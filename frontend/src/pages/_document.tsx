@@ -26,8 +26,7 @@ export default function Document() {
         {/* Meta Tags */}
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta charSet="utf-8" />
-        
-        {/* Dynamic Site Description */}
+        <title>{process.env.NEXT_PUBLIC_SITE_TITLE || "Super Piccell"}</title>
         <meta
           name="description"
           content={process.env.NEXT_PUBLIC_SITE_DESCRIPTION || "Super Piccell - A creative project"}
