@@ -95,8 +95,14 @@ const Gallery = () => {
       {loading && hasMore && <Loading />}
 
       {selectedImage && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 px-4">
-          <div className="bg-white rounded-lg p-8 max-w-xl w-full relative overflow-auto">
+        <div
+          className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 px-4"
+          onClick={() => setSelectedImage(null)} // 背景をクリックでポップアップを閉じる
+        >
+          <div
+            className="bg-white rounded-lg p-8 max-w-xl w-full relative overflow-auto"
+            onClick={(e) => e.stopPropagation()} // ポップアップ内のクリックで閉じないようにする
+          >
             <button
               className="absolute top-4 right-4 text-gray-600 text-3xl font-bold bg-gray-200 rounded-full"
               onClick={() => setSelectedImage(null)}
@@ -125,11 +131,11 @@ const Gallery = () => {
                 maxHeight: '200px',
               }}
             >
-            {selectedImage.description && (
-              <p className="mt-4 text-sm text-gray-500 overflow-wrap break-words">
-                {selectedImage.description}
-              </p>
-            )}
+              {selectedImage.description && (
+                <p className="mt-4 text-sm text-gray-500 overflow-wrap break-words">
+                  {selectedImage.description}
+                </p>
+              )}
             </div>
           </div>
         </div>

@@ -93,12 +93,25 @@ const Character = () => {
       </div>
 
       {selectedCharacter && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 px-4">
-          <div className="bg-white rounded-lg p-8 max-w-xl w-full relative">
+        <div
+          className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 px-4"
+          onClick={() => setSelectedCharacter(null)} // 背景をクリックした場合にポップアップを閉じる
+        >
+          <div
+            className="bg-white rounded-lg p-8 max-w-xl w-full relative"
+            onClick={(e) => e.stopPropagation()} // ポップアップの中をクリックした場合は閉じないようにする
+          >
             <button
               className="absolute top-4 right-4 text-gray-600 text-3xl font-bold bg-gray-200 rounded-full"
               onClick={() => setSelectedCharacter(null)}
-              style={{ cursor: 'pointer', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              style={{
+                cursor: 'pointer',
+                width: '40px',
+                height: '40px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
             >
               &times;
             </button>
