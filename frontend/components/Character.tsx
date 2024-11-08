@@ -1,0 +1,113 @@
+import React, { useState, useEffect } from 'react';
+import { createClient } from 'contentful';
+import Image from 'next/image';
+import Loading from './Loading';
+
+if (!process.env.NEXT_PUBLIC_CONTENTFUL_SPACE_ID || !process.env.NEXT_PUBLIC_CONTENTFUL_ACCESS_TOKEN) {
+  throw new Error("Missing required Contentful environment variables.");
+}
+
+const client = createClient({
+  space: process.env.NEXT_PUBLIC_CONTENTFUL_SPACE_ID as string,
+  accessToken: process.env.NEXT_PUBLIC_CONTENTFUL_ACCESS_TOKEN as string,
+});
+
+interface CharacterProps {
+  name: string;
+  thumbnail: string;
+  image: string;
+  description?: string;
+  profile: string;
+}
+
+const Character = () => {
+  const [characters, setCharacters] = useState<CharacterProps[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const [selectedCharacter, setSelectedCharacter] = useState<CharacterProps | null>(null);
+
+  useEffect(() => {
+    const fetchCharacters = async () => {
+      try {
+        const response = await client.getEntries({ content_type: process.env.NEXT_PUBLIC_CONTENTFUL_CONTENT_TYPE_CHARACTER as string });
+        
+        const assetMap: Record<string, string> = {};
+        response.includes?.Asset?.forEach((asset: any) => {
+          assetMap[asset.sys.id] = `https:${asset.fields.file.url}`;
+        });
+
+        const items = response.items.map((item: any) => ({
+          name: item.fields.name,
+          thumbnail: assetMap[item.fields.thumbnail.sys.id],
+          image: assetMap[item.fields.image.sys.id],
+          description: item.fields.description || '',
+          profile: item.fields.profile,
+        }));
+        
+        setCharacters(items);
+      } catch (error) {
+        console.error(error);
+        setError(true);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCharacters();
+  }, []);
+
+  if (loading) return <Loading />;
+  if (error || characters.length === 0) return null;
+
+  return (
+    <>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+        {characters.map((character, index) => (
+          <div key={index} className="text-center">
+            <Image
+              src={character.thumbnail}
+              alt={character.name}
+              width={200}
+              height={200}
+              className="w-full rounded-lg cursor-pointer"
+              onClick={() => setSelectedCharacter(character)}
+            />
+          </div>
+        ))}
+      </div>
+
+      {selectedCharacter && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 px-4">
+          <div className="bg-white rounded-lg p-8 max-w-3xl w-full relative">
+            <button
+              className="absolute top-4 right-4 text-gray-600 text-3xl font-bold bg-gray-200 rounded-full"
+              onClick={() => setSelectedCharacter(null)}
+              style={{ cursor: 'pointer', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            >
+              &times;
+            </button>
+            <h3 className="text-3xl font-bold text-center mb-4">{selectedCharacter.name}</h3>
+            <Image
+              src={selectedCharacter.image}
+              alt={selectedCharacter.name}
+              width={600}
+              height={600}
+              className="w-full rounded-lg mb-4"
+            />
+            <p className="mt-4 text-center">{selectedCharacter.description}</p>
+            <p className="mt-4 text-sm text-gray-500 whitespace-pre-line">
+              {selectedCharacter.profile.split('\n').map((line, i) => (
+                <React.Fragment key={i}>
+                  {line}
+                  <br />
+                </React.Fragment>
+              ))}
+            </p>
+          </div>
+        </div>
+      )}
+    </>
+  );
+};
+
+export default Character;

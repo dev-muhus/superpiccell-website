@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  frontend:
+    build:
+      context: .  # Use the project root as the build context
+      dockerfile: ./docker/frontend/Dockerfile  # Path to Dockerfile
+    ports:
+      - "${PORT}:${PORT}"  # Use the port specified in .env
+    volumes:
+      - ./frontend:/frontend  # Mount the frontend directory in the container at /frontend
+    env_file:
+      - ./.env  # Use the root .env file for the server
+    working_dir: /frontend  # Set the working directory in the container to /frontend

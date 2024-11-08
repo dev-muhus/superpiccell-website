@@ -1,0 +1,12 @@
+# Next.js build-related directories
+.next
+out
+
+# Node.js specific
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment configuration file (frontend-specific)
+.env.local
