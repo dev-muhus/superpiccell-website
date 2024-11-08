@@ -13,7 +13,6 @@ docker-compose.override.yml
 # Environment configuration files (global exclusion)
 .env
 .env.local
-*.env
 
 # Exclude Next.js build directories within frontend
 frontend/.next
