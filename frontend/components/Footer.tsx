@@ -11,7 +11,7 @@ const Footer = () => {
       {/* フッター */}
       <footer style={{ backgroundColor: footerBgColor, color: footerTextColor }} className="py-4">
         {/* SNSリンクセクション */}
-        <div className="social-icons mb-4">
+        <div className="social-icons">
           <div className="flex justify-center space-x-6">
             <a
               href="https://x.com/superpiccell"
