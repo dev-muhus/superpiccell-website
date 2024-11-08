@@ -57,6 +57,26 @@ footer {
   padding: 20px 0;
 }
 
+.social-icons {
+  padding-top: 20px;
+  padding-bottom: 20px;
+}
+
+.social-icons a {
+  display: inline-block;
+  transition: transform 0.3s ease;
+}
+
+.social-icons a:hover {
+  transform: scale(1.2); /* ホバー時にアイコンを拡大 */
+}
+
+.copyright {
+  font-size: 14px;
+  border-top: 1px solid #555;
+  padding-top: 10px;
+}
+
 nav a {
   color: white;
   padding: 8px 12px;

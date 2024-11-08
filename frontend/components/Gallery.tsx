@@ -97,11 +97,11 @@ const Gallery = () => {
       {selectedImage && (
         <div
           className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 px-4"
-          onClick={() => setSelectedImage(null)} // 背景をクリックでポップアップを閉じる
+          onClick={() => setSelectedImage(null)}
         >
           <div
-            className="bg-white rounded-lg p-8 max-w-xl w-full relative overflow-auto"
-            onClick={(e) => e.stopPropagation()} // ポップアップ内のクリックで閉じないようにする
+            className="bg-white rounded-lg p-8 max-w-xl w-full relative overflow-y-auto max-h-screen"
+            onClick={(e) => e.stopPropagation()}
           >
             <button
               className="absolute top-4 right-4 text-gray-600 text-3xl font-bold bg-gray-200 rounded-full"
@@ -123,20 +123,13 @@ const Gallery = () => {
               alt={selectedImage.title}
               width={500}
               height={500}
-              className="w-full rounded-lg"
+              className="w-full rounded-lg mb-4"
             />
-            <div
-              className="overflow-y-auto"
-              style={{
-                maxHeight: '200px',
-              }}
-            >
-              {selectedImage.description && (
-                <p className="mt-4 text-sm text-gray-500 overflow-wrap break-words">
-                  {selectedImage.description}
-                </p>
-              )}
-            </div>
+            {selectedImage.description && (
+              <p className="text-sm text-gray-500 overflow-wrap break-words">
+                {selectedImage.description}
+              </p>
+            )}
           </div>
         </div>
       )}

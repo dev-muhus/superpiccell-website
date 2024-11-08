@@ -57,12 +57,12 @@ const Header = () => {
           )}
 
           <div className="container mx-auto mt-16 md:mt-0 flex flex-col items-center space-y-4 md:space-y-0 md:flex-row">
-            <a href="#membership" onClick={(e) => smoothScroll(e, 'membership')} className="hover:text-gray-300 transition-colors" style={{ color: headerTextColor }}>MEMBERSHIP</a>
-            <a href="#about" onClick={(e) => smoothScroll(e, 'about')} className="hover:text-gray-300 transition-colors" style={{ color: headerTextColor }}>ABOUT</a>
-            <a href="#character" onClick={(e) => smoothScroll(e, 'character')} className="hover:text-gray-300 transition-colors" style={{ color: headerTextColor }}>CHARACTER</a>
-            <a href="#core" onClick={(e) => smoothScroll(e, 'core')} className="hover:text-gray-300 transition-colors" style={{ color: headerTextColor }}>CORE</a>
-            <a href="#embryo" onClick={(e) => smoothScroll(e, 'embryo')} className="hover:text-gray-300 transition-colors" style={{ color: headerTextColor }}>EMBRYO</a>
-            <a href="#gallery" onClick={(e) => smoothScroll(e, 'gallery')} className="hover:text-gray-300 transition-colors" style={{ color: headerTextColor }}>GALLERY</a>
+            <a href="#membership" onClick={(e) => smoothScroll(e, 'membership')} className="hover:text-gray-300 transition-colors uppercase" style={{ color: headerTextColor }}>membership</a>
+            <a href="#about" onClick={(e) => smoothScroll(e, 'about')} className="hover:text-gray-300 transition-colors uppercase" style={{ color: headerTextColor }}>about</a>
+            <a href="#character" onClick={(e) => smoothScroll(e, 'character')} className="hover:text-gray-300 transition-colors uppercase" style={{ color: headerTextColor }}>character</a>
+            <a href="#core" onClick={(e) => smoothScroll(e, 'core')} className="hover:text-gray-300 transition-colors uppercase" style={{ color: headerTextColor }}>core</a>
+            <a href="#embryo" onClick={(e) => smoothScroll(e, 'embryo')} className="hover:text-gray-300 transition-colors uppercase" style={{ color: headerTextColor }}>embryo</a>
+            <a href="#gallery" onClick={(e) => smoothScroll(e, 'gallery')} className="hover:text-gray-300 transition-colors uppercase" style={{ color: headerTextColor }}>gallery</a>
           </div>
         </nav>
       </div>

@@ -34,8 +34,8 @@ export default function Home() {
 
       <main className="container">
         <section id="membership" className="section">
-          <h2 className="section-title">
-            MEMBERSHIP
+          <h2 className="section-title uppercase">
+            membership
             <div className="section-title-icon">
               <div className="section-title-line"></div>
               <FaUser />
@@ -46,8 +46,8 @@ export default function Home() {
         </section>
 
         <section id="about" className="section">
-          <h2 className="section-title">
-            ABOUT
+          <h2 className="section-title uppercase">
+          about
             <div className="section-title-icon">
               <div className="section-title-line"></div>
               <FaHome />
@@ -60,8 +60,8 @@ export default function Home() {
         </section>
 
         <section id="character" className="section">
-          <h2 className="section-title">
-            CHARACTER
+          <h2 className="section-title uppercase">
+            character
             <div className="section-title-icon">
               <div className="section-title-line"></div>
               <FaSmile />
@@ -72,8 +72,8 @@ export default function Home() {
         </section>
 
         <section id="core" className="section">
-          <h2 className="section-title">
-            CORE
+          <h2 className="section-title uppercase">
+            core
             <div className="section-title-icon">
               <div className="section-title-line"></div>
               <FaHeart />
@@ -94,8 +94,8 @@ export default function Home() {
         </section>
 
         <section id="embryo" className="section">
-          <h2 className="section-title">
-            EMBRYO
+          <h2 className="section-title uppercase">
+          embryo
             <div className="section-title-icon">
               <div className="section-title-line"></div>
               <FaStar />
@@ -116,8 +116,8 @@ export default function Home() {
         </section>
 
         <section id="gallery" className="section">
-          <h2 className="section-title">
-            GALLERY
+          <h2 className="section-title uppercase">
+            gallery
             <div className="section-title-icon">
               <div className="section-title-line"></div>
               <FaImages />

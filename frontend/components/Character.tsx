@@ -47,14 +47,15 @@ const Character = () => {
             profile?: string;
           };
     
+          const noImagePath: string = "/image/no-image.png";
           return {
             name: fields.name || "Unknown Name",
             thumbnail:
               (fields.thumbnail?.sys?.id && assetMap[fields.thumbnail.sys.id]) ||
-              "/image/no-image.png",
+              noImagePath,
             image:
               (fields.image?.sys?.id && assetMap[fields.image.sys.id]) ||
-              "/image/no-image.png",
+              noImagePath,
             description: fields.description || "",
             profile: fields.profile || "No profile available",
           };
@@ -95,11 +96,11 @@ const Character = () => {
       {selectedCharacter && (
         <div
           className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 px-4"
-          onClick={() => setSelectedCharacter(null)} // 背景をクリックした場合にポップアップを閉じる
+          onClick={() => setSelectedCharacter(null)}
         >
           <div
-            className="bg-white rounded-lg p-8 max-w-xl w-full relative"
-            onClick={(e) => e.stopPropagation()} // ポップアップの中をクリックした場合は閉じないようにする
+            className="bg-white rounded-lg p-8 max-w-xl w-full relative overflow-y-auto max-h-screen"
+            onClick={(e) => e.stopPropagation()}
           >
             <button
               className="absolute top-4 right-4 text-gray-600 text-3xl font-bold bg-gray-200 rounded-full"
@@ -123,12 +124,7 @@ const Character = () => {
               height={500}
               className="w-full rounded-lg mb-4"
             />
-            <div
-              className="overflow-y-auto"
-              style={{
-                maxHeight: '200px',
-              }}
-            >
+            <div>
               <p className="mt-4 text-center">{selectedCharacter.description}</p>
               <p className="mt-4 text-sm text-gray-500 whitespace-pre-line">
                 {selectedCharacter.profile.split('\n').map((line, i) => (
@@ -142,6 +138,7 @@ const Character = () => {
           </div>
         </div>
       )}
+
     </>
   );
 };
