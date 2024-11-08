@@ -33,7 +33,7 @@ const Gallery = () => {
     setLoading(true);
     try {
       const response = await client.getEntries({
-        content_type: process.env.NEXT_PUBLIC_CONTENTFUL_CONTENT_TYPE_IMAGE,
+        content_type: process.env.NEXT_PUBLIC_CONTENTFUL_CONTENT_TYPE_GALLERY,
         include: 1,
         limit,
         skip: newSkip,
