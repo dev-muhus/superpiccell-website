@@ -110,15 +110,22 @@ const Character = () => {
               height={500}
               className="w-full rounded-lg mb-4"
             />
-            <p className="mt-4 text-center">{selectedCharacter.description}</p>
-            <p className="mt-4 text-sm text-gray-500 whitespace-pre-line">
-              {selectedCharacter.profile.split('\n').map((line, i) => (
-                <React.Fragment key={i}>
-                  {line}
-                  <br />
-                </React.Fragment>
-              ))}
-            </p>
+            <div
+              className="overflow-y-auto"
+              style={{
+                maxHeight: '200px',
+              }}
+            >
+              <p className="mt-4 text-center">{selectedCharacter.description}</p>
+              <p className="mt-4 text-sm text-gray-500 whitespace-pre-line">
+                {selectedCharacter.profile.split('\n').map((line, i) => (
+                  <React.Fragment key={i}>
+                    {line}
+                    <br />
+                  </React.Fragment>
+                ))}
+              </p>
+            </div>
           </div>
         </div>
       )}

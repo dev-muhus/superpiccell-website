@@ -119,11 +119,18 @@ const Gallery = () => {
               height={500}
               className="w-full rounded-lg"
             />
+            <div
+              className="overflow-y-auto"
+              style={{
+                maxHeight: '200px',
+              }}
+            >
             {selectedImage.description && (
               <p className="mt-4 text-sm text-gray-500 overflow-wrap break-words">
                 {selectedImage.description}
               </p>
             )}
+            </div>
           </div>
         </div>
       )}
