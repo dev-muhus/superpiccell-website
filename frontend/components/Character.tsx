@@ -51,10 +51,10 @@ const Character = () => {
             name: fields.name || "Unknown Name",
             thumbnail:
               (fields.thumbnail?.sys?.id && assetMap[fields.thumbnail.sys.id]) ||
-              "/default-thumbnail.png",
+              "/image/no-image.png",
             image:
               (fields.image?.sys?.id && assetMap[fields.image.sys.id]) ||
-              "/default-image.png",
+              "/image/no-image.png",
             description: fields.description || "",
             profile: fields.profile || "No profile available",
           };
