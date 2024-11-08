@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { createClient } from 'contentful';
+import { createClient, Asset } from 'contentful';
 import Image from 'next/image';
 import Loading from './Loading';
 
@@ -29,24 +29,40 @@ const Character = () => {
   useEffect(() => {
     const fetchCharacters = async () => {
       try {
-        const response = await client.getEntries({ content_type: process.env.NEXT_PUBLIC_CONTENTFUL_CONTENT_TYPE_CHARACTER as string });
-        
-        const assetMap: Record<string, string> = {};
-        response.includes?.Asset?.forEach((asset: any) => {
-          assetMap[asset.sys.id] = `https:${asset.fields.file.url}`;
+        const response = await client.getEntries({
+          content_type: process.env.NEXT_PUBLIC_CONTENTFUL_CONTENT_TYPE_CHARACTER as string,
         });
-
-        const items = response.items.map((item: any) => ({
-          name: item.fields.name,
-          thumbnail: assetMap[item.fields.thumbnail.sys.id],
-          image: assetMap[item.fields.image.sys.id],
-          description: item.fields.description || '',
-          profile: item.fields.profile,
-        }));
-        
+    
+        const assetMap: Record<string, string> = {};
+        response.includes?.Asset?.forEach((asset: Asset) => {
+          assetMap[asset.sys.id] = `https:${asset.fields.file?.url}`;
+        });
+    
+        const items: CharacterProps[] = response.items.map((item) => {
+          const fields = item.fields as {
+            name?: string;
+            thumbnail?: { sys: { id: string } };
+            image?: { sys: { id: string } };
+            description?: string;
+            profile?: string;
+          };
+    
+          return {
+            name: fields.name || "Unknown Name",
+            thumbnail:
+              (fields.thumbnail?.sys?.id && assetMap[fields.thumbnail.sys.id]) ||
+              "/default-thumbnail.png",
+            image:
+              (fields.image?.sys?.id && assetMap[fields.image.sys.id]) ||
+              "/default-image.png",
+            description: fields.description || "",
+            profile: fields.profile || "No profile available",
+          };
+        });
+    
         setCharacters(items);
       } catch (error) {
-        console.error(error);
+        console.error("Failed to fetch characters:", error);
         setError(true);
       } finally {
         setLoading(false);
