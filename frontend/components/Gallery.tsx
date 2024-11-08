@@ -84,8 +84,8 @@ const Gallery = () => {
             <Image
               src={image.url}
               alt={image.title}
-              width={500}
-              height={500}
+              width={200}
+              height={200}
               className="w-full rounded-lg cursor-pointer"
               onClick={() => setSelectedImage(image)}
             />
@@ -96,7 +96,7 @@ const Gallery = () => {
 
       {selectedImage && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 px-4">
-          <div className="bg-white rounded-lg p-8 max-w-3xl w-full relative overflow-auto">
+          <div className="bg-white rounded-lg p-8 max-w-xl w-full relative overflow-auto">
             <button
               className="absolute top-4 right-4 text-gray-600 text-3xl font-bold bg-gray-200 rounded-full"
               onClick={() => setSelectedImage(null)}
@@ -115,8 +115,8 @@ const Gallery = () => {
             <Image
               src={selectedImage.url}
               alt={selectedImage.title}
-              width={800}
-              height={800}
+              width={500}
+              height={500}
               className="w-full rounded-lg"
             />
             {selectedImage.description && (

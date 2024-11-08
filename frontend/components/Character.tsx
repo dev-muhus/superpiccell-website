@@ -85,7 +85,7 @@ const Character = () => {
               alt={character.name}
               width={200}
               height={200}
-              className="w-full rounded-lg cursor-pointer"
+              className="w-full rounded-full cursor-pointer"
               onClick={() => setSelectedCharacter(character)}
             />
           </div>
@@ -94,7 +94,7 @@ const Character = () => {
 
       {selectedCharacter && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 px-4">
-          <div className="bg-white rounded-lg p-8 max-w-3xl w-full relative">
+          <div className="bg-white rounded-lg p-8 max-w-xl w-full relative">
             <button
               className="absolute top-4 right-4 text-gray-600 text-3xl font-bold bg-gray-200 rounded-full"
               onClick={() => setSelectedCharacter(null)}
@@ -106,8 +106,8 @@ const Character = () => {
             <Image
               src={selectedCharacter.image}
               alt={selectedCharacter.name}
-              width={600}
-              height={600}
+              width={500}
+              height={500}
               className="w-full rounded-lg mb-4"
             />
             <p className="mt-4 text-center">{selectedCharacter.description}</p>
