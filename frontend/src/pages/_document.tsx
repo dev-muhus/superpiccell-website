@@ -1,6 +1,8 @@
 import { Html, Head, Main, NextScript } from 'next/document';
 
 export default function Document() {
+  const googleAnalyticsId = process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID;
+
   return (
     <Html lang="ja">
       <Head>
@@ -12,7 +14,7 @@ export default function Document() {
             var f=d.getElementsByTagName(s)[0],
             j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
             'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-            })(window,document,'script','dataLayer','GTM-KWTMT9J');
+            })(window,document,'script','dataLayer','${googleAnalyticsId}');
             `,
           }}
         />
@@ -35,7 +37,7 @@ export default function Document() {
       <body>
         {/* Google Tag Manager (noscript) */}
         <noscript>
-          <iframe src="https://www.googletagmanager.com/ns.html?id=GTM-KWTMT9J"
+          <iframe src="https://www.googletagmanager.com/ns.html?id=${googleAnalyticsId}"
             height="0" width="0" style={{ display: 'none', visibility: 'hidden' }}></iframe>
         </noscript>
         <Main />

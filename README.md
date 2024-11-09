@@ -76,6 +76,13 @@ The frontend of this project is built with Next.js. The setup is containerized w
      NEXT_PUBLIC_HEADER_TEXT_COLOR="#ffffff"
      NEXT_PUBLIC_FOOTER_BG_COLOR="#2C3E50"
      NEXT_PUBLIC_FOOTER_TEXT_COLOR="#ffffff"
+     NEXT_PUBLIC_COPYRIGHT_BG_COLOR="#1a1a1a"
+     NEXT_PUBLIC_COPYRIGHT_TEXT_COLOR="#cccccc"
+     NEXT_PUBLIC_SCROLL_BUTTON_BG_COLOR="#2563eb"
+     NEXT_PUBLIC_SCROLL_BUTTON_TEXT_COLOR="#ffffff"
+
+     # Google Analytics ID for tracking site metrics
+     NEXT_PUBLIC_GOOGLE_ANALYTICS_ID=XXXXXXXXXXXXXXXXXXXXXXX
      ```
 
 ### Starting the Frontend

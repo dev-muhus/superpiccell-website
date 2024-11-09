@@ -73,8 +73,6 @@ footer {
 
 .copyright {
   font-size: 14px;
-  border-top: 1px solid #555;
-  padding-top: 10px;
 }
 
 nav a {
@@ -95,27 +93,6 @@ nav a:hover {
     flex-direction: column;
     gap: 1rem;
   }
-}
-
-/* main {
-  padding-top: 120px;
-} */
-
-.scroll-to-top-btn {
-  position: fixed;
-  bottom: 1.5rem; /* 24px */
-  right: 1.5rem; /* 24px */
-  padding: 1rem 1.5rem;
-  background-color: #2563eb;
-  color: white;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-  font-size: 1.25rem;
-  border-radius: 8px;
-  transition: background-color 0.2s;
-}
-
-.scroll-to-top-btn:hover {
-  background-color: #1d4ed8;
 }
 
 .section-title {
@@ -143,7 +120,7 @@ nav a:hover {
 }
 
 .section {
-  margin-top: 2.5rem; /* Tailwind の my-10 と同等のマージン */
+  margin-top: 2.5rem;
   margin-bottom: 2.5rem;
 }
 
