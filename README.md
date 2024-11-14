@@ -53,10 +53,6 @@ The frontend of this project is built with Next.js. The setup is containerized w
      NEXT_PUBLIC_ALCHEMY_API_KEY=XXXXXXXXXXXXXXXX
      NEXT_PUBLIC_ALCHEMY_NETWORK="MATIC_MAINNET"
 
-     # Infura API
-     NEXT_PUBLIC_INFURA_URL=https://polygon-mainnet.infura.io/v3/
-     NEXT_PUBLIC_INFURA_PROJECT_ID=XXXXXXXXXXXXXXXX
-
      # Contract and Blockchain settings
      NEXT_PUBLIC_SUPERPICCELL_MEMBERSHIP_CONTRACT=XXXXXXXXXXXXXXXX
      NEXT_PUBLIC_RPC_URL="https://polygon-rpc.com/"
