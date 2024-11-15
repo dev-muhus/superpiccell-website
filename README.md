@@ -1,6 +1,6 @@
 # Super Piccell Website Project
 
-This project is a website for the Super Piccell project, built using Next.js and Docker, with Contentful for content management.
+This project is a website for the Super Piccell project, built using Next.js and Docker, with Contentful for content management. It is designed to be flexible and reusable for other projects by simply updating the environment variables.
 
 ## Project Structure
 
@@ -15,8 +15,22 @@ The frontend of this project is built with Next.js. The setup is containerized w
 
 ### Prerequisites
 
+Before you start, ensure you have the following:
+
 - Docker and Docker Compose installed
-- Contentful account with necessary API tokens
+- Contentful account with API tokens (Space ID, Access Token, etc.)
+- Alchemy account for blockchain API integration (API Key required)
+- Configured environment variables (`.env.local`)
+
+---
+
+## How to Reuse
+
+To reuse this project for other purposes, update the environment variables in `.env.local` to match your new project’s requirements. Adjustments can include:
+
+- Blockchain configuration (e.g., contract address, network details)
+- Contentful content type IDs
+- Alchemy network settings
 
 ### Setup Instructions
 
