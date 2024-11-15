@@ -2,6 +2,10 @@ import { Html, Head, Main, NextScript } from 'next/document';
 
 export default function Document() {
   const googleAnalyticsId = process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID;
+  const siteTitle = process.env.NEXT_PUBLIC_SITE_TITLE || "Super Piccell";
+  const siteDescription = process.env.NEXT_PUBLIC_SITE_DESCRIPTION || "Super Piccell - A creative project";
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://superpiccell.com";
+  const siteAlternateName = process.env.NEXT_PUBLIC_SITE_ALTERNATE_NAME || "SuperPiccell";
 
   return (
     <Html lang="ja">
@@ -28,17 +32,33 @@ export default function Document() {
         {/* Meta Tags */}
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta charSet="utf-8" />
-        <title>{process.env.NEXT_PUBLIC_SITE_TITLE || "Super Piccell"}</title>
-        <meta
-          name="description"
-          content={process.env.NEXT_PUBLIC_SITE_DESCRIPTION || "Super Piccell - A creative project"}
+        <title>{siteTitle}</title>
+        <meta name="description" content={siteDescription} />
+
+        {/* JSON-LD */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "WebSite",
+              "name": siteTitle,
+              "alternateName": siteAlternateName,
+              "url": siteUrl,
+              "description": siteDescription,
+            }),
+          }}
         />
       </Head>
       <body>
         {/* Google Tag Manager (noscript) */}
         <noscript>
-          <iframe src="https://www.googletagmanager.com/ns.html?id=${googleAnalyticsId}"
-            height="0" width="0" style={{ display: 'none', visibility: 'hidden' }}></iframe>
+          <iframe
+            src={`https://www.googletagmanager.com/ns.html?id=${googleAnalyticsId}`}
+            height="0"
+            width="0"
+            style={{ display: 'none', visibility: 'hidden' }}
+          ></iframe>
         </noscript>
         <Main />
         <NextScript />

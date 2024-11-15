@@ -51,9 +51,11 @@ To reuse this project for other purposes, update the environment variables in `.
    - In the `frontend` directory, ensure a `.env.local` file is present with the following variables:
      ```
      # Project-wide settings
-     NEXT_PUBLIC_SITE_TITLE="Super Piccell"
-     NEXT_PUBLIC_SITE_DESCRIPTION="Welcome to the Super Piccell project!"
-     NEXT_PUBLIC_INFURA_PROJECT_ID=XXXXXXXXXXXXXXXX
+     NEXT_PUBLIC_SITE_NAME="Super Piccell"
+     NEXT_PUBLIC_SITE_TITLE="Super Piccell - Web3 Media Franchise | SuperPiccell"
+     NEXT_PUBLIC_SITE_ALTERNATE_NAME=SuperPiccell
+     NEXT_PUBLIC_SITE_DESCRIPTION="Welcome to Super Piccell (SuperPiccell), the ultimate Web3 media franchise. Explore NFTs, characters, and more!"
+     NEXT_PUBLIC_SITE_URL=https://superpiccell.com
      NEXT_PUBLIC_CONTRACT_ADDRESS=XXXXXXXXXXXXXXXX
 
      # Contentful-specific settings

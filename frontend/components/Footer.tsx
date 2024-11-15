@@ -6,7 +6,7 @@ const Footer = () => {
   const footerTextColor = process.env.NEXT_PUBLIC_FOOTER_TEXT_COLOR || '#ffffff';
   const copyrightBgColor = process.env.NEXT_PUBLIC_COPYRIGHT_BG_COLOR || '#222';
   const copyrightTextColor = process.env.NEXT_PUBLIC_COPYRIGHT_TEXT_COLOR || '#aaaaaa';
-  const siteTitle = process.env.NEXT_PUBLIC_SITE_TITLE || 'Super Piccell';
+  const siteName = process.env.NEXT_PUBLIC_SITE_NAME || 'Super Piccell';
 
   return (
     <>
@@ -58,7 +58,7 @@ const Footer = () => {
         style={{ backgroundColor: copyrightBgColor, color: copyrightTextColor }}
       >
         <p className="text-center">
-          Copyright &copy; {siteTitle} {new Date().getFullYear()}
+          Copyright &copy; {siteName} {new Date().getFullYear()}
         </p>
       </div>
     </>

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const siteTitle = process.env.NEXT_PUBLIC_SITE_TITLE || 'Super Piccell';
+  const siteName = process.env.NEXT_PUBLIC_SITE_NAME || 'Super Piccell';
 
   const headerBgColor = process.env.NEXT_PUBLIC_HEADER_BG_COLOR || '#0077cc';
   const headerTextColor = process.env.NEXT_PUBLIC_HEADER_TEXT_COLOR || '#ffffff';
@@ -30,7 +30,7 @@ const Header = () => {
     <header style={{ backgroundColor: headerBgColor }} className="p-4 md:p-2 shadow-lg fixed top-0 left-0 w-full z-50">
       <div className="container mx-auto flex justify-between items-center">
         <h1 style={{ color: headerTextColor }} className="text-2xl font-bold">
-          {siteTitle.toUpperCase()}
+          {siteName.toUpperCase()}
         </h1>
 
         <button
