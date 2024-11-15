@@ -3,7 +3,7 @@ import { Alchemy, Network, OwnedNft } from 'alchemy-sdk';
 import Loading from './Loading';
 import Image from 'next/image';
 
-const contractAddress = process.env.NEXT_PUBLIC_SUPERPICCELL_MEMBERSHIP_CONTRACT!;
+const contractAddress = process.env.NEXT_PUBLIC_MEMBERSHIP_CONTRACT!;
 const blockchainRpcUrl = process.env.NEXT_PUBLIC_RPC_URL!;
 const blockchainScanUrl = process.env.NEXT_PUBLIC_SCAN_URL!;
 const networkChainId = process.env.NEXT_PUBLIC_CHAIN_ID!;
@@ -11,6 +11,7 @@ const networkName = process.env.NEXT_PUBLIC_NETWORK_NAME!;
 const currencyName = process.env.NEXT_PUBLIC_CURRENCY_NAME!;
 const currencySymbol = process.env.NEXT_PUBLIC_CURRENCY_SYMBOL!;
 const currencyDecimals = parseInt(process.env.NEXT_PUBLIC_CURRENCY_DECIMALS!);
+const membershipCollectionName = process.env.NEXT_PUBLIC_MEMBERSHIP_COLLECTION_NAME!;
 
 const alchemyNetwork = process.env.NEXT_PUBLIC_ALCHEMY_NETWORK as keyof typeof Network;
 const settings = {
@@ -146,7 +147,7 @@ const WalletConnector = () => {
         <p className="text-red-500 text-center mt-4">
           {error === "NFTを保有していません" ? (
             <a
-              href="https://opensea.io/collection/super-piccell-membership-cards"
+              href={`https://opensea.io/collection/${membershipCollectionName}`}
               target="_blank"
               rel="noopener noreferrer"
               className="text-blue-500 underline"
@@ -161,9 +162,29 @@ const WalletConnector = () => {
 
       {displayedTokenIds.length > 0 &&
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
-          {displayedTokenIds.map((tokenId, index) => (
-            <div key={index} className="text-center">
-              <Image src={generateImageUrl(tokenId)} alt={`NFT ${index}`} width={500} height={500} className="w-full rounded-lg" />
+          {displayedTokenIds.map((tokenId) => (
+            <div key={tokenId} className="nft-card">
+              <div className="nft-card-inner">
+                <div className="nft-card-front">
+                  <Image
+                    src={generateImageUrl(tokenId)}
+                    alt={`NFT ${tokenId}`}
+                    width={500}
+                    height={500}
+                    className="w-full h-full object-cover rounded-lg"
+                  />
+                </div>
+                <div className="nft-card-back">
+                  <a
+                    href={`https://opensea.io/assets/${currencyName.toLowerCase()}/${contractAddress}/${tokenId}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-3xl font-bold text-white-500 underline"
+                  >
+                    #{tokenId}
+                  </a>
+                </div>
+              </div>
             </div>
           ))}
         </div>

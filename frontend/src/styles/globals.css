@@ -68,7 +68,7 @@ footer {
 }
 
 .social-icons a:hover {
-  transform: scale(1.2); /* ホバー時にアイコンを拡大 */
+  transform: scale(1.2);
 }
 
 .copyright {
@@ -124,3 +124,49 @@ nav a:hover {
   margin-bottom: 2.5rem;
 }
 
+.nft-card {
+  position: relative;
+  width: 100%;
+  height: 0;
+  padding-top: 100%;
+  perspective: 1000px;
+}
+
+.nft-card-inner {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.8s ease;
+}
+
+.nft-card:hover .nft-card-inner,
+.nft-card:focus-within .nft-card-inner {
+  transform: rotateY(180deg);
+}
+
+.nft-card-front,
+.nft-card-back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nft-card-front {
+  background-color: white;
+  z-index: 2;
+  transform: rotateY(0deg);
+}
+
+.nft-card-back {
+  background-color: #333;
+  color: white;
+  transform: rotateY(180deg);
+}

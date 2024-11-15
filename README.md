@@ -54,7 +54,8 @@ The frontend of this project is built with Next.js. The setup is containerized w
      NEXT_PUBLIC_ALCHEMY_NETWORK="MATIC_MAINNET"
 
      # Contract and Blockchain settings
-     NEXT_PUBLIC_SUPERPICCELL_MEMBERSHIP_CONTRACT=XXXXXXXXXXXXXXXX
+     NEXT_PUBLIC_MEMBERSHIP_CONTRACT=XXXXXXXXXXXXXXXX
+     NEXT_PUBLIC_MEMBERSHIP_COLLECTION_NAME="XXX-XXXX-XXXXX"
      NEXT_PUBLIC_RPC_URL="https://polygon-rpc.com/"
      NEXT_PUBLIC_SCAN_URL="https://polygonscan.com/"
      NEXT_PUBLIC_CHAIN_ID="0x89"
