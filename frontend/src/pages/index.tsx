@@ -54,7 +54,7 @@ export default function Home() {
               <div className="section-title-line"></div>
             </div>
           </h2>
-          <p className="mt-4">
+          <p className="mt-4 text-xl">
             <MultilineText text={textContent.ABOUT_TEXT} />
           </p>
         </section>
@@ -80,7 +80,7 @@ export default function Home() {
               <div className="section-title-line"></div>
             </div>
           </h2>
-          <p className="mt-4">
+          <p className="mt-4 text-xl">
             <MultilineText text={textContent.CORE_TEXT} />
           </p>
           <div className="flex items-center">
@@ -102,7 +102,7 @@ export default function Home() {
               <div className="section-title-line"></div>
             </div>
           </h2>
-          <p className="mt-4">
+          <p className="mt-4 text-xl">
             <MultilineText text={textContent.EMBRYO_TEXT} />
           </p>
           <div className="flex items-center">
