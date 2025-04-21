@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import Gallery from '../../components/Gallery';
 import Character from '../../components/Character';
 import WalletConnector from "../../components/WalletConnector";
@@ -12,8 +13,41 @@ const overlayText = process.env.NEXT_PUBLIC_OVERLAY_TEXT || "Welcome to Super Pi
 const headerImageHeight = process.env.NEXT_PUBLIC_HEADER_IMAGE_HEIGHT || "400px";
 
 export default function Home() {
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  useEffect(() => {
+    setIsLoaded(true);
+    
+    // Intersection Observer を使って要素が表示されたらアニメーション効果を適用
+    const observerOptions = {
+      root: null,
+      rootMargin: '0px',
+      threshold: 0.1
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-visible');
+          // 一度表示されたら監視を解除（オプション）
+          // observer.unobserve(entry.target);
+        }
+      });
+    }, observerOptions);
+
+    // アニメーション対象の要素を監視
+    document.querySelectorAll('.fade-in-section, .slide-in-left, .slide-in-right, .scale-in').forEach(el => {
+      observer.observe(el);
+    });
+
+    return () => {
+      // コンポーネントのアンマウント時にオブザーバーを解除
+      observer.disconnect();
+    };
+  }, []);
+
   return (
-    <div>
+    <div className={`transition-opacity duration-1000 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}>
       {overlayImageUrl && (
         <div
           className="header-background"
@@ -33,7 +67,7 @@ export default function Home() {
       )}
 
       <main className="container">
-        <section id="membership" className="section">
+        <section id="membership" className="section fade-in-section">
           <h2 className="section-title uppercase">
             membership
             <div className="section-title-icon">
@@ -42,11 +76,13 @@ export default function Home() {
               <div className="section-title-line"></div>
             </div>
           </h2>
-          <WalletConnector />
+          <div className="scale-in delay-200">
+            <WalletConnector />
+          </div>
         </section>
 
         <section id="about" className="section">
-          <h2 className="section-title uppercase">
+          <h2 className="section-title uppercase fade-in-section">
           about
             <div className="section-title-icon">
               <div className="section-title-line"></div>
@@ -54,13 +90,13 @@ export default function Home() {
               <div className="section-title-line"></div>
             </div>
           </h2>
-          <p className="mt-4 text-xl">
+          <p className="mt-4 text-xl slide-in-left delay-100">
             <MultilineText text={textContent.ABOUT_TEXT} />
           </p>
         </section>
 
         <section id="character" className="section">
-          <h2 className="section-title uppercase">
+          <h2 className="section-title uppercase fade-in-section">
             character
             <div className="section-title-icon">
               <div className="section-title-line"></div>
@@ -68,11 +104,13 @@ export default function Home() {
               <div className="section-title-line"></div>
             </div>
           </h2>
-          <Character />
+          <div className="fade-in-section delay-200">
+            <Character />
+          </div>
         </section>
 
         <section id="core" className="section">
-          <h2 className="section-title uppercase">
+          <h2 className="section-title uppercase fade-in-section">
             core
             <div className="section-title-icon">
               <div className="section-title-line"></div>
@@ -80,10 +118,10 @@ export default function Home() {
               <div className="section-title-line"></div>
             </div>
           </h2>
-          <p className="mt-4 text-xl">
+          <p className="mt-4 text-xl slide-in-right delay-100">
             <MultilineText text={textContent.CORE_TEXT} />
           </p>
-          <div className="flex items-center">
+          <div className="flex items-center scale-in delay-300">
             <a href="https://super-piccell.gitbook.io/core/" target="_blank" rel="noopener noreferrer">
               <FaBook size={40} color="#5B5B5B" />
             </a>
@@ -94,7 +132,7 @@ export default function Home() {
         </section>
 
         <section id="embryo" className="section">
-          <h2 className="section-title uppercase">
+          <h2 className="section-title uppercase fade-in-section">
           embryo
             <div className="section-title-icon">
               <div className="section-title-line"></div>
@@ -102,10 +140,10 @@ export default function Home() {
               <div className="section-title-line"></div>
             </div>
           </h2>
-          <p className="mt-4 text-xl">
+          <p className="mt-4 text-xl slide-in-left delay-100">
             <MultilineText text={textContent.EMBRYO_TEXT} />
           </p>
-          <div className="flex items-center">
+          <div className="flex items-center scale-in delay-300">
             <a href="https://super-piccell.gitbook.io/embryo/" target="_blank" rel="noopener noreferrer">
               <FaBook size={40} color="#5B5B5B" />
             </a>
@@ -116,7 +154,7 @@ export default function Home() {
         </section>
 
         <section id="gallery" className="section">
-          <h2 className="section-title uppercase">
+          <h2 className="section-title uppercase fade-in-section">
             gallery
             <div className="section-title-icon">
               <div className="section-title-line"></div>
@@ -124,7 +162,9 @@ export default function Home() {
               <div className="section-title-line"></div>
             </div>
           </h2>
-          <Gallery />
+          <div className="fade-in-section delay-200">
+            <Gallery />
+          </div>
         </section>
 
         <ScrollToTopButton />
