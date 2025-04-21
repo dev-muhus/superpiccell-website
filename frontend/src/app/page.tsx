@@ -1,3 +1,5 @@
+'use client';
+
 import { useEffect, useState } from 'react';
 import Gallery from '../../components/Gallery';
 import Character from '../../components/Character';
@@ -171,4 +173,4 @@ export default function Home() {
       </main>
     </div>
   );
-}
+} 

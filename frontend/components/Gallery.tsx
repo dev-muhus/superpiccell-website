@@ -1,3 +1,5 @@
+'use client';
+
 import { useEffect, useState } from 'react';
 import Loading from './Loading';
 import { createClient, Asset } from 'contentful';

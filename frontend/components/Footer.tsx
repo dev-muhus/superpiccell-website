@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import { FaTwitter, FaInstagram, FaDiscord, FaYoutube } from 'react-icons/fa';
 

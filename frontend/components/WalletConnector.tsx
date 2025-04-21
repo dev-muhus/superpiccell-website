@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Alchemy, Network, OwnedNft } from 'alchemy-sdk';
 import Loading from './Loading';

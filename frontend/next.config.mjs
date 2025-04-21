@@ -1,15 +1,19 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    images: {
-      remotePatterns: [
-        {
-          protocol: 'https',
-          hostname: 'images.ctfassets.net',
-          pathname: '**',
-        },
-      ],
-    },
-  };
-  
-  export default nextConfig;
+  reactStrictMode: true,
+  output: 'standalone',
+  swcMinify: true,
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'images.ctfassets.net',
+        pathname: '**',
+      },
+    ],
+    domains: ['images.ctfassets.net'],
+  },
+};
+
+export default nextConfig;
   
