@@ -2,17 +2,100 @@
 @tailwind components;
 @tailwind utilities;
 
+/* 基本スタイル - 横スクロール防止 */
 html, body {
   margin: 0;
   padding: 0;
   font-family: 'M PLUS Rounded 1c', sans-serif;
   scroll-behavior: smooth;
+  overflow-x: hidden; /* 横スクロール防止 */
+  width: 100%;
+  box-sizing: border-box;
 }
 
+*, *:before, *:after {
+  box-sizing: inherit;
+}
+
+/* コンテナスタイル */
 .container {
+  width: 100%;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 20px;
+  padding-left: 20px;
+  padding-right: 20px;
+  overflow-x: hidden;
+}
+
+/* ヘッダー */
+header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 9000;
+  display: flex;
+  align-items: center;
+}
+
+/* ヘッダー背景 */
+.header-background {
+  position: relative;
+  width: 100vw;
+  max-width: 100%;
+  height: var(--header-height, 300px);
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  padding-bottom: 20px;
+  overflow: hidden;
+  /* ヘッダー背景のパララックス効果 */
+  background-attachment: fixed;
+}
+
+/* オーバーレイ画像 */
+.overlay-image {
+  max-width: 100%;
+  height: auto;
+  max-height: 300px;
+  margin-bottom: 40px;
+  animation: float 6s ease-in-out infinite;
+}
+
+@keyframes float {
+  0% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+.overlay-text {
+  color: white;
+  font-size: 2rem;
+  font-weight: bold;
+  text-align: center;
+  animation: fadeIn 2s ease-in;
+  padding: 0 20px;
+  width: 100%;
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* スクロールアニメーション用のクラス */
@@ -77,74 +160,10 @@ html, body {
   transition-delay: 400ms;
 }
 
-header {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100px;
-  z-index: 1000;
-  display: flex;
-  align-items: center;
-  padding: 0 1rem;
-}
-
-.header-background {
-  position: relative;
-  width: 100%;
-  height: var(--header-height, 300px);
-  background-size: cover;
-  background-position: center;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  align-items: center;
-  padding-bottom: 20px;
-  /* ヘッダー背景のパララックス効果 */
-  background-attachment: fixed;
-}
-
-.overlay-image {
-  max-width: auto;
-  height: 300px;;
-  margin-bottom: 40px;
-  animation: float 6s ease-in-out infinite;
-}
-
-@keyframes float {
-  0% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-20px);
-  }
-  100% {
-    transform: translateY(0);
-  }
-}
-
-.overlay-text {
-  color: white;
-  font-size: 2rem;
-  font-weight: bold;
-  text-align: center;
-  animation: fadeIn 2s ease-in;
-}
-
-@keyframes fadeIn {
-  0% {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
 footer {
   text-align: center;
   padding: 20px 0;
+  width: 100%;
 }
 
 .social-icons {
@@ -165,6 +184,7 @@ footer {
   font-size: 14px;
 }
 
+/* ナビゲーション */
 nav a {
   color: white;
   padding: 8px 12px;
@@ -183,6 +203,14 @@ nav a:hover {
     flex-direction: column;
     gap: 1rem;
   }
+  
+  .overlay-text {
+    font-size: 1.5rem;
+  }
+  
+  .section-title {
+    font-size: 1.75rem;
+  }
 }
 
 .section-title {
@@ -192,6 +220,7 @@ nav a:hover {
   font-size: 2rem;
   font-weight: bold;
   margin-bottom: 1rem;
+  text-align: center;
 }
 
 .section-title-icon {
@@ -212,6 +241,7 @@ nav a:hover {
 .section {
   margin-top: 2.5rem;
   margin-bottom: 2.5rem;
+  width: 100%;
 }
 
 .nft-card {
@@ -259,4 +289,9 @@ nav a:hover {
   background-color: #333;
   color: white;
   transform: rotateY(180deg);
+}
+
+/* モーダル表示時のスクロール制御 */
+.modal-open {
+  overflow: hidden;
 }

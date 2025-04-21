@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Loading from './Loading';
 import { createClient, Asset } from 'contentful';
 import Image from 'next/image';
+import Modal from './Modal';
 
 if (!process.env.NEXT_PUBLIC_CONTENTFUL_SPACE_ID || !process.env.NEXT_PUBLIC_CONTENTFUL_ACCESS_TOKEN) {
   throw new Error("Missing required Contentful environment variables.");
@@ -30,6 +31,20 @@ const Gallery = () => {
   const hasMore = images.length < total;
 
   const [selectedImage, setSelectedImage] = useState<ImageData | null>(null);
+  
+  // モーダル表示時の本文スクロール制御
+  useEffect(() => {
+    if (selectedImage) {
+      document.body.classList.add('modal-open');
+    } else {
+      document.body.classList.remove('modal-open');
+    }
+
+    // クリーンアップ関数
+    return () => {
+      document.body.classList.remove('modal-open');
+    };
+  }, [selectedImage]);
 
   const fetchGalleryImages = async (newSkip: number) => {
     setLoading(true);
@@ -96,45 +111,29 @@ const Gallery = () => {
       </div>
       {loading && hasMore && <Loading />}
 
-      {selectedImage && (
-        <div
-          className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 px-4"
-          onClick={() => setSelectedImage(null)}
-        >
-          <div
-            className="bg-white rounded-lg p-8 max-w-xl w-full relative overflow-y-auto max-h-screen"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              className="absolute top-4 right-4 text-gray-600 text-3xl font-bold bg-gray-200 rounded-full"
-              onClick={() => setSelectedImage(null)}
-              style={{
-                cursor: 'pointer',
-                width: '40px',
-                height: '40px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              &times;
-            </button>
-            {selectedImage.title && <h3 className="text-2xl font-bold text-center mb-6">{selectedImage.title}</h3>}
+      <Modal
+        isOpen={selectedImage !== null}
+        onClose={() => setSelectedImage(null)}
+        title={selectedImage?.title}
+      >
+        {selectedImage && (
+          <>
             <Image
               src={selectedImage.url}
               alt={selectedImage.title}
               width={500}
               height={500}
               className="w-full rounded-lg mb-4"
+              priority
             />
             {selectedImage.description && (
               <p className="text-sm text-gray-500 overflow-wrap break-words">
                 {selectedImage.description}
               </p>
             )}
-          </div>
-        </div>
-      )}
+          </>
+        )}
+      </Modal>
     </>
   );
 };

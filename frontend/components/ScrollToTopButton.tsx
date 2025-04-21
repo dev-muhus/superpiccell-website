@@ -4,17 +4,35 @@ import { useState, useEffect } from 'react';
 
 const ScrollToTopButton = () => {
   const [isVisible, setIsVisible] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const bgColor = process.env.NEXT_PUBLIC_SCROLL_BUTTON_BG_COLOR || '#2563eb';
   const textColor = process.env.NEXT_PUBLIC_SCROLL_BUTTON_TEXT_COLOR || '#ffffff';
 
   useEffect(() => {
     const handleScroll = () => {
-      setIsVisible(window.scrollY > 300);
+      setIsVisible(window.scrollY > 100);
     };
+
+    handleScroll();
 
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useEffect(() => {
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.attributeName === 'style') {
+          const bodyStyle = document.body.style;
+          setIsMenuOpen(bodyStyle.overflow === 'hidden');
+        }
+      });
+    });
+
+    observer.observe(document.body, { attributes: true });
+
+    return () => observer.disconnect();
   }, []);
 
   const scrollToTop = () => {
@@ -22,7 +40,7 @@ const ScrollToTopButton = () => {
   };
 
   return (
-    isVisible && (
+    isVisible && !isMenuOpen && (
       <button
         onClick={scrollToTop}
         style={{
@@ -41,6 +59,7 @@ const ScrollToTopButton = () => {
           fontSize: '1rem',
           cursor: 'pointer',
           transition: 'transform 0.2s',
+          zIndex: 9000,
         }}
         onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.1)')}
         onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}

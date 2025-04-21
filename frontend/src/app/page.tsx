@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 import Gallery from '../../components/Gallery';
 import Character from '../../components/Character';
 import WalletConnector from "../../components/WalletConnector";
@@ -9,8 +10,14 @@ import MultilineText from '../../components/MultilineText';
 import textContent from '../../content/textContent';
 import { FaHome, FaStar, FaHeart, FaUser, FaImages, FaSmile, FaDiscord, FaBook } from 'react-icons/fa';
 
-const overlayImageUrl = process.env.NEXT_PUBLIC_HEADER_IMAGE_URL || null;
-const centeredImageUrl = process.env.NEXT_PUBLIC_OVERLAY_IMAGE_URL || null;
+const overlayImageUrl = process.env.NEXT_PUBLIC_HEADER_IMAGE_URL?.startsWith('/') 
+  ? process.env.NEXT_PUBLIC_HEADER_IMAGE_URL 
+  : process.env.NEXT_PUBLIC_HEADER_IMAGE_URL ? `/${process.env.NEXT_PUBLIC_HEADER_IMAGE_URL}` : null;
+
+const centeredImageUrl = process.env.NEXT_PUBLIC_OVERLAY_IMAGE_URL?.startsWith('/') 
+  ? process.env.NEXT_PUBLIC_OVERLAY_IMAGE_URL 
+  : process.env.NEXT_PUBLIC_OVERLAY_IMAGE_URL ? `/${process.env.NEXT_PUBLIC_OVERLAY_IMAGE_URL}` : null;
+
 const overlayText = process.env.NEXT_PUBLIC_OVERLAY_TEXT || "Welcome to Super Piccell";
 const headerImageHeight = process.env.NEXT_PUBLIC_HEADER_IMAGE_HEIGHT || "400px";
 
@@ -49,18 +56,23 @@ export default function Home() {
   }, []);
 
   return (
-    <div className={`transition-opacity duration-1000 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}>
+    <div className={`w-full overflow-x-hidden transition-opacity duration-1000 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}>
       {overlayImageUrl && (
         <div
           className="header-background"
           style={{ backgroundImage: `url(${overlayImageUrl})`, height: headerImageHeight }}
         >
           {centeredImageUrl && (
-            <img
-              src={centeredImageUrl}
-              alt="Overlay Image"
-              className="overlay-image"
-            />
+            <div className="relative w-full max-w-[300px] mx-auto">
+              <Image
+                src={centeredImageUrl}
+                alt="Overlay Image"
+                width={300}
+                height={300}
+                className="overlay-image"
+                priority
+              />
+            </div>
           )}
           <div className="overlay-text">
             {overlayText}

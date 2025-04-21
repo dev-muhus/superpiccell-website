@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { createClient, Asset } from 'contentful';
 import Image from 'next/image';
 import Loading from './Loading';
+import Modal from './Modal';
 
 if (!process.env.NEXT_PUBLIC_CONTENTFUL_SPACE_ID || !process.env.NEXT_PUBLIC_CONTENTFUL_ACCESS_TOKEN) {
   throw new Error("Missing required Contentful environment variables.");
@@ -95,36 +96,20 @@ const Character = () => {
         ))}
       </div>
 
-      {selectedCharacter && (
-        <div
-          className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50 px-4"
-          onClick={() => setSelectedCharacter(null)}
-        >
-          <div
-            className="bg-white rounded-lg p-8 max-w-xl w-full relative overflow-y-auto max-h-screen"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              className="absolute top-4 right-4 text-gray-600 text-3xl font-bold bg-gray-200 rounded-full"
-              onClick={() => setSelectedCharacter(null)}
-              style={{
-                cursor: 'pointer',
-                width: '40px',
-                height: '40px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              &times;
-            </button>
-            <h3 className="text-3xl font-bold text-center mb-4">{selectedCharacter.name}</h3>
+      <Modal
+        isOpen={selectedCharacter !== null}
+        onClose={() => setSelectedCharacter(null)}
+        title={selectedCharacter?.name}
+      >
+        {selectedCharacter && (
+          <>
             <Image
               src={selectedCharacter.image}
               alt={selectedCharacter.name}
               width={500}
               height={500}
               className="w-full rounded-lg mb-4"
+              priority
             />
             <div>
               <p className="mt-4 text-center">{selectedCharacter.description}</p>
@@ -137,10 +122,9 @@ const Character = () => {
                 ))}
               </p>
             </div>
-          </div>
-        </div>
-      )}
-
+          </>
+        )}
+      </Modal>
     </>
   );
 };

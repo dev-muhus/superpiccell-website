@@ -22,6 +22,9 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: 'cover',
 };
 
 export default function RootLayout({
@@ -30,8 +33,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="ja">
+    <html lang="ja" className="overflow-x-hidden">
       <head>
+        <meta name="format-detection" content="telephone=no" />
         <link 
           href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700&display=swap" 
           rel="stylesheet" 
@@ -67,7 +71,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body>
+      <body className="overflow-x-hidden">
         {/* Google Tag Manager (noscript) */}
         <noscript>
           <iframe
