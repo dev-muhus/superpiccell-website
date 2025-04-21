@@ -13,6 +13,22 @@ html, body {
   box-sizing: border-box;
 }
 
+body {
+  min-height: 100vh;
+  position: relative;
+  overflow: auto;
+}
+
+/* フォント設定用の注意事項
+ * エラー「Failed to find font override values for font `M PLUS Rounded 1c`」が
+ * 発生した場合は次のいずれかの対応をしてください：
+ * 1. next/fontを使わずlinkタグでフォントを読み込む（現在の方法）
+ * 2. 別のフォントに変更する
+ * 
+ * - next/fontでM PLUS Rounded 1cを使用すると上記エラーが発生します
+ * - このプロジェクトではlinkタグによるCDN経由のフォント読み込みを採用しています
+ */
+
 *, *:before, *:after {
   box-sizing: inherit;
 }
@@ -24,7 +40,7 @@ html, body {
   margin: 0 auto;
   padding-left: 20px;
   padding-right: 20px;
-  overflow-x: hidden;
+  overflow: hidden;
 }
 
 /* ヘッダー */
@@ -238,10 +254,22 @@ nav a:hover {
   margin: 0.5rem auto;
 }
 
+/* セクションスタイル */
 .section {
+  width: 100%;
   margin-top: 2.5rem;
   margin-bottom: 2.5rem;
-  width: 100%;
+  overflow: hidden;
+}
+
+/* 特定セクションのスクロール解消 */
+section[id="membership"], 
+section[id="about"], 
+section[id="character"], 
+section[id="core"], 
+section[id="embryo"], 
+section[id="gallery"] {
+  overflow: hidden !important;
 }
 
 .nft-card {

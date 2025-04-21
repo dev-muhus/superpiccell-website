@@ -1,0 +1,23 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Dockerコマンド実行ルール
+
+プロジェクトでのコマンド実行に関するルール
+
+## npmとnpxコマンドの実行方法
+
+npm, npxコマンドは直接実行せず、docker compose経由で実行してください。
+
+```regex
+^npm|^npx
+```
+
+### 正しい実行方法
+
+```
+docker compose exec frontend npm install
+docker compose exec frontend npx next build
+``` 

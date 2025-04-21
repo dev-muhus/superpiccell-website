@@ -56,7 +56,7 @@ export default function Home() {
   }, []);
 
   return (
-    <div className={`w-full overflow-x-hidden transition-opacity duration-1000 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}>
+    <div className={`w-full overflow-hidden transition-opacity duration-1000 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}>
       {overlayImageUrl && (
         <div
           className="header-background"
@@ -80,8 +80,8 @@ export default function Home() {
         </div>
       )}
 
-      <main className="container">
-        <section id="membership" className="section fade-in-section">
+      <main className="container overflow-hidden">
+        <section id="membership" className="section fade-in-section overflow-hidden">
           <h2 className="section-title uppercase">
             membership
             <div className="section-title-icon">
@@ -90,12 +90,12 @@ export default function Home() {
               <div className="section-title-line"></div>
             </div>
           </h2>
-          <div className="scale-in delay-200">
+          <div className="scale-in delay-200 overflow-hidden">
             <WalletConnector />
           </div>
         </section>
 
-        <section id="about" className="section">
+        <section id="about" className="section overflow-hidden">
           <h2 className="section-title uppercase fade-in-section">
           about
             <div className="section-title-icon">
@@ -104,12 +104,12 @@ export default function Home() {
               <div className="section-title-line"></div>
             </div>
           </h2>
-          <p className="mt-4 text-xl slide-in-left delay-100">
+          <p className="mt-4 text-xl slide-in-left delay-100 overflow-hidden">
             <MultilineText text={textContent.ABOUT_TEXT} />
           </p>
         </section>
 
-        <section id="character" className="section">
+        <section id="character" className="section overflow-hidden">
           <h2 className="section-title uppercase fade-in-section">
             character
             <div className="section-title-icon">
@@ -118,12 +118,12 @@ export default function Home() {
               <div className="section-title-line"></div>
             </div>
           </h2>
-          <div className="fade-in-section delay-200">
+          <div className="fade-in-section delay-200 overflow-hidden">
             <Character />
           </div>
         </section>
 
-        <section id="core" className="section">
+        <section id="core" className="section overflow-hidden">
           <h2 className="section-title uppercase fade-in-section">
             core
             <div className="section-title-icon">
@@ -132,10 +132,10 @@ export default function Home() {
               <div className="section-title-line"></div>
             </div>
           </h2>
-          <p className="mt-4 text-xl slide-in-right delay-100">
+          <p className="mt-4 text-xl slide-in-right delay-100 overflow-hidden">
             <MultilineText text={textContent.CORE_TEXT} />
           </p>
-          <div className="flex items-center scale-in delay-300">
+          <div className="flex items-center scale-in delay-300 overflow-hidden">
             <a href="https://super-piccell.gitbook.io/core/" target="_blank" rel="noopener noreferrer">
               <FaBook size={40} color="#5B5B5B" />
             </a>
@@ -145,7 +145,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section id="embryo" className="section">
+        <section id="embryo" className="section overflow-hidden">
           <h2 className="section-title uppercase fade-in-section">
           embryo
             <div className="section-title-icon">
@@ -154,10 +154,10 @@ export default function Home() {
               <div className="section-title-line"></div>
             </div>
           </h2>
-          <p className="mt-4 text-xl slide-in-left delay-100">
+          <p className="mt-4 text-xl slide-in-left delay-100 overflow-hidden">
             <MultilineText text={textContent.EMBRYO_TEXT} />
           </p>
-          <div className="flex items-center scale-in delay-300">
+          <div className="flex items-center scale-in delay-300 overflow-hidden">
             <a href="https://super-piccell.gitbook.io/embryo/" target="_blank" rel="noopener noreferrer">
               <FaBook size={40} color="#5B5B5B" />
             </a>
@@ -167,7 +167,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section id="gallery" className="section">
+        <section id="gallery" className="section overflow-hidden">
           <h2 className="section-title uppercase fade-in-section">
             gallery
             <div className="section-title-icon">
@@ -176,7 +176,7 @@ export default function Home() {
               <div className="section-title-line"></div>
             </div>
           </h2>
-          <div className="fade-in-section delay-200">
+          <div className="fade-in-section delay-200 overflow-hidden">
             <Gallery />
           </div>
         </section>

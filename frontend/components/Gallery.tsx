@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Loading from './Loading';
 import { createClient, Asset } from 'contentful';
 import Image from 'next/image';
@@ -46,7 +46,7 @@ const Gallery = () => {
     };
   }, [selectedImage]);
 
-  const fetchGalleryImages = async (newSkip: number) => {
+  const fetchGalleryImages = useCallback(async (newSkip: number) => {
     setLoading(true);
     try {
       const response = await client.getEntries({
@@ -73,31 +73,33 @@ const Gallery = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchGalleryImages(0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleScroll = () => {
+  const handleScroll = useCallback(() => {
     if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 500 && hasMore && !loading) {
       fetchGalleryImages(skip);
     }
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasMore, loading, skip]);
 
   useEffect(() => {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [hasMore, loading, skip]);
+  }, [handleScroll]);
 
   if (loading && images.length === 0) return <Loading />;
   if (hasError || images.length === 0) return null;
 
   return (
     <>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6 overflow-hidden">
         {images.map((image, index) => (
-          <div key={index} className="text-center">
+          <div key={index} className="text-center overflow-hidden">
             <Image
               src={image.url}
               alt={image.title}

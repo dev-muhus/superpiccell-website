@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -10,18 +10,18 @@ const Header = () => {
   const headerBgColor = process.env.NEXT_PUBLIC_HEADER_BG_COLOR || '#0077cc';
   const headerTextColor = process.env.NEXT_PUBLIC_HEADER_TEXT_COLOR || '#ffffff';
 
+  const handleScroll = useCallback(() => {
+    // スクロール位置が10px以上なら背景色を不透明に
+    setIsScrolled(window.scrollY > 10);
+  }, []);
+  
   useEffect(() => {
-    const handleScroll = () => {
-      // スクロール位置が10px以上なら背景色を不透明に
-      setIsScrolled(window.scrollY > 10);
-    };
-    
     // 初期表示時にもスクロール位置をチェック
     handleScroll();
     
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [handleScroll]);
 
   // メニュー表示時にbodyのスクロールを無効化
   useEffect(() => {
@@ -35,9 +35,9 @@ const Header = () => {
     };
   }, [isMenuOpen]);
 
-  const closeMenu = () => setIsMenuOpen(false);
+  const closeMenu = useCallback(() => setIsMenuOpen(false), []);
 
-  const smoothScroll = (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>, targetId: string) => {
+  const smoothScroll = useCallback((e: React.MouseEvent<HTMLAnchorElement, MouseEvent>, targetId: string) => {
     e.preventDefault();
 
     const target = document.getElementById(targetId);
@@ -52,7 +52,7 @@ const Header = () => {
 
       closeMenu();
     }
-  };
+  }, [closeMenu]);
 
   return (
     <header 

@@ -138,15 +138,15 @@ const WalletConnector = () => {
   
 
   return (
-    <div className="mt-4">
-      <div className="flex justify-center">
+    <div className="mt-4 overflow-hidden">
+      <div className="flex justify-center overflow-hidden">
         <button onClick={connectWallet} className="bg-blue-500 text-white p-2 rounded">
           {account ? `Connected: ${account}` : "ウォレットを接続してNFTを持っているか確認しましょう"}
         </button>
       </div>
 
       {error && (
-        <p className="text-red-500 text-center mt-4">
+        <p className="text-red-500 text-center mt-4 overflow-hidden">
           {error === "NFTを保有していません" ? (
             <a
               href={`https://opensea.io/collection/${membershipCollectionName}`}
@@ -163,9 +163,9 @@ const WalletConnector = () => {
       )}
 
       {displayedTokenIds.length > 0 &&
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6 overflow-hidden">
           {displayedTokenIds.map((tokenId) => (
-            <div key={tokenId} className="nft-card">
+            <div key={tokenId} className="nft-card overflow-hidden">
               <div className="nft-card-inner">
                 <div className="nft-card-front">
                   <Image

@@ -2,6 +2,7 @@ import '../styles/globals.css';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
 import type { Metadata, Viewport } from 'next';
+import Script from 'next/script';
 
 export const metadata: Metadata = {
   title: process.env.NEXT_PUBLIC_SITE_TITLE || 'Super Piccell',
@@ -36,25 +37,13 @@ export default function RootLayout({
     <html lang="ja" className="overflow-x-hidden">
       <head>
         <meta name="format-detection" content="telephone=no" />
-        <link 
-          href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700&display=swap" 
-          rel="stylesheet" 
-        />
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
         <link rel="icon" type="image/png" href="/icon-192x192.png" />
-        {/* Google Tag Manager */}
-        <script
-          id="gtm-script"
-          dangerouslySetInnerHTML={{
-            __html: `
-            (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start': new Date().getTime(),event:'gtm.js'});
-            var f=d.getElementsByTagName(s)[0],
-            j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-            'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-            })(window,document,'script','dataLayer','${process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID}');
-            `,
-          }}
+        <link 
+          href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700&display=swap" 
+          rel="stylesheet"
+          crossOrigin="anonymous"
         />
         {/* JSON-LD */}
         <script
@@ -84,6 +73,21 @@ export default function RootLayout({
         <Header />
         {children}
         <Footer />
+        
+        {/* Google Tag Manager */}
+        <Script
+          id="gtm-script"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+            (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start': new Date().getTime(),event:'gtm.js'});
+            var f=d.getElementsByTagName(s)[0],
+            j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+            'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+            })(window,document,'script','dataLayer','${process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID}');
+            `,
+          }}
+        />
       </body>
     </html>
   );
