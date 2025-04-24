@@ -19,7 +19,6 @@ const centeredImageUrl = process.env.NEXT_PUBLIC_OVERLAY_IMAGE_URL?.startsWith('
   : process.env.NEXT_PUBLIC_OVERLAY_IMAGE_URL ? `/${process.env.NEXT_PUBLIC_OVERLAY_IMAGE_URL}` : null;
 
 const overlayText = process.env.NEXT_PUBLIC_OVERLAY_TEXT || "Welcome to Super Piccell";
-const headerImageHeight = process.env.NEXT_PUBLIC_HEADER_IMAGE_HEIGHT || "400px";
 
 export default function Home() {
   const [isLoaded, setIsLoaded] = useState(false);
@@ -60,7 +59,7 @@ export default function Home() {
       {overlayImageUrl && (
         <div
           className="header-background"
-          style={{ backgroundImage: `url(${overlayImageUrl})`, height: headerImageHeight }}
+          style={{ backgroundImage: `url(${overlayImageUrl})` }}
         >
           {centeredImageUrl && (
             <div className="relative w-full max-w-[300px] mx-auto">

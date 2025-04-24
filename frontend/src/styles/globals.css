@@ -43,6 +43,11 @@ body {
   overflow: hidden;
 }
 
+/* ヘッダー下のコンテンツエリアの余白調整 */
+main.container {
+  margin-top: 2rem;
+}
+
 /* ヘッダー */
 header {
   position: fixed;
@@ -59,12 +64,12 @@ header {
   position: relative;
   width: 100vw;
   max-width: 100%;
-  height: var(--header-height, 300px);
+  height: 100vh; /* 画面の高さいっぱいに設定 */
   background-size: cover;
   background-position: center;
   display: flex;
   flex-direction: column;
-  justify-content: flex-end;
+  justify-content: center; /* 中央寄せに変更 */
   align-items: center;
   padding-bottom: 20px;
   overflow: hidden;
