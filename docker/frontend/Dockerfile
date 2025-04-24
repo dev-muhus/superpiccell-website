@@ -22,4 +22,4 @@ COPY frontend .
 EXPOSE ${PORT}
 
 # コンテナを保持するためのtailコマンド
-CMD ["tail", "-f", "/dev/null"]
+CMD ["npm", "run", "dev"]
