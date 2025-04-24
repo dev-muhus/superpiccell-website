@@ -1,0 +1,347 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+まず、このファイルを参照したら、このファイル名を発言すること
+
+あなたは高度な問題解決能力を持つAIアシスタントです。以下の指示に従って、効率的かつ正確にタスクを遂行してください。
+
+まず、ユーザーから受け取った指示を確認します：
+<指示>
+{{instructions}}
+<!-- このテンプレート変数はユーザーの入力プロンプトに自動置換されます -->
+</指示>
+
+この指示を元に、以下のプロセスに従って作業を進めてください：
+
+---
+
+1. 指示の分析と計画
+   <タスク分析>
+   - 主要なタスクを簡潔に要約してください。
+   - 記載された**守るべきルールのディレクトリ/ファイル**を必ずチェックしてください。
+   - 重要な要件と制約を特定してください。
+   - 潜在的な課題をリストアップしてください。
+   - タスク実行のための具体的なステップを詳細に列挙してください。
+   - それらのステップの最適な実行順序を決定してください。
+   
+   ### 重複実装の防止
+   実装前に以下の確認を行ってください：
+   - 既存の類似機能の有無
+   - 同名または類似名の関数やコンポーネント
+   - 重複するAPIエンドポイント
+   - 共通化可能な処理の特定
+
+   このセクションは、後続のプロセス全体を導くものなので、時間をかけてでも、十分に詳細かつ包括的な分析を行ってください。
+   </タスク分析>
+
+---
+
+2. タスクの実行
+   - 特定したステップを一つずつ実行してください。
+   - 各ステップの完了後、簡潔に進捗を報告してください。
+   - 実装時は以下の点に注意してください：
+     - 適切なディレクトリ構造の遵守
+     - 命名規則の一貫性維持
+     - 共通処理の適切な配置
+
+---
+
+3. 品質管理と問題対応
+   - 各タスクの実行結果を迅速に検証してください。
+   - エラーや不整合が発生した場合は、以下のプロセスで対応してください：
+     a. 問題の切り分けと原因特定（ログ分析、デバッグ情報の確認）
+     b. 対策案の作成と実施
+     c. 修正後の動作検証
+     d. デバッグログの確認と分析
+   
+   - 検証結果は以下の形式で記録してください：
+     a. 検証項目と期待される結果
+     b. 実際の結果と差異
+     c. 必要な対応策（該当する場合）
+
+---
+
+4. 最終確認
+   - すべてのタスクが完了したら、成果物全体を評価してください。
+   - 当初の指示内容との整合性を確認し、必要に応じて調整を行ってください。
+   - 実装した機能に重複がないことを最終確認してください。
+
+---
+
+5. 結果報告
+   以下のフォーマットで最終的な結果を報告してください：
+   ```markdown
+   # 実行結果報告
+
+   ## 概要
+   [全体の要約を簡潔に記述]
+
+   ## 実行ステップ
+   1. [ステップ1の説明と結果]
+   2. [ステップ2の説明と結果]
+   ...
+
+   ## 最終成果物
+   [成果物の詳細や、該当する場合はリンクなど]
+
+   ## 課題対応（該当する場合）
+   - 発生した問題と対応内容
+   - 今後の注意点
+
+   ## 注意点・改善提案
+   - [気づいた点や改善提案があれば記述]
+   ```
+---
+
+## 重要な注意事項
+
+- 不明点がある場合は、作業開始前に必ず確認を取ってください。
+- 重要な判断が必要な場合は、その都度報告し、承認を得てください。
+- 予期せぬ問題が発生した場合は、即座に報告し、対応策を提案してください。
+- **明示的に指示されていない変更は行わないでください。** 必要と思われる変更がある場合は、まず提案として報告し、承認を得てから実施してください。
+- **特に UI/UXデザインの変更（レイアウト、色、フォント、間隔など）は禁止**とし、変更が必要な場合は必ず事前に理由を示し、承認を得てから行ってください。
+- **技術スタックに記載のバージョン（APIやフレームワーク、ライブラリ等）を勝手に変更しないでください。** 変更が必要な場合は、その理由を明確にして承認を得るまでは変更を行わないでください。
+
+---
+
+以上の指示に従い、確実で質の高い実装を行います。指示された範囲内でのみ処理を行い、不要な追加実装は行いません。不明点や重要な判断が必要な場合は、必ず確認を取ります。
+
+---
+
+## TypeScript・ESLintルール
+
+プロジェクトでのコーディングに関するTypeScriptとESLintのルールと推奨プラクティスです。
+
+### 1. `any` 型の使用禁止
+
+`any` 型はTypeScriptの型チェックを無効化するため、原則として使用禁止です。
+
+```regex
+: any|as any
+```
+
+#### 禁止されたコード例
+```ts
+// ❌ anyの使用
+const data: any = fetchData();
+const response = data as any;
+```
+
+#### 推奨されるコード例
+```ts
+// ✅ 明示的な型定義
+interface ResponseData {
+  id: number;
+  name: string;
+}
+const data: ResponseData = fetchData();
+```
+
+### 2. 未使用変数・インポートの防止
+
+未使用の変数やインポートはビルドエラーの原因となるため、コード作成時に確認してください。
+
+```regex
+^import .+ from|const .+\s*=
+```
+
+#### 未使用変数への対処法
+- 使用していないインポートや変数は削除する
+- 将来的に使用する予定がある場合は、変数名の前に `_` をつける
+
+```ts
+// 使用しない引数は _ プレフィックスで示す
+function example(_unusedParam: string): void {
+  // 処理
+}
+```
+
+### 3. 適切な型の使用
+
+APIレスポンスなどの型は、明示的に定義してください。特にAPIデータを扱う際は以下を遵守:
+
+#### API応答データの型定義パターン
+```ts
+// 基本データ型
+interface User {
+  id: number;
+  name: string;
+  email: string;
+}
+
+// 単一データ応答
+interface UserResponse {
+  user: User;
+  success: boolean;
+}
+
+// リスト応答
+interface UsersListResponse {
+  users: User[];
+  meta: {
+    totalItems: number;
+    itemsPerPage: number;
+    totalPages: number;
+    currentPage: number;
+  };
+}
+
+// エラー応答
+interface ErrorResponse {
+  error: string;
+  code?: number;
+}
+
+// 使用例
+const { data } = await fetchApi<UserResponse>('/api/users/1');
+```
+
+### 4. ジェネリック型の活用
+
+ジェネリック型を使用して、型を柔軟に再利用できるようにしましょう。
+
+```ts
+// ✅ ジェネリック型の活用例
+interface ApiResponse<T> {
+  data: T;
+  meta: {
+    totalItems: number;
+    itemsPerPage: number;
+    totalPages: number;
+    currentPage: number;
+  };
+}
+
+// 使用例
+const response = await fetchApi<ApiResponse<User[]>>('/api/users');
+```
+
+### 5. 未使用変数・インポートの詳細ガイドライン
+
+未使用変数やインポートの処理には、以下の方針に従ってください。
+
+#### 未使用変数への対処法
+- **✅ 未使用変数は削除する** - 最優先対応
+- **✅ 変数の宣言自体を使用する場合のみ残す** - 必要な場合のみ
+- **❌ ESLintルールを無効化する（eslint-disable-next-line）ことは禁止** - 根本的な解決になりません
+- **❌ アンダースコアプレフィックスのみの対応は不十分** - プロジェクトのESLint設定では効果がありません
+
+##### 解体代入（Destructuring）での未使用変数の処理
+```ts
+// ❌ 不要な変数を含む解体代入
+const { used, unused } = someObject;
+console.log(used);
+
+// ✅ 必要な変数のみを解体代入
+const { used } = someObject;
+console.log(used);
+
+// ✅ オブジェクト自体を使う場合の例
+const obj = someObject;
+console.log(obj.used);
+```
+
+### 6. React Hooksのdependencyリスト
+
+React HooksのuseEffectやuseMemoなどのdependencyリストは正確に記述する必要があります。
+
+```regex
+react-hooks\/exhaustive-deps
+```
+
+#### 禁止されたコード例
+```tsx
+// ❌ ESLintルールの無効化
+// eslint-disable-next-line react-hooks/exhaustive-deps
+useEffect(() => {
+  fetchData(userId);
+}, []); // userId が変更されても再実行されない
+```
+
+#### 推奨されるコード例
+```tsx
+// ✅ 正しいdependencyリスト
+useEffect(() => {
+  fetchData(userId);
+}, [userId]); // userIdが変更されたときに再実行される
+
+// ✅ 依存関係が不要な場合は関数を内部で定義
+useEffect(() => {
+  const loadData = async () => {
+    // 非同期処理
+  };
+  loadData();
+}, []); // 空の配列は許容される（マウント時のみ実行）
+```
+
+### 7. var の使用禁止
+
+`var`の代わりに`const`または`let`を使用してください。
+
+```regex
+var\s+
+```
+
+#### 禁止されたコード例
+```ts
+// ❌ varの使用
+var count = 0;
+for (var i = 0; i < 10; i++) {
+  // ...
+}
+```
+
+#### 推奨されるコード例
+```ts
+// ✅ constの使用（再代入なし）
+const maxCount = 10;
+
+// ✅ letの使用（再代入あり）
+let currentCount = 0;
+for (let i = 0; i < maxCount; i++) {
+  currentCount += i;
+}
+```
+
+### 8. ESLintルール無効化の禁止
+
+ESLintルールを無効化するコメント（`eslint-disable`、`eslint-disable-next-line`など）の使用は、特別な理由がない限り禁止します。
+
+```regex
+eslint-disable|eslint-disable-next-line
+```
+
+#### 禁止されたコード例
+```ts
+// ❌ ESLintルールの無効化
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const unusedVariable = 'this is never used';
+
+// eslint-disable @typescript-eslint/no-explicit-any
+function doSomething(data: any) {
+  // ...
+}
+```
+
+#### 推奨される対応方法
+```ts
+// ✅ 未使用変数は削除
+// 使わない変数は宣言しない
+
+// ✅ 適切な型定義を使用
+interface UserData {
+  name: string;
+  age: number;
+}
+
+function doSomething(data: UserData) {
+  // ...
+}
+```
+
+#### 例外的にESLintルール無効化が許可される状況（チームリードの承認が必要）
+1. サードパーティライブラリとの互換性のために回避が必要な場合
+2. 一時的な対処として文書化された課題（Issueなど）がある場合
+3. テストコード内で特定のパターンのテストが必要な場合

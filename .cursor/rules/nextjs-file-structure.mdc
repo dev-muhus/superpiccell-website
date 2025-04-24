@@ -1,0 +1,129 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Next.jsファイル構造ルール
+
+## 重要なファイルの配置
+
+Next.jsプロジェクトにおける重要なファイルの適切な配置場所を示します。
+
+### Middlewareファイル
+
+Middlewareファイルは必ず`src/middleware.ts`に配置します。
+これはNext.jsの規約に従った場所です。
+
+```regex
+^middleware\.ts$
+```
+
+### 正しい配置場所
+- ✅ `src/middleware.ts`
+
+### 誤った配置場所
+- ❌ `middleware.ts` (ルートディレクトリ)
+- ❌ `src/app/middleware.ts`
+- ❌ その他のディレクトリ
+
+### Clerk認証関連
+
+Clerk認証に関するファイル（middleware等）は既存のものを尊重し、必要がなければ新規作成しないでください。
+
+## ファイル重複の防止
+
+新規ファイルを作成する前に、既存の類似ファイルが存在するか必ず確認してください。
+
+### ファイル作成前のチェック
+
+1. 同じ機能や目的を持つファイルが既に存在しないか必ず検索する
+2. 特にテストファイルの場合は、単数形・複数形含めて確認する（例: `repost.test.tsx` と `reposts.test.tsx`）
+3. 既存のファイル命名規則に従う
+
+### 重複ファイル作成の禁止
+
+```regex
+\.test\.(tsx|ts|js|jsx)$
+```
+
+- ✅ 機能ごとに1つのテストファイル
+- ❌ 同じ機能に対して複数のテストファイル
+- ❌ 単数形・複数形違いの重複ファイル（`user.test.tsx` と `users.test.tsx` など）
+
+## パッケージインストール前の確認
+
+新しいパッケージをインストールする前に、必ず`package.json`を確認し、すでにインストールされているか確認してください。
+
+- 既存の依存関係: `dependencies`と`devDependencies`を確認
+- バージョン: インストール済みのパッケージのバージョンを確認
+
+既にインストールされているパッケージを再度インストールしないでください。
+
+## テストファイル構造と注意点
+
+テストファイルはESLintエラーが特に発生しやすいため、以下のルールに従ってください。
+
+### テストファイルの基本構造
+
+```ts
+// 1. 必要なインポート
+import { describe, test, expect, beforeEach } from 'vitest';
+import { server } from '../mocks/server';
+import { http, HttpResponse } from 'msw';
+import { fetchApi, BASE_URL } from '../utils/api-test-helpers';
+
+// 2. 型定義
+interface TestData {
+  id: number;
+  name: string;
+}
+
+interface TestResponse {
+  data: TestData[];
+  meta: {
+    totalItems: number;
+    itemsPerPage: number;
+    totalPages: number;
+    currentPage: number;
+  };
+}
+
+// 3. テストスイート
+describe('APIテスト', () => {
+  // 各テスト前の準備
+  beforeEach(() => {
+    server.resetHandlers();
+  });
+  
+  // 4. 個別テスト
+  test('データが取得できる', async () => {
+    // モックの準備
+    server.use(
+      http.get(`${BASE_URL}/api/test`, () => {
+        return HttpResponse.json({
+          data: [{ id: 1, name: 'テスト' }],
+          meta: {
+            totalItems: 1,
+            itemsPerPage: 10,
+            totalPages: 1,
+            currentPage: 1
+          }
+        }, { status: 200 });
+      })
+    );
+
+    // APIの実行
+    const { status, data } = await fetchApi<TestResponse>(`${BASE_URL}/api/test`);
+    
+    // アサーション
+    expect(status).toBe(200);
+    expect(data.data).toHaveLength(1);
+  });
+});
+```
+
+### テストファイル作成・編集時の注意点
+
+1. **型定義を徹底する**: `any`型を使わず、明示的に型を定義する
+2. **使用しないインポートは削除する**: 不要なインポートはESLintエラーの原因になる
+4. **モックレスポンスの型一致**: モックレスポンスは実際のAPIレスポンス構造と一致させる
