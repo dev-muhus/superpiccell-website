@@ -378,3 +378,34 @@ export const users = pgTable('users', {
 ## ライセンス
 
 このプロジェクトはパブリックドメインです。
+
+---
+
+## 認証設定
+
+### Clerkプロダクション環境のDNS設定
+
+Clerk認証を本番環境で正常に動作させるには、以下のDNSレコードを設定する必要があります。これらの設定はドメインプロバイダー（お名前.com、AWS Route53、Cloudflareなど）のDNS管理画面で行います。
+
+#### 必要なCNAMEレコード
+
+| サブドメイン | レコードタイプ | 値 |
+|------------|-------------|-----|
+| `clerk` | CNAME | `frontend-api.clerk.services` |
+| `accounts` | CNAME | `accounts.clerk.services` |
+| `clk._domainkey` | CNAME | `dkim1.q9muopcd1lhn.clerk.services` (※) |
+| `clk2._domainkey` | CNAME | `dkim2.q9muopcd1lhn.clerk.services` (※) |
+| `clkmail` | CNAME | `mail.q9muopcd1lhn.clerk.services` (※) |
+
+※ DKIM値はClerkダッシュボードで提供される実際の値に置き換えてください
+
+#### 設定手順
+
+1. Clerkダッシュボードで「**Configure**」→「**Domains**」ページを開く
+2. 表示されるDNSレコード情報を確認
+3. ドメインプロバイダーのDNS設定画面で上記のレコードを追加
+4. Cloudflareを使用している場合は「**DNS only**」モード（プロキシを通さない）で設定
+5. DNSの伝播には最大24時間かかる場合があります
+6. Clerkダッシュボードの「**Validate configuration**」ボタンをクリックして検証
+
+これらの設定が完了すると、Clerk認証が本番環境で正常に動作するようになり、サインイン/サインアップボタンが正しく機能します。
