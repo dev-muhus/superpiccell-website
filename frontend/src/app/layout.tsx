@@ -1,8 +1,12 @@
 import '../styles/globals.css';
-import Header from '../../components/Header';
-import Footer from '../../components/Footer';
+import Header from '../components/Header';
+import Footer from '../components/Footer';
+import ScrollToTopButton from '../components/ScrollToTopButton';
 import type { Metadata, Viewport } from 'next';
-import Script from 'next/script';
+import { ClerkProvider } from '@clerk/nextjs';
+import { Toaster } from 'react-hot-toast';
+import CookieConsent from '@/components/CookieConsent';
+import ConditionalTrackingScripts from '@/components/ConditionalTrackingScripts';
 
 export const metadata: Metadata = {
   title: process.env.NEXT_PUBLIC_SITE_TITLE || 'Super Piccell',
@@ -23,8 +27,8 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
+  maximumScale: 5,
+  userScalable: true,
   viewportFit: 'cover',
 };
 
@@ -34,7 +38,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="ja" className="overflow-x-hidden">
+    <ClerkProvider>
+    <html lang="ja">
       <head>
         <meta name="format-detection" content="telephone=no" />
         <link rel="icon" href="/favicon.ico" />
@@ -60,35 +65,36 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="overflow-x-hidden">
-        {/* Google Tag Manager (noscript) */}
-        <noscript>
-          <iframe
-            src={`https://www.googletagmanager.com/ns.html?id=${process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID}`}
-            height="0"
-            width="0"
-            style={{ display: 'none', visibility: 'hidden' }}
-          ></iframe>
-        </noscript>
+      <body>
         <Header />
-        {children}
-        <Footer />
-        
-        {/* Google Tag Manager */}
-        <Script
-          id="gtm-script"
-          strategy="afterInteractive"
-          dangerouslySetInnerHTML={{
-            __html: `
-            (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start': new Date().getTime(),event:'gtm.js'});
-            var f=d.getElementsByTagName(s)[0],
-            j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-            'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-            })(window,document,'script','dataLayer','${process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID}');
-            `,
+        {/* Toasterコンポーネント */}
+        <Toaster
+          position="top-center"
+          toastOptions={{
+            duration: 3000,
+            style: {
+              background: '#333',
+              color: '#fff',
+            },
+            success: {
+              style: {
+                background: 'green',
+              },
+            },
+            error: {
+              style: {
+                background: 'red',
+              },
+            },
           }}
         />
+        {children}
+        <Footer />
+        <ScrollToTopButton />
+        <CookieConsent privacyPolicyUrl="/privacy-policy" />
+        <ConditionalTrackingScripts />
       </body>
     </html>
+    </ClerkProvider>
   );
 } 

@@ -19,5 +19,9 @@ npm, npxコマンドは直接実行せず、docker compose経由で実行して�
 
 ```
 docker compose exec frontend npm install
-docker compose exec frontend npx next build
+docker compose exec frontend npm run build
 ``` 
+
+## 環境設定確認
+
+docker-compose.yml, .env や docker/frontend/Dockerfile を確認すること

@@ -2,13 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
-import Gallery from '../../components/Gallery';
-import Character from '../../components/Character';
-import WalletConnector from "../../components/WalletConnector";
-import ScrollToTopButton from '../../components/ScrollToTopButton';
-import MultilineText from '../../components/MultilineText';
+import Gallery from '../components/Gallery';
+import Character from '../components/Character';
+import WalletConnector from "../components/WalletConnector";
+import MultilineText from '../components/MultilineText';
 import textContent from '../../content/textContent';
-import { FaHome, FaStar, FaHeart, FaUser, FaImages, FaSmile, FaDiscord, FaBook } from 'react-icons/fa';
+import { FaHome, FaStar, FaHeart, FaUser, FaImages, FaSmile, FaDiscord, FaBook, FaChevronDown } from 'react-icons/fa';
 
 const overlayImageUrl = process.env.NEXT_PUBLIC_HEADER_IMAGE_URL?.startsWith('/') 
   ? process.env.NEXT_PUBLIC_HEADER_IMAGE_URL 
@@ -37,8 +36,6 @@ export default function Home() {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
           entry.target.classList.add('is-visible');
-          // 一度表示されたら監視を解除（オプション）
-          // observer.unobserve(entry.target);
         }
       });
     }, observerOptions);
@@ -55,132 +52,239 @@ export default function Home() {
   }, []);
 
   return (
-    <div className={`w-full overflow-hidden transition-opacity duration-1000 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}>
+    <div className={`w-full transition-opacity duration-1000 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}>
+      {/* ヒーローセクション */}
       {overlayImageUrl && (
         <div
-          className="header-background"
-          style={{ backgroundImage: `url(${overlayImageUrl})` }}
+          className="header-background relative min-h-screen flex flex-col justify-center items-center pb-16"
+          style={{ 
+            backgroundImage: `url(${overlayImageUrl})`,
+            backgroundAttachment: 'fixed',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center'
+          }}
         >
-          {centeredImageUrl && (
-            <div className="relative w-full max-w-[300px] mx-auto">
-              <Image
-                src={centeredImageUrl}
-                alt="Overlay Image"
-                width={300}
-                height={300}
-                className="overlay-image"
-                priority
-              />
+          <div className="absolute inset-0 bg-black/30" aria-hidden="true"></div>
+          
+          <div className="container relative z-10 mx-auto px-4 sm:px-6 flex flex-col items-center">
+            {centeredImageUrl && (
+              <div className="mt-16 sm:mt-8 mb-8 w-full max-w-[180px] sm:max-w-xs md:max-w-sm">
+                <Image
+                  src={centeredImageUrl}
+                  alt="Overlay Image"
+                  width={300}
+                  height={300}
+                  className="w-full h-auto animate-float"
+                  priority
+                />
+              </div>
+            )}
+            
+            <h1 className="text-white text-3xl sm:text-4xl md:text-5xl font-bold text-center mb-6 animate-fadeIn">
+              {overlayText}
+            </h1>
+            
+            <div className="mt-8">
+              <a 
+                href="#membership" 
+                className="bg-white/90 hover:bg-white text-blue-600 font-semibold py-3 px-8 rounded-full transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+              >
+                Start Exploring
+              </a>
             </div>
-          )}
-          <div className="overlay-text">
-            {overlayText}
+          </div>
+          
+          <div className="absolute bottom-8 left-0 right-0 flex justify-center animate-bounce">
+            <a href="#membership" aria-label="Scroll to content">
+              <FaChevronDown className="text-white text-3xl" />
+            </a>
           </div>
         </div>
       )}
 
-      <main className="container overflow-hidden">
-        <section id="membership" className="section fade-in-section overflow-hidden">
-          <h2 className="section-title uppercase">
-            membership
-            <div className="section-title-icon">
-              <div className="section-title-line"></div>
-              <FaUser />
-              <div className="section-title-line"></div>
+      <main className="bg-white">
+        {/* メンバーシップセクション */}
+        <section id="membership" className="py-24 relative">
+          <div className="container mx-auto px-4 sm:px-6">
+            <div className="text-center mb-16">
+              <h2 className="text-3xl md:text-4xl font-bold mb-4 uppercase fade-in-section">
+                Membership
+              </h2>
+              <div className="flex items-center justify-center mb-6 fade-in-section">
+                <div className="w-16 h-1 bg-blue-600 rounded-full"></div>
+                <div className="mx-3"><FaUser className="text-blue-600 text-xl" /></div>
+                <div className="w-16 h-1 bg-blue-600 rounded-full"></div>
+              </div>
+              <p className="text-lg text-gray-600 max-w-2xl mx-auto fade-in-section delay-100">
+                Connect your wallet to access exclusive content and join our community.
+              </p>
             </div>
-          </h2>
-          <div className="scale-in delay-200 overflow-hidden">
-            <WalletConnector />
+            
+            <div className="max-w-3xl mx-auto scale-in delay-200">
+              <WalletConnector />
+            </div>
           </div>
         </section>
 
-        <section id="about" className="section overflow-hidden">
-          <h2 className="section-title uppercase fade-in-section">
-          about
-            <div className="section-title-icon">
-              <div className="section-title-line"></div>
-              <FaHome />
-              <div className="section-title-line"></div>
+        {/* Aboutセクション */}
+        <section id="about" className="py-24 bg-gray-50">
+          <div className="container mx-auto px-4 sm:px-6">
+            <div className="text-center mb-16">
+              <h2 className="text-3xl md:text-4xl font-bold mb-4 uppercase fade-in-section">
+                About
+              </h2>
+              <div className="flex items-center justify-center mb-6 fade-in-section">
+                <div className="w-16 h-1 bg-blue-600 rounded-full"></div>
+                <div className="mx-3"><FaHome className="text-blue-600 text-xl" /></div>
+                <div className="w-16 h-1 bg-blue-600 rounded-full"></div>
+              </div>
             </div>
-          </h2>
-          <p className="mt-4 text-xl slide-in-left delay-100 overflow-hidden">
-            <MultilineText text={textContent.ABOUT_TEXT} />
-          </p>
-        </section>
-
-        <section id="character" className="section overflow-hidden">
-          <h2 className="section-title uppercase fade-in-section">
-            character
-            <div className="section-title-icon">
-              <div className="section-title-line"></div>
-              <FaSmile />
-              <div className="section-title-line"></div>
+            
+            <div className="max-w-4xl mx-auto slide-in-left delay-100">
+              <div className="bg-white p-8 rounded-xl shadow-lg">
+                <p className="text-lg leading-relaxed text-gray-700">
+                  <MultilineText text={textContent.ABOUT_TEXT} />
+                </p>
+              </div>
             </div>
-          </h2>
-          <div className="fade-in-section delay-200 overflow-hidden">
-            <Character />
           </div>
         </section>
 
-        <section id="core" className="section overflow-hidden">
-          <h2 className="section-title uppercase fade-in-section">
-            core
-            <div className="section-title-icon">
-              <div className="section-title-line"></div>
-              <FaHeart />
-              <div className="section-title-line"></div>
+        {/* キャラクターセクション */}
+        <section id="character" className="py-24">
+          <div className="container mx-auto px-4 sm:px-6">
+            <div className="text-center mb-16">
+              <h2 className="text-3xl md:text-4xl font-bold mb-4 uppercase fade-in-section">
+                Character
+              </h2>
+              <div className="flex items-center justify-center mb-6 fade-in-section">
+                <div className="w-16 h-1 bg-blue-600 rounded-full"></div>
+                <div className="mx-3"><FaSmile className="text-blue-600 text-xl" /></div>
+                <div className="w-16 h-1 bg-blue-600 rounded-full"></div>
+              </div>
+              <p className="text-lg text-gray-600 max-w-2xl mx-auto fade-in-section delay-100">
+                Meet the characters from the Super Piccell universe.
+              </p>
             </div>
-          </h2>
-          <p className="mt-4 text-xl slide-in-right delay-100 overflow-hidden">
-            <MultilineText text={textContent.CORE_TEXT} />
-          </p>
-          <div className="flex items-center scale-in delay-300 overflow-hidden">
-            <a href="https://super-piccell.gitbook.io/core/" target="_blank" rel="noopener noreferrer">
-              <FaBook size={40} color="#5B5B5B" />
-            </a>
-            <a href="https://discord.com/invite/JgMv8rFcr3" target="_blank" rel="noopener noreferrer" style={{ marginLeft: '10px' }}>
-              <FaDiscord size={40} color="#7289DA" />
-            </a>
+            
+            <div className="fade-in-section delay-200">
+              <Character />
+            </div>
           </div>
         </section>
 
-        <section id="embryo" className="section overflow-hidden">
-          <h2 className="section-title uppercase fade-in-section">
-          embryo
-            <div className="section-title-icon">
-              <div className="section-title-line"></div>
-              <FaStar />
-              <div className="section-title-line"></div>
+        {/* Coreセクション */}
+        <section id="core" className="py-24 bg-gray-50">
+          <div className="container mx-auto px-4 sm:px-6">
+            <div className="text-center mb-16">
+              <h2 className="text-3xl md:text-4xl font-bold mb-4 uppercase fade-in-section">
+                Core
+              </h2>
+              <div className="flex items-center justify-center mb-6 fade-in-section">
+                <div className="w-16 h-1 bg-blue-600 rounded-full"></div>
+                <div className="mx-3"><FaHeart className="text-blue-600 text-xl" /></div>
+                <div className="w-16 h-1 bg-blue-600 rounded-full"></div>
+              </div>
             </div>
-          </h2>
-          <p className="mt-4 text-xl slide-in-left delay-100 overflow-hidden">
-            <MultilineText text={textContent.EMBRYO_TEXT} />
-          </p>
-          <div className="flex items-center scale-in delay-300 overflow-hidden">
-            <a href="https://super-piccell.gitbook.io/embryo/" target="_blank" rel="noopener noreferrer">
-              <FaBook size={40} color="#5B5B5B" />
-            </a>
-            <a href="https://discord.com/invite/xcwpuKXKrp" target="_blank" rel="noopener noreferrer" style={{ marginLeft: '10px' }}>
-              <FaDiscord size={40} color="#7289DA" />
-            </a>
+            
+            <div className="max-w-4xl mx-auto">
+              <div className="bg-white p-8 rounded-xl shadow-lg slide-in-right delay-100">
+                <p className="text-lg leading-relaxed text-gray-700 mb-8">
+                  <MultilineText text={textContent.CORE_TEXT} />
+                </p>
+                
+                <div className="flex items-center justify-center mt-8 space-x-6 scale-in delay-300">
+                  <a 
+                    href="https://super-piccell.gitbook.io/core/" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex flex-col items-center transition-transform hover:scale-110"
+                  >
+                    <FaBook size={40} className="text-gray-600 mb-2" />
+                    <span className="text-sm font-medium">Documentation</span>
+                  </a>
+                  <a 
+                    href="https://discord.com/invite/JgMv8rFcr3" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex flex-col items-center transition-transform hover:scale-110"
+                  >
+                    <FaDiscord size={40} className="text-[#7289DA] mb-2" />
+                    <span className="text-sm font-medium">Join Discord</span>
+                  </a>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
-        <section id="gallery" className="section overflow-hidden">
-          <h2 className="section-title uppercase fade-in-section">
-            gallery
-            <div className="section-title-icon">
-              <div className="section-title-line"></div>
-              <FaImages />
-              <div className="section-title-line"></div>
+        {/* Embryoセクション */}
+        <section id="embryo" className="py-24">
+          <div className="container mx-auto px-4 sm:px-6">
+            <div className="text-center mb-16">
+              <h2 className="text-3xl md:text-4xl font-bold mb-4 uppercase fade-in-section">
+                Embryo
+              </h2>
+              <div className="flex items-center justify-center mb-6 fade-in-section">
+                <div className="w-16 h-1 bg-blue-600 rounded-full"></div>
+                <div className="mx-3"><FaStar className="text-blue-600 text-xl" /></div>
+                <div className="w-16 h-1 bg-blue-600 rounded-full"></div>
+              </div>
             </div>
-          </h2>
-          <div className="fade-in-section delay-200 overflow-hidden">
-            <Gallery />
+            
+            <div className="max-w-4xl mx-auto">
+              <div className="bg-white p-8 rounded-xl shadow-lg slide-in-left delay-100">
+                <p className="text-lg leading-relaxed text-gray-700 mb-8">
+                  <MultilineText text={textContent.EMBRYO_TEXT} />
+                </p>
+                
+                <div className="flex items-center justify-center mt-8 space-x-6 scale-in delay-300">
+                  <a 
+                    href="https://super-piccell.gitbook.io/embryo/" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex flex-col items-center transition-transform hover:scale-110"
+                  >
+                    <FaBook size={40} className="text-gray-600 mb-2" />
+                    <span className="text-sm font-medium">Documentation</span>
+                  </a>
+                  <a 
+                    href="https://discord.com/invite/xcwpuKXKrp" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex flex-col items-center transition-transform hover:scale-110"
+                  >
+                    <FaDiscord size={40} className="text-[#7289DA] mb-2" />
+                    <span className="text-sm font-medium">Join Discord</span>
+                  </a>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
-        <ScrollToTopButton />
+        {/* ギャラリーセクション */}
+        <section id="gallery" className="py-24 bg-gray-50">
+          <div className="container mx-auto px-4 sm:px-6">
+            <div className="text-center mb-16">
+              <h2 className="text-3xl md:text-4xl font-bold mb-4 uppercase fade-in-section">
+                Gallery
+              </h2>
+              <div className="flex items-center justify-center mb-6 fade-in-section">
+                <div className="w-16 h-1 bg-blue-600 rounded-full"></div>
+                <div className="mx-3"><FaImages className="text-blue-600 text-xl" /></div>
+                <div className="w-16 h-1 bg-blue-600 rounded-full"></div>
+              </div>
+              <p className="text-lg text-gray-600 max-w-2xl mx-auto fade-in-section delay-100">
+                Explore our collection of images and artwork.
+              </p>
+            </div>
+            
+            <div className="fade-in-section delay-200">
+              <Gallery />
+            </div>
+          </div>
+        </section>
       </main>
     </div>
   );

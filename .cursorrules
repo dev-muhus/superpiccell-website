@@ -1,0 +1,122 @@
+## CURSOR RULES CONFIG ##
+# Version: 1.0.0
+# Last updated: 2023-06-01
+# Important: This file must be placed in the root directory of your project
+
+# ----------------------------------------------------------
+# DESIGN REQUIREMENTS
+# ----------------------------------------------------------
+
+# ----------------------------------------------------------
+# WORDPRESS INTEGRATION REQUIREMENTS
+# ----------------------------------------------------------
+
+# ----------------------------------------------------------
+# DEVELOPMENT GUIDELINES
+# ----------------------------------------------------------
+development:
+  # Next.js Architecture
+  nextjs:
+    - use_only_nextjs_app_router_architecture
+    - no_mixing_app_router_and_pages_router_concepts
+    - implement_api_routes_in_app_api_route_format
+    - use_route_handlers_with_exported_functions
+    - implement_server_side_data_fetching_with_react_server_components
+    - conduct_all_external_api_access_through_nextjs_api_routes
+    - never_call_external_apis_directly_from_client_components
+    - centralize_api_related_configuration_and_types_in_dedicated_files
+
+  # Code Style and Structure
+  code_style:
+    - write_concise_technical_typescript_code
+    - use_functional_and_declarative_programming_patterns
+    - prioritize_iteration_and_modularization_over_code_duplication
+    - use_descriptive_variable_names_with_auxiliary_verbs
+    - file_structure: exported_component_subcomponents_helpers_static_content_types
+    - use_existing_solutions_and_patterns_from_codebase_or_common_libraries
+    - prioritize_code_reuse_extract_common_functionality
+
+  # Naming Conventions
+  naming:
+    - use_lowercase_with_dashes_for_directories
+    - prefer_named_exports_for_components
+
+  # TypeScript Usage
+  typescript:
+    - use_typescript_for_all_code
+    - prefer_interfaces_over_types
+    - avoid_enums_use_maps_instead
+    - use_functional_components_with_typescript_interfaces
+
+  # Syntax and Formatting
+  syntax:
+    - use_function_keyword_for_pure_functions
+    - avoid_unnecessary_curly_braces_in_conditionals
+    - use_declarative_jsx
+
+  # UI and Styling
+  ui:
+    - use_shadcn_ui_radix_and_tailwind
+    - implement_responsive_design_with_tailwind_css
+    - follow_international_ui_ux_standards_and_material_design
+    - ensure_accessibility_compliance_with_wcag_2_1_aa
+    - maintain_consistent_interaction_patterns
+
+  # Performance Optimization
+  performance:
+    - minimize_use_client_useeffect_and_setstate
+    - favor_react_server_components
+    - wrap_client_components_in_suspense_with_fallback
+    - use_dynamic_loading_for_non_critical_components
+    - image_optimization: webp_format_size_data_lazy_loading
+
+  # Constants Usage
+  constants:
+    - define_and_use_named_constants_for_all_non_trivial_values
+    - never_use_magic_numbers_directly_in_code
+    - group_related_constants_in_dedicated_files_or_objects
+    - use_descriptive_names_for_constants
+    - use_named_constants_for_pagination_display_counts_api_limits
+    - centralize_application_wide_constants_in_dedicated_files
+    - use_typescripts_as_const_assertion_for_constant_objects
+
+  # Key Conventions
+  conventions:
+    - use_nuqs_for_url_search_parameter_state_management
+    - optimize_web_vitals_lcp_cls_fid
+    - use_client_limitations:
+      - prioritize_server_components_and_nextjs_ssr
+      - use_only_for_web_api_access_in_small_components
+      - avoid_for_data_fetching_or_state_management
+
+# ----------------------------------------------------------
+# REGRESSION PREVENTION REQUIREMENTS
+# ----------------------------------------------------------
+regression_prevention:
+  - understand_existing_component_structure_and_hierarchy
+  - check_component_relationships
+  - document_current_functionality:
+    - component_composition
+    - state_management
+    - styling_approach
+    - special_effects
+  - styling_changes:
+    - make_minimal_targeted_changes
+    - maintain_existing_styles_and_classes
+    - add_new_styles_rather_than_replacing_entire_blocks
+    - test_changes_in_isolation
+  - implement_changes_in_appropriate_component:
+    - client_wrappers_focus_on_client_side_behavior
+    - layout_components_manage_visual_structure
+    - content_components_handle_data_display
+  - verify_after_changes:
+    - all_original_functionality_remains_intact
+    - no_visual_regression_in_any_responsive_breakpoint
+    - animations_and_interactive_elements_continue_to_function
+    - component_composition_remains_uninterrupted
+  - compare_with_pre_change_state:
+    - visual_appearance_matches_or_improves
+    - data_displays_correctly
+    - all_interactive_elements_function_properly
+    - performance_is_maintained_or_improved
+  - document_potential_side_effects_of_changes

@@ -2,21 +2,121 @@
 @tailwind components;
 @tailwind utilities;
 
-/* 基本スタイル - 横スクロール防止 */
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* 基本スタイル - スクロール挙動の改善 */
 html, body {
   margin: 0;
   padding: 0;
   font-family: 'M PLUS Rounded 1c', sans-serif;
-  scroll-behavior: smooth;
-  overflow-x: hidden; /* 横スクロール防止 */
   width: 100%;
   box-sizing: border-box;
 }
 
+/* 横スクロール防止のみ適用 */
+html {
+  overflow-x: hidden;
+}
+
+/* body要素の設定 - overflow設定はJSで制御 */
 body {
   min-height: 100vh;
   position: relative;
-  overflow: auto;
+  overflow-x: hidden; /* 横方向のみスクロール防止 */
+  display: flex;
+  flex-direction: column;
+}
+
+/* スクロール制御のための特殊クラス - JSからアクセス */
+.no-scroll {
+  overflow: hidden !important;
+  height: 100% !important;
+}
+
+/* コンテンツエリアが小さくてもフッターを下部に表示 */
+#__next {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+main {
+  flex: 1 0 auto;
+}
+
+footer {
+  flex-shrink: 0;
 }
 
 /* フォント設定用の注意事項
@@ -33,6 +133,121 @@ body {
   box-sizing: inherit;
 }
 
+@layer components {
+  /* ボタン関連のコンポーネントスタイル */
+  .btn-primary {
+    @apply bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors;
+  }
+  
+  .btn-secondary {
+    @apply bg-gray-200 text-gray-800 px-4 py-2 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-opacity-50 transition-colors;
+  }
+  
+  /* ポストカード関連のアニメーション */
+  .post-card-enter {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  
+  .post-card-enter-active {
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 300ms, transform 300ms;
+  }
+  
+  /* いいねアニメーション */
+  .like-animation {
+    animation: like-bounce 0.45s ease-in-out;
+  }
+  
+  /* ブックマークアニメーション */
+  .bookmark-animation {
+    animation: bookmark-pulse 0.5s ease-in-out;
+  }
+  
+  /* スケルトンローディング */
+  .skeleton {
+    @apply bg-gray-200 animate-pulse rounded;
+  }
+  
+  .skeleton-text {
+    @apply skeleton h-4 mb-2;
+  }
+  
+  .skeleton-circle {
+    @apply skeleton rounded-full;
+  }
+  
+  .skeleton-card {
+    @apply p-4 border-b border-gray-200;
+  }
+}
+
+/* アクセシビリティ向上のためのフォーカススタイル */
+*:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* タッチデバイス用の最適化 */
+@media (hover: none) {
+  .hover-only {
+    display: none;
+  }
+}
+
+/* いいねアニメーション用キーフレーム */
+@keyframes like-bounce {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+}
+
+/* 返信成功のアニメーション */
+@keyframes reply-flash {
+  0% { background-color: rgba(59, 130, 246, 0.1); }
+  50% { background-color: rgba(59, 130, 246, 0.2); }
+  100% { background-color: rgba(255, 255, 255, 0); }
+}
+
+/* ブックマークアニメーション用キーフレーム */
+@keyframes bookmark-pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+
+/* ヒーローセクションアイコン浮遊アニメーション */
+@keyframes float {
+  0% { transform: translateY(0); }
+  50% { transform: translateY(-20px); }
+  100% { transform: translateY(0); }
+}
+
+/* フェードインアニメーション */
+@keyframes fadeIn {
+  0% { opacity: 0; transform: translateY(30px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+/* 汎用アニメーションクラス */
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-fadeIn {
+  animation: fadeIn 2s ease-in forwards;
+}
+
+.animate-bounce {
+  animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+  0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+  40% { transform: translateY(-20px); }
+  60% { transform: translateY(-10px); }
+}
+
 /* コンテナスタイル */
 .container {
   width: 100%;
@@ -40,7 +255,7 @@ body {
   margin: 0 auto;
   padding-left: 20px;
   padding-right: 20px;
-  overflow: hidden;
+  overflow: visible;
 }
 
 /* ヘッダー下のコンテンツエリアの余白調整 */
@@ -72,7 +287,7 @@ header {
   justify-content: center; /* 中央寄せに変更 */
   align-items: center;
   padding-bottom: 20px;
-  overflow: hidden;
+  overflow: visible;
   /* ヘッダー背景のパララックス効果 */
   background-attachment: fixed;
 }
@@ -86,18 +301,6 @@ header {
   animation: float 6s ease-in-out infinite;
 }
 
-@keyframes float {
-  0% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-20px);
-  }
-  100% {
-    transform: translateY(0);
-  }
-}
-
 .overlay-text {
   color: white;
   font-size: 2rem;
@@ -106,17 +309,6 @@ header {
   animation: fadeIn 2s ease-in;
   padding: 0 20px;
   width: 100%;
-}
-
-@keyframes fadeIn {
-  0% {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
 }
 
 /* スクロールアニメーション用のクラス */
@@ -264,7 +456,6 @@ nav a:hover {
   width: 100%;
   margin-top: 2.5rem;
   margin-bottom: 2.5rem;
-  overflow: hidden;
 }
 
 /* 特定セクションのスクロール解消 */
@@ -274,7 +465,7 @@ section[id="character"],
 section[id="core"], 
 section[id="embryo"], 
 section[id="gallery"] {
-  overflow: hidden !important;
+  overflow: visible !important;
 }
 
 .nft-card {
@@ -324,7 +515,165 @@ section[id="gallery"] {
   transform: rotateY(180deg);
 }
 
-/* モーダル表示時のスクロール制御 */
+/* モーダル表示時のスクロール制御 - JSからアクセス */
 .modal-open {
+  overflow: hidden !important;
+}
+
+/* ContentLayoutコンポーネント用スタイル */
+.content-layout {
+  width: 100%;
+  max-width: 100%;
+  margin-bottom: 1rem;
+}
+
+.content-layout__header {
+  position: relative;
+  width: 100%;
+  padding-bottom: 0.75rem;
+  margin-bottom: 0.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.content-layout__title-container {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.content-layout__title-wrapper {
+  display: flex;
+  flex-direction: column;
+}
+
+.content-layout__title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+  padding: 0;
+  line-height: 1.2;
+}
+
+.content-layout__subtitle {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-top: 0.25rem;
+  line-height: 1.4;
+}
+
+.content-layout__back-link {
+  display: inline-flex;
+  align-items: center;
+  color: #4b5563;
+  font-size: 0.875rem;
+  padding: 0.5rem 0;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.content-layout__back-link:hover,
+.content-layout__back-link:focus {
+  color: #111827;
+  transform: translateX(-2px);
+}
+
+.content-layout__back-link:active {
+  color: #1f2937;
+}
+
+.content-layout__actions {
+  display: flex;
+  align-items: center;
+  margin-left: 1rem;
+}
+
+.content-layout__content {
+  width: 100%;
+  margin-top: 1rem;
+  position: relative;
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 640px) {
+  .content-layout__title {
+    font-size: 1.25rem;
+  }
+  
+  .content-layout__subtitle {
+    font-size: 0.75rem;
+  }
+}
+
+/* ContentRenderer関連のスタイル */
+.content-wrapper {
+  position: relative;
+  padding: 0.5rem 0;
+}
+
+/* リンクラッパー */
+.link-wrapper {
+  position: relative;
+  z-index: 10;
+}
+
+/* リンク要素 */
+.content-wrapper a,
+.link-wrapper a {
+  position: relative;
+  z-index: 10;
+  pointer-events: auto;
+}
+
+/* オーバーレイ層 */
+.content-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+  cursor: pointer;
+}
+
+/* 投稿コンテナのスタイル */
+.post-content-container {
+  border-radius: 6px;
   overflow: hidden;
+}
+
+/* 投稿カード全体のスタイル */
+.post-card-container {
+  cursor: pointer;
+  position: relative;
+}
+
+/* 非活性リンクのスタイル */
+.disabled-link {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+  color: #888 !important;
+}
+
+.disabled-card {
+  opacity: 0.7;
+  cursor: not-allowed;
+  pointer-events: none;
+  position: relative;
+}
+
+.disabled-card::after {
+  content: "Coming Soon";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  z-index: 10;
 }

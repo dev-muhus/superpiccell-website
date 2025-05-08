@@ -21,14 +21,17 @@
     ],
     "paths": {
       "@/*": ["./src/*"]
-    }
+    },
+    "types": ["jest", "node", "@jest/globals"]
   },
   "include": [
     "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    "global.d.ts"  // 追加
+    "global.d.ts",
+    "jest.setup.js",
+    "jest.setupAfterEnv.js"
   ],
   "exclude": ["node_modules"]
 }
