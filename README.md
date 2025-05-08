@@ -183,8 +183,11 @@ CLERK_WEBHOOK_SECRET=whsec_XXXXXXXXXXXXX
 # スキーマ変更からマイグレーションファイルを生成
 docker compose exec frontend npm run db:generate
 
-# 保留中のマイグレーションを適用
+# 保留中のマイグレーションを適用（開発環境）
 docker compose exec frontend npm run db:migrate
+
+# 本番環境のデータベースにマイグレーションを適用
+docker compose exec frontend sh -c "NODE_ENV=production DATABASE_URL=postgresql://superpiccell_owner:xxxxxxxxxxxx@xxxxxxxxxxxx.ap-southeast-1.aws.neon.tech/superpiccell?sslmode=require npm run db:migrate"
 
 # データベースをリセット（テーブルを削除し、マイグレーションを再生成して適用）
 docker compose exec frontend npm run db:reset
