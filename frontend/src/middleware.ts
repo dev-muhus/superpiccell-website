@@ -36,6 +36,7 @@ const isPublicRoute = createRouteMatcher([
   '/core',
   '/embryo',
   '/gallery',
+  '/privacy-policy',
   '/api/webhooks(.*)',
 ]);
 
