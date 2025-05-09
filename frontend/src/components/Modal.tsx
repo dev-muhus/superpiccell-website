@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { useScrollLock } from '@/lib/hooks/useScrollLock';
 
 interface ModalProps {
   isOpen: boolean;
@@ -17,8 +18,8 @@ const useIsomorphicLayoutEffect =
 
 const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, isLoading = false }) => {
   const modalRef = useRef<HTMLDivElement>(null);
-  // 明示的にスクロール位置を保存するRef
-  const scrollPosRef = useRef(0);
+  // 明示的なスクロール制御のためのフックを使用
+  const { lockScroll, unlockScroll } = useScrollLock();
   // モーダルが開いている前後の状態を検出するためのRef
   const wasOpenRef = useRef(false);
 
@@ -31,47 +32,17 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, isLoadi
     
     // モーダルが新しく開かれた場合
     if (isOpen && !prevOpen) {
-      // 現在のスクロール位置を記録
-      scrollPosRef.current = window.pageYOffset;
-
-      // スクロールを無効化
-      document.body.style.overflow = 'hidden';
-      document.body.style.position = 'fixed';
-      document.body.style.top = `-${scrollPosRef.current}px`;
-      document.body.style.width = '100%';
-      
-      // スクロールバー幅の処理
-      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
-      if (scrollbarWidth > 0) {
-        document.body.style.paddingRight = `${scrollbarWidth}px`;
-      }
+      lockScroll();
     }
     
     // モーダルが閉じられた場合
     if (!isOpen && prevOpen) {
-      // スタイルをリセット
-      document.body.style.overflow = '';
-      document.body.style.position = '';
-      document.body.style.top = '';
-      document.body.style.width = '';
-      document.body.style.paddingRight = '';
-      
-      // 記録したスクロール位置に即座に復帰（スムーズスクロールなし）
-      window.scrollTo(0, scrollPosRef.current);
-      
-      // スクロールイベント伝播を防止するために、少し待ってからもう一度スクロール位置を確認・修正
-      const checkScrollTimeout = setTimeout(() => {
-        if (window.pageYOffset !== scrollPosRef.current) {
-          window.scrollTo(0, scrollPosRef.current);
-        }
-      }, 50);
-      
-      return () => clearTimeout(checkScrollTimeout);
+      unlockScroll();
     }
     
     // 現在の状態を記録
     wasOpenRef.current = isOpen;
-  }, [isOpen]);
+  }, [isOpen, lockScroll, unlockScroll]);
   
   // Escキー押下でモーダルを閉じる
   useEffect(() => {
@@ -101,6 +72,14 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, isLoadi
       onClose();
     }
   };
+
+  // コンポーネントのクリーンアップ処理を追加
+  useEffect(() => {
+    return () => {
+      // コンポーネントがアンマウントされる時にスクロールロックを解除
+      unlockScroll();
+    };
+  }, [unlockScroll]);
 
   if (!isOpen) return null;
 

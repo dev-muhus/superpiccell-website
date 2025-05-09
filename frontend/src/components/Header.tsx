@@ -4,23 +4,15 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { SignInButton, SignUpButton, UserButton, useUser } from '@clerk/nextjs';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { useScrollLock } from '@/lib/hooks/useScrollLock';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const siteName = process.env.NEXT_PUBLIC_SITE_NAME || 'Super Piccell';
   const { isSignedIn } = useUser();
+  const { lockScroll, unlockScroll } = useScrollLock();
   
-  // スクロール位置を保存するref
-  const scrollPositionRef = useRef(0);
-  // メニュー開閉前のbodyのスタイルを保存するref
-  const bodyStylesRef = useRef({
-    overflow: '',
-    height: '',
-    width: '',
-    position: ''
-  });
-
   const headerBgColor = process.env.NEXT_PUBLIC_HEADER_BG_COLOR || '#0077cc';
   const headerTextColor = process.env.NEXT_PUBLIC_HEADER_TEXT_COLOR || '#ffffff';
 
@@ -37,52 +29,19 @@ const Header = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [handleScroll]);
 
-  // body要素のスクロールをロックする関数
-  const lockBodyScroll = useCallback(() => {
-    // 現在のスタイルを保存
-    const originalStyles = {
-      overflow: document.body.style.overflow,
-      height: document.body.style.height,
-      width: document.body.style.width,
-      position: document.body.style.position
-    };
-    bodyStylesRef.current = originalStyles;
-    
-    // スクロール位置を保存
-    scrollPositionRef.current = window.pageYOffset;
-    
-    // スクロールロック
-    document.body.style.overflow = 'hidden';
-    document.body.style.height = '100%';
-    document.body.style.width = '100%';
-    
-    // fixed設定を適用しない - これが問題の原因
-  }, []);
-
-  // body要素のスクロールロックを解除する関数
-  const unlockBodyScroll = useCallback(() => {
-    // 保存したスタイルを復元
-    document.body.style.overflow = bodyStylesRef.current.overflow;
-    document.body.style.height = bodyStylesRef.current.height;
-    document.body.style.width = bodyStylesRef.current.width;
-    document.body.style.position = bodyStylesRef.current.position;
-    
-    // position: fixedを使わないのでスクロール位置は自動的に保持される
-  }, []);
-
-  // メニュー表示時にbodyのスクロールを無効化
+  // メニュー表示時にスクロールをロック
   useEffect(() => {
     if (isMenuOpen) {
-      lockBodyScroll();
+      lockScroll();
     } else {
-      unlockBodyScroll();
+      unlockScroll();
     }
     
     return () => {
-      // コンポーネントアンマウント時にスクロールを有効化
-      unlockBodyScroll();
+      // コンポーネントアンマウント時にスクロールを解除
+      unlockScroll();
     };
-  }, [isMenuOpen, lockBodyScroll, unlockBodyScroll]);
+  }, [isMenuOpen, lockScroll, unlockScroll]);
 
   const closeMenu = useCallback(() => {
     setIsMenuOpen(false);

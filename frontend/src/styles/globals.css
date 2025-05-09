@@ -98,10 +98,18 @@ body {
   flex-direction: column;
 }
 
-/* スクロール制御のための特殊クラス - JSからアクセス */
+/* スクロール制御のための特殊クラス */
 .no-scroll {
   overflow: hidden !important;
-  height: 100% !important;
+}
+
+/* スクロールロック中のスタイル - JSからの制御用 */
+body.scroll-locked {
+  overflow: hidden !important;
+  position: fixed !important;
+  width: 100% !important;
+  /* position:fixed適用時の高さ0対策 */
+  min-height: -webkit-fill-available;
 }
 
 /* コンテンツエリアが小さくてもフッターを下部に表示 */
