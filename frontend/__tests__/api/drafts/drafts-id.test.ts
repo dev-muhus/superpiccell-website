@@ -274,9 +274,10 @@ describe('Drafts [id] API', () => {
       expect(data.draft.content).toBe(updateData.content);
       
       // データベースで確認
-      const updatedDraft = await db.query.drafts.findFirst({
-        where: eq(drafts.id, testDraft.id)
-      });
+      const [updatedDraft] = await db.select()
+        .from(drafts)
+        .where(eq(drafts.id, testDraft.id))
+        .limit(1);
       
       expect(updatedDraft).toBeTruthy();
       expect(updatedDraft?.content).toBe(updateData.content);
@@ -331,9 +332,10 @@ describe('Drafts [id] API', () => {
       expect(data.draft.media_data).toEqual(updateData.media_data);
       
       // データベースで確認
-      const updatedDraft = await db.query.drafts.findFirst({
-        where: eq(drafts.id, testDraft.id)
-      });
+      const [updatedDraft] = await db.select()
+        .from(drafts)
+        .where(eq(drafts.id, testDraft.id))
+        .limit(1);
       
       expect(updatedDraft).toBeTruthy();
       expect(updatedDraft?.media_data).toEqual(updateData.media_data);
@@ -431,9 +433,10 @@ describe('Drafts [id] API', () => {
       expect(data.error).toBeDefined();
       
       // データベースで確認 - 更新されていないこと
-      const nonUpdatedDraft = await db.query.drafts.findFirst({
-        where: eq(drafts.id, testDraft.id)
-      });
+      const [nonUpdatedDraft] = await db.select()
+        .from(drafts)
+        .where(eq(drafts.id, testDraft.id))
+        .limit(1);
       
       expect(nonUpdatedDraft).toBeTruthy();
       expect(nonUpdatedDraft?.content).toBe(testDraft.content);

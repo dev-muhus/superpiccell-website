@@ -56,9 +56,10 @@ export async function POST(req: Request) {
     
     try {
       // 既存のユーザーを確認
-      const existingUser = await db.query.users.findFirst({
-        where: eq(users.clerk_id, id),
-      });
+      const [existingUser] = await db.select()
+        .from(users)
+        .where(eq(users.clerk_id, id))
+        .limit(1);
       
       const userData = {
         clerk_id: id,

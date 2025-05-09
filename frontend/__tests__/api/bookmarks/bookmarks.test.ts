@@ -337,13 +337,14 @@ describe('Bookmarks API', () => {
       expect(data.bookmarked).toBe(true);
       
       // データベースで確認
-      const bookmarkRecord = await db.query.bookmarks.findFirst({
-        where: and(
+      const [bookmarkRecord] = await db.select()
+        .from(bookmarks)
+        .where(and(
           eq(bookmarks.user_id, currentUser.id),
           eq(bookmarks.post_id, unbookmarkedPost.id),
           eq(bookmarks.is_deleted, false)
-        )
-      });
+        ))
+        .limit(1);
       
       expect(bookmarkRecord).toBeTruthy();
     });
@@ -364,13 +365,14 @@ describe('Bookmarks API', () => {
       expect(data.bookmarked).toBe(false);
       
       // データベースで確認 - 論理削除されている
-      const bookmarkRecord = await db.query.bookmarks.findFirst({
-        where: and(
+      const [bookmarkRecord] = await db.select()
+        .from(bookmarks)
+        .where(and(
           eq(bookmarks.user_id, currentUser.id),
           eq(bookmarks.post_id, bookmarkedPost.id),
           eq(bookmarks.is_deleted, false)
-        )
-      });
+        ))
+        .limit(1);
       
       expect(bookmarkRecord).toBeFalsy();
     });
@@ -536,13 +538,14 @@ describe('Bookmarks API', () => {
       expect(checkAfterRemoveData.bookmarked).toBe(false);
       
       // データベースでも確認
-      const bookmark = await db.query.bookmarks.findFirst({
-        where: and(
+      const [bookmark] = await db.select()
+        .from(bookmarks)
+        .where(and(
           eq(bookmarks.user_id, currentUser.id),
           eq(bookmarks.post_id, post.id),
           eq(bookmarks.is_deleted, false)
-        )
-      });
+        ))
+        .limit(1);
       
       expect(bookmark).toBeFalsy();
     });

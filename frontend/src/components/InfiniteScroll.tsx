@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 interface InfiniteScrollProps {
   /**
@@ -42,39 +42,111 @@ const InfiniteScroll: React.FC<InfiniteScrollProps> = ({
   threshold = 0.5
 }) => {
   const observerRef = useRef<HTMLDivElement>(null);
+  const observerInstance = useRef<IntersectionObserver | null>(null);
+  const [isVisible, setIsVisible] = useState(false);
+  const prevHasNextPageRef = useRef(hasNextPage);
+  const callbackTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // hasNextPageの変更を監視
   useEffect(() => {
-    const currentObserver = observerRef.current;
+    prevHasNextPageRef.current = hasNextPage;
+  }, [hasNextPage]);
+
+  // IntersectionObserverの設定
+  useEffect(() => {
+    const currentRef = observerRef.current;
     
-    if (!currentObserver || !hasNextPage) return;
-    
-    const handleObserver = (entries: IntersectionObserverEntry[]) => {
-      const [entry] = entries;
-      if (entry?.isIntersecting && hasNextPage && !isLoading) {
-        console.log('IntersectionObserver triggered - loading more content');
-        onLoadMore();
+    // 監視対象要素がない場合やページがない場合は何もしない
+    if (!currentRef || !hasNextPage) {
+      // 既存のオブザーバーを破棄
+      if (observerInstance.current) {
+        observerInstance.current.disconnect();
+        observerInstance.current = null;
       }
+      setIsVisible(false);
+      return;
+    }
+    
+    // 監視コールバック
+    const handleIntersection = (entries: IntersectionObserverEntry[]) => {
+      const [entry] = entries;
+      const isIntersecting = entry?.isIntersecting || false;
+      setIsVisible(isIntersecting);
     };
     
-    const observer = new IntersectionObserver(handleObserver, {
+    // 既存のオブザーバーを破棄して新しいオブザーバーを作成
+    if (observerInstance.current) {
+      observerInstance.current.disconnect();
+    }
+    
+    observerInstance.current = new IntersectionObserver(handleIntersection, {
       root: null,
-      rootMargin: '200px',
-      threshold
+      rootMargin: '300px', // より広いマージンで早めに検知
+      threshold: threshold
     });
     
-    observer.observe(currentObserver);
+    observerInstance.current.observe(currentRef);
     
     return () => {
-      if (currentObserver) {
-        observer.unobserve(currentObserver);
+      if (observerInstance.current) {
+        observerInstance.current.disconnect();
+        observerInstance.current = null;
       }
     };
-  }, [hasNextPage, isLoading, onLoadMore, threshold]);
+  }, [hasNextPage, threshold]);
+  
+  // 可視状態の変化に応じてデータ読み込み処理を実行
+  useEffect(() => {
+    // タイムアウトをクリア
+    if (callbackTimeoutRef.current) {
+      clearTimeout(callbackTimeoutRef.current);
+      callbackTimeoutRef.current = null;
+    }
+    
+    // 可視状態でない場合はスキップ
+    if (!isVisible) return;
+    
+    // すでに読み込み中の場合はスキップ
+    if (isLoading) return;
+    
+    // 次のページがない場合はスキップ
+    if (!hasNextPage) return;
+    
+    // 少し遅延を入れてデータ読み込みを実行（連続実行防止）
+    callbackTimeoutRef.current = setTimeout(() => {
+      onLoadMore();
+      callbackTimeoutRef.current = null;
+    }, 100);
+    
+    return () => {
+      if (callbackTimeoutRef.current) {
+        clearTimeout(callbackTimeoutRef.current);
+        callbackTimeoutRef.current = null;
+      }
+    };
+  }, [isVisible, hasNextPage, isLoading, onLoadMore]);
+  
+  // コンポーネント内のタイムアウトをクリーンアップ
+  useEffect(() => {
+    return () => {
+      if (callbackTimeoutRef.current) {
+        clearTimeout(callbackTimeoutRef.current);
+        callbackTimeoutRef.current = null;
+      }
+    };
+  }, []);
   
   return (
-    <div>
+    <div className="infinite-scroll-container">
       {children}
-      {hasNextPage && <div ref={observerRef} style={{ height: '20px' }} />}
+      <div 
+        ref={observerRef} 
+        className="infinite-scroll-sentinel"
+        style={{ 
+          height: '10px', 
+          visibility: hasNextPage ? 'visible' : 'hidden' 
+        }}
+      />
     </div>
   );
 };

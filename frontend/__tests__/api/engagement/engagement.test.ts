@@ -101,12 +101,13 @@ async function createReply(userId: number, replyToPostId: number) {
 // いいねを作成するヘルパー関数
 async function createLike(userId: number, postId: number) {
   // 同じ組み合わせが存在しないことを確認
-  const existingLike = await db.query.likes.findFirst({
-    where: and(
+  const [existingLike] = await db.select()
+    .from(likes)
+    .where(and(
       eq(likes.user_id, userId),
       eq(likes.post_id, postId)
-    )
-  });
+    ))
+    .limit(1);
   
   if (existingLike) {
     return existingLike;

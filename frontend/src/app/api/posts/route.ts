@@ -7,6 +7,7 @@ import { z } from 'zod';
 import { ITEMS_PER_PAGE } from '@/constants/pagination';
 
 export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
 
 // 投稿作成のバリデーションスキーマ
 const createPostSchema = z.object({
@@ -44,9 +45,10 @@ export async function POST(req: NextRequest) {
     const { content, post_type, in_reply_to_post_id, quote_of_post_id, repost_of_post_id } = validationResult.data;
     
     // データベースからユーザー情報を取得
-    const dbUser = await db.query.users.findFirst({
-      where: eq(users.clerk_id, userId)
-    });
+    const [dbUser] = await db.select()
+      .from(users)
+      .where(eq(users.clerk_id, userId))
+      .limit(1);
     
     if (!dbUser) {
       return NextResponse.json(
@@ -57,12 +59,13 @@ export async function POST(req: NextRequest) {
     
     // replyの場合、返信先の投稿が存在するか確認
     if (post_type === 'reply' && in_reply_to_post_id) {
-      const replyToPost = await db.query.posts.findFirst({
-        where: and(
+      const [replyToPost] = await db.select()
+        .from(posts)
+        .where(and(
           eq(posts.id, in_reply_to_post_id),
           eq(posts.is_deleted, false)
-        )
-      });
+        ))
+        .limit(1);
       
       if (!replyToPost) {
         return NextResponse.json(
@@ -74,12 +77,13 @@ export async function POST(req: NextRequest) {
     
     // quoteの場合、引用元の投稿が存在するか確認
     if (post_type === 'quote' && quote_of_post_id) {
-      const quotePost = await db.query.posts.findFirst({
-        where: and(
+      const [quotePost] = await db.select()
+        .from(posts)
+        .where(and(
           eq(posts.id, quote_of_post_id),
           eq(posts.is_deleted, false)
-        )
-      });
+        ))
+        .limit(1);
       
       if (!quotePost) {
         return NextResponse.json(
@@ -91,12 +95,13 @@ export async function POST(req: NextRequest) {
     
     // repostの場合、リポスト元の投稿が存在するか確認
     if (post_type === 'repost' && repost_of_post_id) {
-      const repostOfPost = await db.query.posts.findFirst({
-        where: and(
+      const [repostOfPost] = await db.select()
+        .from(posts)
+        .where(and(
           eq(posts.id, repost_of_post_id),
           eq(posts.is_deleted, false)
-        )
-      });
+        ))
+        .limit(1);
       
       if (!repostOfPost) {
         return NextResponse.json(
@@ -159,9 +164,10 @@ export async function GET(req: NextRequest) {
     const targetUserId = searchParams.get('userId') ? parseInt(searchParams.get('userId') || '0') : null;
     
     // データベースからログインユーザー情報を取得
-    const dbUser = await db.query.users.findFirst({
-      where: eq(users.clerk_id, userId)
-    });
+    const [dbUser] = await db.select()
+      .from(users)
+      .where(eq(users.clerk_id, userId))
+      .limit(1);
     
     if (!dbUser) {
       return NextResponse.json(

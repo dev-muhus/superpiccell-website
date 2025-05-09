@@ -70,6 +70,32 @@ frontend/                 # Next.js アプリ本体
    - 特殊文字
    - 大量データ
 
+### Drizzle ORMの使用に関する注意点
+
+Drizzle ORMを使用したデータベースアクセスでは、以下の点に注意が必要です：
+
+1. **findFirstメソッドの回避**
+   - `db.query.[テーブル].findFirst()`メソッドは不安定な動作を示す場合があり、代わりに直接SQLクエリを使用します
+   ```typescript
+   // ❌ 避けるべき方法
+   const user = await db.query.users.findFirst({
+     where: eq(users.id, userId)
+   });
+   
+   // ✅ 推奨される方法
+   const [user] = await db.select().from(users)
+     .where(eq(users.id, userId))
+     .limit(1);
+   ```
+   
+2. **アトミックな更新**
+   - トランザクション内でデータを更新し、同じトランザクション内で検証することで一貫性を保証
+   - 複数のテーブルを更新する場合は特に注意
+
+3. **テスト間の独立性**
+   - 各テストケースは独自のテストデータを使用
+   - beforeEach/afterEachでテストデータのクリーンアップを徹底
+
 ### コンソール出力抑制
 
 エラー処理をテストする際は、意図的なエラーログが出力されないよう、コンソール出力を抑制します：

@@ -31,9 +31,10 @@ export async function GET(
     }
     
     // データベースからユーザー情報を取得
-    const dbUser = await db.query.users.findFirst({
-      where: eq(users.clerk_id, userId)
-    });
+    const [dbUser] = await db.select()
+      .from(users)
+      .where(eq(users.clerk_id, userId))
+      .limit(1);
     
     if (!dbUser) {
       return NextResponse.json(

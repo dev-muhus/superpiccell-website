@@ -69,13 +69,14 @@ describe('Post Likes API', () => {
       expect(data.like_count).toBe(1);
       
       // DBにいいねが追加されたことを確認
-      const like = await db.query.likes.findFirst({
-        where: and(
+      const [like] = await db.select()
+        .from(likes)
+        .where(and(
           eq(likes.user_id, testUser.id),
           eq(likes.post_id, testPost.id),
           eq(likes.is_deleted, false)
-        )
-      });
+        ))
+        .limit(1);
       
       expect(like).not.toBeNull();
       expect(like?.user_id).toBe(testUser.id);
@@ -102,13 +103,13 @@ describe('Post Likes API', () => {
       expect(data.like_count).toBe(0);
       
       // DBでいいねが論理削除されたことを確認
-      const activeLikes = await db.query.likes.findMany({
-        where: and(
+      const activeLikes = await db.select()
+        .from(likes)
+        .where(and(
           eq(likes.user_id, testUser.id),
           eq(likes.post_id, testPost.id),
           eq(likes.is_deleted, false)
-        )
-      });
+        ));
       
       expect(activeLikes.length).toBe(0);
     });
@@ -137,13 +138,14 @@ describe('Post Likes API', () => {
       expect(data.like_count).toBe(1);
       
       // DBに新しいいいねが追加されたことを確認
-      const newLike = await db.query.likes.findFirst({
-        where: and(
+      const [newLike] = await db.select()
+        .from(likes)
+        .where(and(
           eq(likes.user_id, testUser.id),
           eq(likes.post_id, testPost.id),
           eq(likes.is_deleted, false)
-        )
-      });
+        ))
+        .limit(1);
       
       expect(newLike).not.toBeNull();
     });

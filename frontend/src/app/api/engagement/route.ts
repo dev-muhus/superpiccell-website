@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { ITEMS_PER_PAGE } from '@/constants/pagination';
 
 export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
 
 export async function GET(req: NextRequest) {
   try {
@@ -26,9 +27,10 @@ export async function GET(req: NextRequest) {
     const cursor = searchParams.get('cursor');
     
     // データベースからログインユーザー情報を取得
-    const dbUser = await db.query.users.findFirst({
-      where: eq(users.clerk_id, userId)
-    });
+    const [dbUser] = await db.select()
+      .from(users)
+      .where(eq(users.clerk_id, userId))
+      .limit(1);
     
     if (!dbUser) {
       return NextResponse.json(

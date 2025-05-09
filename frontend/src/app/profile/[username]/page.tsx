@@ -3,8 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useUser } from '@clerk/nextjs';
 import Image from 'next/image';
-import Link from 'next/link';
-import { FaUser, FaEdit, FaUserPlus, FaUserCheck, FaBan, FaUnlock } from 'react-icons/fa';
+import { FaUser, FaEdit, FaUserPlus, FaUserCheck, FaBan, FaUnlock, FaTimes, FaSave } from 'react-icons/fa';
 import Loading from '@/components/Loading';
 import PageLayout from '@/components/PageLayout';
 import ContentLayout from '@/components/ContentLayout';
@@ -14,6 +13,7 @@ import { ITEMS_PER_PAGE } from '@/constants/pagination';
 import { toast } from 'sonner';
 import Modal from '@/components/Modal';
 import ContentRenderer from '@/components/ContentRenderer';
+import { generateProfileBackgroundStyle } from '@/lib/utils';
 
 interface User {
   id: number;
@@ -127,78 +127,95 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onClose, us
   if (!isOpen) return null;
 
   return (
-    <Modal isOpen={isOpen} onClose={() => onClose(false)} title="プロフィール編集">
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {error && (
-          <div className="bg-red-50 p-4 rounded-md text-red-600 mb-4">
-            {error}
+    <Modal 
+      isOpen={isOpen} 
+      onClose={() => onClose(false)} 
+      title="Profile Edit" 
+      className="w-full max-w-2xl"
+    >
+      <div style={{ width: '100%', maxWidth: '100%' }}>
+        <form onSubmit={handleSubmit} className="space-y-6 px-2">
+          {error && (
+            <div className="bg-red-50 p-4 rounded-md text-red-600 mb-4">
+              {error}
+            </div>
+          )}
+          
+          <div>
+            <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
+              名前
+            </label>
+            <input
+              id="firstName"
+              type="text"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="名"
+              maxLength={50}
+            />
           </div>
-        )}
-        
-        <div>
-          <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
-            名前
-          </label>
-          <input
-            id="firstName"
-            type="text"
-            value={firstName}
-            onChange={(e) => setFirstName(e.target.value)}
-            className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="名"
-            maxLength={50}
-          />
-        </div>
-        
-        <div>
-          <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
-            苗字
-          </label>
-          <input
-            id="lastName"
-            type="text"
-            value={lastName}
-            onChange={(e) => setLastName(e.target.value)}
-            className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="苗字"
-            maxLength={50}
-          />
-        </div>
-        
-        <div>
-          <label htmlFor="bio" className="block text-sm font-medium text-gray-700 mb-1">
-            自己紹介
-          </label>
-          <textarea
-            id="bio"
-            value={bio}
-            onChange={(e) => setBio(e.target.value)}
-            rows={4}
-            className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="自己紹介を入力してください"
-            maxLength={200}
-          />
-          <p className="text-right text-xs text-gray-500 mt-1">{bio.length}/200</p>
-        </div>
-        
-        <div className="flex justify-end space-x-2 pt-4">
-          <button
-            type="button"
-            onClick={() => onClose(false)}
-            className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors"
-            disabled={isSubmitting}
-          >
-            キャンセル
-          </button>
-          <button
-            type="submit"
-            className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors disabled:bg-blue-300"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? '更新中...' : '保存する'}
-          </button>
-        </div>
-      </form>
+          
+          <div>
+            <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
+              苗字
+            </label>
+            <input
+              id="lastName"
+              type="text"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="苗字"
+              maxLength={50}
+            />
+          </div>
+          
+          <div>
+            <label htmlFor="bio" className="block text-sm font-medium text-gray-700 mb-1">
+              自己紹介
+            </label>
+            <textarea
+              id="bio"
+              value={bio}
+              onChange={(e) => setBio(e.target.value)}
+              rows={4}
+              className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="自己紹介を入力してください"
+              maxLength={200}
+            />
+            <p className="text-right text-xs text-gray-500 mt-1">{bio.length}/200</p>
+          </div>
+          
+          <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 w-full">
+            <button
+              type="button"
+              onClick={() => onClose(false)}
+              className={`px-4 py-2 rounded-full text-gray-700 flex items-center justify-center ${
+                isSubmitting
+                  ? 'bg-gray-200 cursor-not-allowed'
+                  : 'bg-white border border-gray-300 hover:bg-gray-50'
+              } sm:flex-1`}
+              disabled={isSubmitting}
+            >
+              <FaTimes className="mr-1" />
+              <span>キャンセル</span>
+            </button>
+            <button
+              type="submit"
+              className={`px-4 py-2 rounded-full text-white flex items-center justify-center ${
+                isSubmitting
+                  ? 'bg-blue-300 cursor-not-allowed'
+                  : 'bg-blue-500 hover:bg-blue-600'
+              } sm:flex-1`}
+              disabled={isSubmitting}
+            >
+              <FaSave className="mr-1" />
+              <span>{isSubmitting ? '更新中...' : '保存する'}</span>
+            </button>
+          </div>
+        </form>
+      </div>
     </Modal>
   );
 };
@@ -241,17 +258,17 @@ export default function ProfilePage({ params }: { params: { username: string } }
       }
       
       const data = await response.json();
-      setProfile(data.user);
+      setProfile(data.profile);
       
       // フォロー状態を設定
-      setIsFollowing(data.is_following || false);
+      setIsFollowing(data.isFollowing || false);
       
       // ブロック状態を設定
-      setIsBlocked(data.is_blocked || false);
+      setIsBlocked(data.isBlocked || false);
       
       // フォロワー数とフォロー中の数を設定
-      setFollowerCount(data.user.follower_count || 0);
-      setFollowingCount(data.user.following_count || 0);
+      setFollowerCount(data.profile.follower_count || 0);
+      setFollowingCount(data.profile.following_count || 0);
       
       // 自分のプロフィールかどうかを判断
       if (currentUser?.username === params.username) {
@@ -531,7 +548,10 @@ export default function ProfilePage({ params }: { params: { username: string } }
             {/* プロフィールヘッダー */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
               {/* ヘッダー背景 */}
-              <div className="bg-gradient-to-r from-blue-400 to-purple-500 h-32 relative">
+              <div 
+                className="h-32 relative profile-header"
+                style={profile ? generateProfileBackgroundStyle(profile.username) : {}}
+              >
                 {/* プロフィール画像 */}
                 <div className="absolute -bottom-16 left-8">
                   <div className="relative w-32 h-32 rounded-full border-4 border-white bg-white overflow-hidden">
@@ -555,9 +575,9 @@ export default function ProfilePage({ params }: { params: { username: string } }
                   {isOwnProfile ? (
                     <button
                       onClick={handleOpenProfileEditModal}
-                      className="px-4 py-1.5 bg-white text-gray-800 rounded-full border border-gray-300 hover:bg-gray-100 transition-colors text-sm font-medium flex items-center shadow-sm"
+                      className="px-4 py-1.5 bg-white text-gray-800 rounded-full border border-gray-300 hover:bg-gray-100 transition-colors text-sm font-medium flex items-center shadow-sm md:ml-auto sm:static edit-button"
                     >
-                      <FaEdit className="mr-1.5" /> プロフィール編集
+                      <FaEdit className="sm:mr-1.5" /> <span className="hidden sm:inline">プロフィール編集</span>
                     </button>
                   ) : isLoaded && isSignedIn ? (
                     <>
@@ -618,12 +638,12 @@ export default function ProfilePage({ params }: { params: { username: string } }
                 )}
                 
                 <div className="flex items-center text-sm text-gray-600 space-x-6">
-                  <Link href={`/profile/${profile.username}/followers`} className="hover:text-blue-500 transition-colors">
+                  <span className="text-gray-600">
                     <span className="font-bold">{followerCount}</span> フォロワー
-                  </Link>
-                  <Link href={`/profile/${profile.username}/following`} className="hover:text-blue-500 transition-colors">
+                  </span>
+                  <span className="text-gray-600">
                     <span className="font-bold">{followingCount}</span> フォロー中
-                  </Link>
+                  </span>
                 </div>
               </div>
             </div>
@@ -682,6 +702,36 @@ export default function ProfilePage({ params }: { params: { username: string } }
           user={profile}
         />
       )}
+
+      <style jsx global>{`
+        /* スマホ対応のためのスタイル */
+        @media (max-width: 640px) {
+          .profile-header {
+            position: relative;
+          }
+          
+          .profile-header .edit-button {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            z-index: 10;
+            padding: 0.5rem !important;
+            border-radius: 9999px !important;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+          }
+          
+          .profile-header .edit-button svg {
+            margin-right: 0 !important;
+            font-size: 16px;
+          }
+        }
+      `}</style>
     </PageLayout>
   );
 } 

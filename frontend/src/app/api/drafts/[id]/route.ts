@@ -39,22 +39,24 @@ export async function PUT(
     }
 
     // DBユーザーの取得
-    const dbUser = await db.query.users.findFirst({
-      where: eq(users.clerk_id, userId),
-    });
+    const [dbUser] = await db.select()
+      .from(users)
+      .where(eq(users.clerk_id, userId))
+      .limit(1);
 
     if (!dbUser) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
     // 更新対象の下書きを取得して検証
-    const existingDraft = await db.query.drafts.findFirst({
-      where: and(
+    const [existingDraft] = await db.select()
+      .from(drafts)
+      .where(and(
         eq(drafts.id, draftId),
         eq(drafts.user_id, dbUser.id),
         eq(drafts.is_deleted, false)
-      )
-    });
+      ))
+      .limit(1);
 
     if (!existingDraft) {
       return NextResponse.json({ error: '下書きが見つからないか、すでに削除されています' }, { status: 404 });
@@ -104,22 +106,24 @@ export async function GET(
     }
 
     // DBユーザーの取得
-    const dbUser = await db.query.users.findFirst({
-      where: eq(users.clerk_id, userId),
-    });
+    const [dbUser] = await db.select()
+      .from(users)
+      .where(eq(users.clerk_id, userId))
+      .limit(1);
 
     if (!dbUser) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
     // 下書きを取得
-    const draft = await db.query.drafts.findFirst({
-      where: and(
+    const [draft] = await db.select()
+      .from(drafts)
+      .where(and(
         eq(drafts.id, draftId),
         eq(drafts.user_id, dbUser.id),
         eq(drafts.is_deleted, false)
-      )
-    });
+      ))
+      .limit(1);
 
     if (!draft) {
       return NextResponse.json({ error: '下書きが見つかりません' }, { status: 404 });

@@ -11,7 +11,6 @@ import Loading from '@/components/Loading';
 import PageLayout from '@/components/PageLayout';
 import ContentLayout from '@/components/ContentLayout';
 import UserAvatar from '@/components/UserAvatar';
-import InfiniteScroll from '@/components/InfiniteScroll';
 import { ITEMS_PER_PAGE } from '@/constants/pagination';
 import { cn } from '@/lib/utils';
 
@@ -94,11 +93,20 @@ export default function ConnectionsPage() {
   
   // メニュー位置の状態
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
+
+  // API呼び出し制御フラグ（重複実行防止）
+  const isLoadingFollowsRef = useRef(false);
+  const isLoadingFollowersRef = useRef(false);
   
   // コンポーネントがマウントされたらポータルを有効化
   useEffect(() => {
     setIsMounted(true);
-    return () => setIsMounted(false);
+    return () => {
+      setIsMounted(false);
+      // アンマウント時に読み込みフラグをリセット
+      isLoadingFollowsRef.current = false;
+      isLoadingFollowersRef.current = false;
+    };
   }, []);
 
   // メニューの表示を切り替え
@@ -189,10 +197,15 @@ export default function ConnectionsPage() {
 
   // フォロー中ユーザー一覧を取得
   const fetchFollows = useCallback(async (cursor?: string, append: boolean = false) => {
+    // すでに読み込み中の場合は何もしない（ref経由で厳密にチェック）
+    if (isLoadingFollowsRef.current) {
+      return;
+    }
+
     try {
-      if (!append) {
-        setFollowsLoading(true);
-      }
+      // 読み込み開始のフラグを立てる（stateとrefの両方）
+      setFollowsLoading(true);
+      isLoadingFollowsRef.current = true;
 
       // URLクエリパラメータを構築
       const params = new URLSearchParams({
@@ -237,16 +250,23 @@ export default function ConnectionsPage() {
       console.error('フォロー中ユーザー一覧取得エラー:', error);
       setFollowsError('フォロー中ユーザーの取得に失敗しました');
     } finally {
+      // 読み込み完了のフラグを解除（stateとrefの両方）
       setFollowsLoading(false);
+      isLoadingFollowsRef.current = false;
     }
   }, [followingIds]);
 
   // フォロワー一覧を取得
-  const fetchFollowers = async (cursor?: string, append: boolean = false) => {
+  const fetchFollowers = useCallback(async (cursor?: string, append: boolean = false) => {
+    // すでに読み込み中の場合は何もしない（ref経由で厳密にチェック）
+    if (isLoadingFollowersRef.current) {
+      return;
+    }
+
     try {
-      if (!append) {
-        setFollowersLoading(true);
-      }
+      // 読み込み開始のフラグを立てる（stateとrefの両方）
+      setFollowersLoading(true);
+      isLoadingFollowersRef.current = true;
 
       // URLクエリパラメータを構築
       const params = new URLSearchParams({
@@ -284,28 +304,61 @@ export default function ConnectionsPage() {
       console.error('フォロワー一覧取得エラー:', error);
       setFollowersError('フォロワーの取得に失敗しました');
     } finally {
+      // 読み込み完了のフラグを解除（stateとrefの両方）
       setFollowersLoading(false);
+      isLoadingFollowersRef.current = false;
     }
-  };
+  }, []);
 
   // 初期ロード時にデータを取得
   useEffect(() => {
-    if (isLoaded && isSignedIn) {
-      // アクティブなタブに応じてデータ取得
-      if (activeTab === 'follows') {
-        fetchFollows();
-      } else {
-        fetchFollowers();
+    const initData = async () => {
+      if (isLoaded && isSignedIn) {
+        // アクティブなタブに応じてデータ取得
+        if (activeTab === 'follows') {
+          // すでに読み込み中でなければデータを取得
+          if (!isLoadingFollowsRef.current && follows.length === 0) {
+            await fetchFollows();
+          }
+        } else {
+          // すでに読み込み中でなければデータを取得
+          if (!isLoadingFollowersRef.current && followers.length === 0) {
+            await fetchFollowers();
+          }
+        }
+      } else if (isLoaded && !isSignedIn) {
+        // 未ログインの場合はタイムラインにリダイレクト
+        router.push('/timeline');
       }
-    } else if (isLoaded && !isSignedIn) {
-      // 未ログインの場合はタイムラインにリダイレクト
-      router.push('/timeline');
-    }
-  }, [activeTab, isSignedIn, isLoaded, router, fetchFollows]);
+    };
+    
+    initData();
+    
+    return () => {
+      // クリーンアップ関数
+      // アンマウント時にフラグをリセットするのみで十分です
+      // isMounted = false; の行は削除
+    };
+  }, [activeTab, isSignedIn, isLoaded, router, fetchFollows, fetchFollowers, follows.length, followers.length]);
 
   // タブ切り替え時の処理
   const handleTabChange = (tab: 'follows' | 'followers') => {
+    // 同じタブを再度クリックした場合は何もしない
+    if (activeTab === tab) return;
+    
+    // タブ切り替え前に現在のタブの読み込みをキャンセル
+    if (tab === 'follows') {
+      // フォロワータブからフォロータブに切り替え
+      isLoadingFollowersRef.current = false;
+      setFollowersLoading(false);
+    } else {
+      // フォロータブからフォロワータブに切り替え
+      isLoadingFollowsRef.current = false;
+      setFollowsLoading(false);
+    }
+    
     setActiveTab(tab);
+    
     // タブ切り替え時に対応するデータがまだ取得されていない場合は取得する
     if (tab === 'follows' && follows.length === 0) {
       fetchFollows();
@@ -315,18 +368,42 @@ export default function ConnectionsPage() {
   };
 
   // 次のページを読み込む（フォロー）
-  const loadMoreFollows = () => {
-    if (followsPagination.hasNextPage && followsPagination.nextCursor) {
-      fetchFollows(followsPagination.nextCursor, true);
+  const loadMoreFollows = useCallback(() => {
+    // すでに読み込み中の場合は何もしない
+    if (isLoadingFollowsRef.current || followsLoading) {
+      return;
     }
-  };
+    
+    // 次のページがない場合は何もしない
+    if (!followsPagination.hasNextPage || !followsPagination.nextCursor) {
+      return;
+    }
+    
+    // ローディング状態を明示的に設定してフラグをロック
+    setFollowsLoading(true);
+    isLoadingFollowsRef.current = true;
+    
+    fetchFollows(followsPagination.nextCursor, true);
+  }, [fetchFollows, followsLoading, followsPagination]);
 
   // 次のページを読み込む（フォロワー）
-  const loadMoreFollowers = () => {
-    if (followersPagination.hasNextPage && followersPagination.nextCursor) {
-      fetchFollowers(followersPagination.nextCursor, true);
+  const loadMoreFollowers = useCallback(() => {
+    // すでに読み込み中の場合は何もしない
+    if (isLoadingFollowersRef.current || followersLoading) {
+      return;
     }
-  };
+    
+    // 次のページがない場合は何もしない
+    if (!followersPagination.hasNextPage || !followersPagination.nextCursor) {
+      return;
+    }
+    
+    // ローディング状態を明示的に設定してフラグをロック
+    setFollowersLoading(true);
+    isLoadingFollowersRef.current = true;
+    
+    fetchFollowers(followersPagination.nextCursor, true);
+  }, [fetchFollowers, followersLoading, followersPagination]);
 
   // フォロー/フォロー解除の処理
   const handleFollowToggle = async (userId: number, username: string, isFollowing: boolean) => {
@@ -481,8 +558,9 @@ export default function ConnectionsPage() {
             </div>
           )}
           
-          {/* フォロー中ユーザー一覧 */}
-          {activeTab === 'follows' && (
+          {/* コンテンツエリア */}
+          {activeTab === 'follows' ? (
+            // フォロー中ユーザー一覧
             <>
               {followsLoading && follows.length === 0 ? (
                 <div className="text-center py-12">
@@ -498,12 +576,8 @@ export default function ConnectionsPage() {
                   </Link>
                 </div>
               ) : (
-                <InfiniteScroll
-                  hasNextPage={followsPagination.hasNextPage}
-                  isLoading={followsLoading}
-                  onLoadMore={loadMoreFollows}
-                  threshold={0.8}
-                >
+                <>
+                  {/* フォローユーザーリスト */}
                   <div className="space-y-1">
                     {follows.map((follow) => (
                       <div key={follow.id} className="p-4 border-b hover:bg-gray-50 transition-colors relative">
@@ -556,18 +630,39 @@ export default function ConnectionsPage() {
                       </div>
                     ))}
                   </div>
-                  {followsLoading && follows.length > 0 && (
-                    <div className="py-4 flex justify-center">
-                      <Loading message="読み込み中..." size="sm" />
+                  
+                  {/* ページング用フッター */}
+                  {followsPagination.hasNextPage ? (
+                    <div className="mt-4 text-center">
+                      <button
+                        onClick={loadMoreFollows}
+                        disabled={followsLoading}
+                        className={`px-4 py-2 rounded text-sm font-medium ${
+                          followsLoading 
+                            ? 'bg-gray-200 text-gray-500' 
+                            : 'bg-blue-500 text-white hover:bg-blue-600'
+                        }`}
+                      >
+                        {followsLoading ? (
+                          <>
+                            <span className="inline-block mr-2 w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                            読み込み中...
+                          </>
+                        ) : (
+                          '続きを読み込む'
+                        )}
+                      </button>
+                    </div>
+                  ) : follows.length > 0 && (
+                    <div className="mt-4 text-center text-gray-500 text-sm">
+                      すべてのフォロー中ユーザーを表示しています
                     </div>
                   )}
-                </InfiniteScroll>
+                </>
               )}
             </>
-          )}
-          
-          {/* フォロワー一覧 */}
-          {activeTab === 'followers' && (
+          ) : (
+            // フォロワー一覧
             <>
               {followersLoading && followers.length === 0 ? (
                 <div className="text-center py-12">
@@ -583,12 +678,8 @@ export default function ConnectionsPage() {
                   </Link>
                 </div>
               ) : (
-                <InfiniteScroll
-                  hasNextPage={followersPagination.hasNextPage}
-                  isLoading={followersLoading}
-                  onLoadMore={loadMoreFollowers}
-                  threshold={0.8}
-                >
+                <>
+                  {/* フォロワーリスト */}
                   <div className="space-y-1">
                     {followers.map((follower) => (
                       <div key={follower.id} className="p-4 border-b hover:bg-gray-50 transition-colors relative">
@@ -649,12 +740,35 @@ export default function ConnectionsPage() {
                       </div>
                     ))}
                   </div>
-                  {followersLoading && followers.length > 0 && (
-                    <div className="py-4 flex justify-center">
-                      <Loading message="読み込み中..." size="sm" />
+                  
+                  {/* ページング用フッター */}
+                  {followersPagination.hasNextPage ? (
+                    <div className="mt-4 text-center">
+                      <button
+                        onClick={loadMoreFollowers}
+                        disabled={followersLoading}
+                        className={`px-4 py-2 rounded text-sm font-medium ${
+                          followersLoading 
+                            ? 'bg-gray-200 text-gray-500' 
+                            : 'bg-blue-500 text-white hover:bg-blue-600'
+                        }`}
+                      >
+                        {followersLoading ? (
+                          <>
+                            <span className="inline-block mr-2 w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                            読み込み中...
+                          </>
+                        ) : (
+                          '続きを読み込む'
+                        )}
+                      </button>
+                    </div>
+                  ) : followers.length > 0 && (
+                    <div className="mt-4 text-center text-gray-500 text-sm">
+                      すべてのフォロワーを表示しています
                     </div>
                   )}
-                </InfiniteScroll>
+                </>
               )}
             </>
           )}

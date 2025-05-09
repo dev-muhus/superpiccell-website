@@ -29,9 +29,10 @@ export async function POST(
     }
 
     // データベースからユーザー情報を取得
-    const dbUser = await db.query.users.findFirst({
-      where: eq(users.clerk_id, userId)
-    });
+    const [dbUser] = await db.select()
+      .from(users)
+      .where(eq(users.clerk_id, userId))
+      .limit(1);
     
     if (!dbUser) {
       return NextResponse.json(
@@ -41,12 +42,13 @@ export async function POST(
     }
 
     // 投稿が存在するか確認
-    const post = await db.query.posts.findFirst({
-      where: and(
+    const [post] = await db.select()
+      .from(posts)
+      .where(and(
         eq(posts.id, postId),
         eq(posts.is_deleted, false)
-      )
-    });
+      ))
+      .limit(1);
 
     if (!post) {
       return NextResponse.json(
@@ -56,13 +58,14 @@ export async function POST(
     }
 
     // 既にブックマークしているか確認
-    const existingBookmark = await db.query.bookmarks.findFirst({
-      where: and(
+    const [existingBookmark] = await db.select()
+      .from(bookmarks)
+      .where(and(
         eq(bookmarks.user_id, dbUser.id),
         eq(bookmarks.post_id, postId),
         eq(bookmarks.is_deleted, false)
-      )
-    });
+      ))
+      .limit(1);
 
     // ブックマークが存在する場合は削除（is_deletedをtrueに設定）
     if (existingBookmark) {
@@ -162,9 +165,10 @@ export async function GET(
     }
 
     // データベースからユーザー情報を取得
-    const dbUser = await db.query.users.findFirst({
-      where: eq(users.clerk_id, userId)
-    });
+    const [dbUser] = await db.select()
+      .from(users)
+      .where(eq(users.clerk_id, userId))
+      .limit(1);
     
     if (!dbUser) {
       return NextResponse.json({
@@ -174,13 +178,14 @@ export async function GET(
     }
 
     // ユーザーがブックマークしているか確認
-    const existingBookmark = await db.query.bookmarks.findFirst({
-      where: and(
+    const [existingBookmark] = await db.select()
+      .from(bookmarks)
+      .where(and(
         eq(bookmarks.user_id, dbUser.id),
         eq(bookmarks.post_id, postId),
         eq(bookmarks.is_deleted, false)
-      )
-    });
+      ))
+      .limit(1);
 
     return NextResponse.json({
       bookmark_count: bookmarkCount[0].count,

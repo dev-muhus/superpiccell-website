@@ -5,6 +5,7 @@ import { eq, and, count } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
 
 // 特定の投稿を取得するAPI
 export async function GET(
@@ -32,9 +33,10 @@ export async function GET(
     }
 
     // データベースからユーザー情報を取得
-    const dbUser = await db.query.users.findFirst({
-      where: eq(users.clerk_id, userId)
-    });
+    const [dbUser] = await db.select()
+      .from(users)
+      .where(eq(users.clerk_id, userId))
+      .limit(1);
     
     if (!dbUser) {
       return NextResponse.json(
@@ -44,12 +46,13 @@ export async function GET(
     }
     
     // 投稿データを取得
-    const post = await db.query.posts.findFirst({
-      where: and(
+    const [post] = await db.select()
+      .from(posts)
+      .where(and(
         eq(posts.id, postId),
         eq(posts.is_deleted, false)
-      )
-    });
+      ))
+      .limit(1);
     
     if (!post) {
       return NextResponse.json(
@@ -59,38 +62,39 @@ export async function GET(
     }
     
     // 投稿者の情報を取得
-    const postUser = await db.query.users.findFirst({
-      where: eq(users.id, post.user_id),
-      columns: {
-        id: true,
-        username: true,
-        profile_image_url: true,
-        first_name: true,
-        last_name: true
-      }
-    });
+    const [postUser] = await db.select({
+      id: users.id,
+      username: users.username,
+      profile_image_url: users.profile_image_url,
+      first_name: users.first_name,
+      last_name: users.last_name
+    })
+    .from(users)
+    .where(eq(users.id, post.user_id))
+    .limit(1);
     
     // 返信先の投稿情報を取得（もし返信の場合）
     let replyToPost = null;
     if (post.post_type === 'reply' && post.in_reply_to_post_id) {
-      const replyToPostData = await db.query.posts.findFirst({
-        where: and(
+      const [replyToPostData] = await db.select()
+        .from(posts)
+        .where(and(
           eq(posts.id, post.in_reply_to_post_id),
           eq(posts.is_deleted, false)
-        )
-      });
+        ))
+        .limit(1);
       
       if (replyToPostData) {
-        const replyToPostUser = await db.query.users.findFirst({
-          where: eq(users.id, replyToPostData.user_id),
-          columns: {
-            id: true,
-            username: true,
-            profile_image_url: true,
-            first_name: true,
-            last_name: true
-          }
-        });
+        const [replyToPostUser] = await db.select({
+          id: users.id,
+          username: users.username,
+          profile_image_url: users.profile_image_url,
+          first_name: users.first_name,
+          last_name: users.last_name
+        })
+        .from(users)
+        .where(eq(users.id, replyToPostData.user_id))
+        .limit(1);
         
         replyToPost = {
           ...replyToPostData,
@@ -102,24 +106,25 @@ export async function GET(
     // 引用元の投稿情報を取得（もし引用投稿の場合）
     let quotePost = null;
     if (post.post_type === 'quote' && post.quote_of_post_id) {
-      const quotePostData = await db.query.posts.findFirst({
-        where: and(
+      const [quotePostData] = await db.select()
+        .from(posts)
+        .where(and(
           eq(posts.id, post.quote_of_post_id),
           eq(posts.is_deleted, false)
-        )
-      });
+        ))
+        .limit(1);
       
       if (quotePostData) {
-        const quotePostUser = await db.query.users.findFirst({
-          where: eq(users.id, quotePostData.user_id),
-          columns: {
-            id: true,
-            username: true,
-            profile_image_url: true,
-            first_name: true,
-            last_name: true
-          }
-        });
+        const [quotePostUser] = await db.select({
+          id: users.id,
+          username: users.username,
+          profile_image_url: users.profile_image_url,
+          first_name: users.first_name,
+          last_name: users.last_name
+        })
+        .from(users)
+        .where(eq(users.id, quotePostData.user_id))
+        .limit(1);
         
         quotePost = {
           ...quotePostData,
@@ -131,24 +136,25 @@ export async function GET(
     // リポスト元の投稿情報を取得（もしリポストの場合）
     let repostOfPost = null;
     if (post.post_type === 'repost' && post.repost_of_post_id) {
-      const repostOfPostData = await db.query.posts.findFirst({
-        where: and(
+      const [repostOfPostData] = await db.select()
+        .from(posts)
+        .where(and(
           eq(posts.id, post.repost_of_post_id),
           eq(posts.is_deleted, false)
-        )
-      });
+        ))
+        .limit(1);
       
       if (repostOfPostData) {
-        const repostOfPostUser = await db.query.users.findFirst({
-          where: eq(users.id, repostOfPostData.user_id),
-          columns: {
-            id: true,
-            username: true,
-            profile_image_url: true,
-            first_name: true,
-            last_name: true
-          }
-        });
+        const [repostOfPostUser] = await db.select({
+          id: users.id,
+          username: users.username,
+          profile_image_url: users.profile_image_url,
+          first_name: users.first_name,
+          last_name: users.last_name
+        })
+        .from(users)
+        .where(eq(users.id, repostOfPostData.user_id))
+        .limit(1);
         
         repostOfPost = {
           ...repostOfPostData,
@@ -183,13 +189,14 @@ export async function GET(
     const like_count = likesCount[0]?.count || 0;
     
     // ユーザーのいいね状態を取得
-    const userLike = await db.query.likes.findFirst({
-      where: and(
+    const [userLike] = await db.select()
+      .from(likes)
+      .where(and(
         eq(likes.user_id, dbUser.id),
         eq(likes.post_id, post.id),
         eq(likes.is_deleted, false)
-      )
-    });
+      ))
+      .limit(1);
     
     // ブックマーク数を取得
     const bookmarksCount = await db.select({
@@ -204,13 +211,14 @@ export async function GET(
     const bookmark_count = bookmarksCount[0]?.count || 0;
     
     // ユーザーのブックマーク状態を取得
-    const userBookmark = await db.query.bookmarks.findFirst({
-      where: and(
+    const [userBookmark] = await db.select()
+      .from(bookmarks)
+      .where(and(
         eq(bookmarks.user_id, dbUser.id),
         eq(bookmarks.post_id, post.id),
         eq(bookmarks.is_deleted, false)
-      )
-    });
+      ))
+      .limit(1);
     
     // レスポンスデータを構築
     const postWithDetails = {
@@ -263,11 +271,12 @@ export async function DELETE(
         { status: 400 }
       );
     }
-
+    
     // データベースからユーザー情報を取得
-    const dbUser = await db.query.users.findFirst({
-      where: eq(users.clerk_id, userId)
-    });
+    const [dbUser] = await db.select()
+      .from(users)
+      .where(eq(users.clerk_id, userId))
+      .limit(1);
     
     if (!dbUser) {
       return NextResponse.json(
@@ -276,13 +285,11 @@ export async function DELETE(
       );
     }
     
-    // 投稿データを取得
-    const post = await db.query.posts.findFirst({
-      where: and(
-        eq(posts.id, postId),
-        eq(posts.is_deleted, false)
-      )
-    });
+    // 投稿を取得して所有者か確認
+    const [post] = await db.select()
+      .from(posts)
+      .where(eq(posts.id, postId))
+      .limit(1);
     
     if (!post) {
       return NextResponse.json(
@@ -291,7 +298,15 @@ export async function DELETE(
       );
     }
     
-    // 投稿の所有者かどうかを確認
+    // 投稿が既に削除済みかどうかを確認
+    if (post.is_deleted) {
+      return NextResponse.json(
+        { error: "投稿は既に削除されています" },
+        { status: 404 }
+      );
+    }
+    
+    // 投稿の所有者でない場合はエラー
     if (post.user_id !== dbUser.id) {
       return NextResponse.json(
         { error: "この投稿を削除する権限がありません" },
@@ -299,9 +314,9 @@ export async function DELETE(
       );
     }
     
-    // 投稿を論理削除（is_deletedフラグをtrueに設定）
+    // 投稿の論理削除
     await db.update(posts)
-      .set({
+      .set({ 
         is_deleted: true,
         deleted_at: new Date()
       })

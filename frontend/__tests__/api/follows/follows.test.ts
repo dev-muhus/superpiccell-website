@@ -87,12 +87,13 @@ async function createManyFollows(followerId: number, followingIds: number[], cou
     const followingId = followingIds[i % followingIds.length];
     
     // 同じ組み合わせが存在しないことを確認
-    const existingFollow = await db.query.follows.findFirst({
-      where: and(
+    const [existingFollow] = await db.select()
+      .from(follows)
+      .where(and(
         eq(follows.follower_id, followerId),
         eq(follows.following_id, followingId)
-      )
-    });
+      ))
+      .limit(1);
     
     if (!existingFollow) {
       // 日付を少しずつずらして作成

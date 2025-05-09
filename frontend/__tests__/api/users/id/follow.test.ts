@@ -90,13 +90,14 @@ describe('User Follow API', () => {
       expect(data.following).toBe(true);
       
       // データベースの状態を確認
-      const followRecord = await db.query.follows.findFirst({
-        where: and(
+      const [followRecord] = await db.select()
+        .from(follows)
+        .where(and(
           eq(follows.follower_id, testUser.id),
           eq(follows.following_id, otherUser.id),
           eq(follows.is_deleted, false)
-        )
-      });
+        ))
+        .limit(1);
       
       expect(followRecord).not.toBeNull();
       expect(followRecord?.follower_id).toBe(testUser.id);
@@ -210,13 +211,14 @@ describe('User Follow API', () => {
       expect(data.following).toBe(false);
       
       // データベースの状態を確認
-      const followRecord = await db.query.follows.findFirst({
-        where: and(
+      const [followRecord] = await db.select()
+        .from(follows)
+        .where(and(
           eq(follows.follower_id, testUser.id),
           eq(follows.following_id, otherUser.id),
           eq(follows.is_deleted, false)
-        )
-      });
+        ))
+        .limit(1);
       
       // 論理削除されているためnullが返る
       expect(followRecord).toBeUndefined();

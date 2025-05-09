@@ -5,6 +5,7 @@ import { eq, and } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
 
 // ユーザーをフォロー/アンフォローするAPI
 export async function POST(
@@ -31,9 +32,10 @@ export async function POST(
     }
 
     // データベースからログインユーザー情報を取得
-    const currentUser = await db.query.users.findFirst({
-      where: eq(users.clerk_id, userId)
-    });
+    const [currentUser] = await db.select()
+      .from(users)
+      .where(eq(users.clerk_id, userId))
+      .limit(1);
     
     if (!currentUser) {
       return NextResponse.json(
@@ -43,9 +45,10 @@ export async function POST(
     }
 
     // フォロー対象のユーザーが存在するか確認
-    const targetUser = await db.query.users.findFirst({
-      where: eq(users.id, targetUserId)
-    });
+    const [targetUser] = await db.select()
+      .from(users)
+      .where(eq(users.id, targetUserId))
+      .limit(1);
 
     if (!targetUser) {
       return NextResponse.json(
@@ -63,13 +66,14 @@ export async function POST(
     }
 
     // 既にフォローしているか確認
-    const existingFollow = await db.query.follows.findFirst({
-      where: and(
+    const [existingFollow] = await db.select()
+      .from(follows)
+      .where(and(
         eq(follows.follower_id, currentUser.id),
         eq(follows.following_id, targetUserId),
         eq(follows.is_deleted, false)
-      )
-    });
+      ))
+      .limit(1);
 
     // フォローが存在する場合は何もせず、成功レスポンスを返す
     if (existingFollow) {
@@ -125,9 +129,10 @@ export async function DELETE(
     }
 
     // データベースからログインユーザー情報を取得
-    const currentUser = await db.query.users.findFirst({
-      where: eq(users.clerk_id, userId)
-    });
+    const [currentUser] = await db.select()
+      .from(users)
+      .where(eq(users.clerk_id, userId))
+      .limit(1);
     
     if (!currentUser) {
       return NextResponse.json(
@@ -137,13 +142,14 @@ export async function DELETE(
     }
 
     // 既存のフォローを検索
-    const existingFollow = await db.query.follows.findFirst({
-      where: and(
+    const [existingFollow] = await db.select()
+      .from(follows)
+      .where(and(
         eq(follows.follower_id, currentUser.id),
         eq(follows.following_id, targetUserId),
         eq(follows.is_deleted, false)
-      )
-    });
+      ))
+      .limit(1);
 
     // フォローが存在する場合は論理削除
     if (existingFollow) {
@@ -201,9 +207,10 @@ export async function GET(
     }
 
     // データベースからログインユーザー情報を取得
-    const currentUser = await db.query.users.findFirst({
-      where: eq(users.clerk_id, userId)
-    });
+    const [currentUser] = await db.select()
+      .from(users)
+      .where(eq(users.clerk_id, userId))
+      .limit(1);
     
     if (!currentUser) {
       return NextResponse.json(
@@ -213,13 +220,14 @@ export async function GET(
     }
 
     // フォロー状態を確認
-    const existingFollow = await db.query.follows.findFirst({
-      where: and(
+    const [existingFollow] = await db.select()
+      .from(follows)
+      .where(and(
         eq(follows.follower_id, currentUser.id),
         eq(follows.following_id, targetUserId),
         eq(follows.is_deleted, false)
-      )
-    });
+      ))
+      .limit(1);
 
     return NextResponse.json({
       following: !!existingFollow

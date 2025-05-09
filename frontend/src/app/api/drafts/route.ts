@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { ITEMS_PER_PAGE } from '@/constants/pagination';
 
 export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
 
 // 下書き一覧取得API
 export async function GET(req: NextRequest) {
@@ -23,9 +24,10 @@ export async function GET(req: NextRequest) {
     const limit = limitParam ? parseInt(limitParam, 10) : ITEMS_PER_PAGE;
 
     // DBユーザーの取得
-    const dbUser = await db.query.users.findFirst({
-      where: eq(users.clerk_id, userId),
-    });
+    const [dbUser] = await db.select()
+      .from(users)
+      .where(eq(users.clerk_id, userId))
+      .limit(1);
 
     if (!dbUser) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
@@ -69,25 +71,26 @@ export async function GET(req: NextRequest) {
       // 返信下書きの場合のみ返信先投稿情報を取得
       if (draft.in_reply_to_post_id) {
         try {
-          const replyToPost = await db.query.posts.findFirst({
-            where: and(
+          const [replyToPost] = await db.select()
+            .from(posts)
+            .where(and(
               eq(posts.id, draft.in_reply_to_post_id),
               eq(posts.is_deleted, false)
-            )
-          });
+            ))
+            .limit(1);
           
           if (replyToPost) {
             // 投稿者の情報を取得
-            const replyToUser = await db.query.users.findFirst({
-              where: eq(users.id, replyToPost.user_id),
-              columns: {
-                id: true,
-                username: true,
-                profile_image_url: true,
-                first_name: true,
-                last_name: true
-              }
-            });
+            const [replyToUser] = await db.select({
+              id: users.id,
+              username: users.username,
+              profile_image_url: users.profile_image_url,
+              first_name: users.first_name,
+              last_name: users.last_name
+            })
+            .from(users)
+            .where(eq(users.id, replyToPost.user_id))
+            .limit(1);
             
             // 返信先情報を追加
             return {
@@ -158,9 +161,10 @@ export async function POST(req: NextRequest) {
     }
 
     // DBユーザーの取得
-    const dbUser = await db.query.users.findFirst({
-      where: eq(users.clerk_id, userId),
-    });
+    const [dbUser] = await db.select()
+      .from(users)
+      .where(eq(users.clerk_id, userId))
+      .limit(1);
 
     if (!dbUser) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
@@ -209,22 +213,24 @@ export async function DELETE(req: NextRequest) {
     }
 
     // DBユーザーの取得
-    const dbUser = await db.query.users.findFirst({
-      where: eq(users.clerk_id, userId),
-    });
+    const [dbUser] = await db.select()
+      .from(users)
+      .where(eq(users.clerk_id, userId))
+      .limit(1);
 
     if (!dbUser) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
     // ユーザーの下書きであることを確認
-    const draftToDelete = await db.query.drafts.findFirst({
-      where: and(
+    const [draftToDelete] = await db.select()
+      .from(drafts)
+      .where(and(
         eq(drafts.id, parseInt(draftId)),
         eq(drafts.user_id, dbUser.id),
         eq(drafts.is_deleted, false)
-      ),
-    });
+      ))
+      .limit(1);
 
     if (!draftToDelete) {
       return NextResponse.json({ error: 'Draft not found or already deleted' }, { status: 404 });

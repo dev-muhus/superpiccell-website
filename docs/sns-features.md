@@ -203,29 +203,37 @@ const finalPosts = hasNextPage ? results.slice(0, limit) : results;
 const nextCursor = hasNextPage ? finalPosts[finalPosts.length - 1].id.toString() : null;
 ```
 
-### 3. 無限スクロール実装
+### 3. Drizzle ORMの使用と制限
+
+- `findFirst`メソッドの代わりに`select().from().where().limit(1)`を使用
+  ```typescript
+  // ❌ findFirstメソッドの使用は避ける（バグの可能性あり）
+  const user = await db.query.users.findFirst({
+    where: eq(users.id, userId)
+  });
+
+  // ✅ 代わりにこの方法を使用
+  const users = await db.select().from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+  const user = users[0];
+  ```
+- 同一条件でも`findFirst`と直接SQLでは異なる結果が返される可能性あり（[Drizzle ORMのIssue #2068](https://github.com/drizzle-team/drizzle-orm/issues/2068)参照）
+- セキュリティとパフォーマンスのためにクエリのWHERE句を最適化
+
+### 4. 無限スクロール実装
 
 - Intersection Observer APIを使用した効率的な実装
 - 共通InfiniteScrollコンポーネントを使用
 - 適切なthresholdとrootMargin設定による事前読み込み最適化
 
-```jsx
-<InfiniteScroll
-  hasNextPage={pagination.hasNextPage}
-  isLoading={isLoading}
-  onLoadMore={loadMorePosts}
->
-  {/* コンテンツ */}
-</InfiniteScroll>
-```
-
-### 4. エンゲージメント実装
+### 5. エンゲージメント実装
 
 - トグル式のエンゲージメント操作（いいね、ブックマーク、フォロー、ブロック）
 - Optimistic UIパターンによる即時UI反映
 - カウント表示の自動更新
 
-### 5. セキュリティ対策
+### 6. セキュリティ対策
 
 - すべてのAPIで認証チェック（Clerk Middleware）
 - ブロックユーザー、BANユーザー、削除済みユーザーの投稿のフィルタリング

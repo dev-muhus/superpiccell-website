@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { ITEMS_PER_PAGE } from '@/constants/pagination';
 
 export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
 
 // フォロー中のユーザー一覧を取得するAPI
 export async function GET(req: NextRequest) {
@@ -27,9 +28,10 @@ export async function GET(req: NextRequest) {
     const sortDirection = (searchParams.get('sort') || 'desc') === 'asc' ? asc : desc;
 
     // データベースからログインユーザー情報を取得
-    const currentUser = await db.query.users.findFirst({
-      where: eq(users.clerk_id, userId)
-    });
+    const [currentUser] = await db.select()
+      .from(users)
+      .where(eq(users.clerk_id, userId))
+      .limit(1);
     
     if (!currentUser) {
       return NextResponse.json(

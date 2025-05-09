@@ -275,9 +275,10 @@ describe('Post ID API', () => {
       expect(data.success).toBe(true);
       
       // 論理削除されていることを確認
-      const deletedPost = await db.query.posts.findFirst({
-        where: eq(posts.id, testPost.id)
-      });
+      const [deletedPost] = await db.select()
+        .from(posts)
+        .where(eq(posts.id, testPost.id))
+        .limit(1);
       
       expect(deletedPost).not.toBeNull();
       expect(deletedPost?.is_deleted).toBe(true);
@@ -295,9 +296,10 @@ describe('Post ID API', () => {
       expect(data.error).toBeDefined();
       
       // 投稿が削除されていないことを確認
-      const notDeletedPost = await db.query.posts.findFirst({
-        where: eq(posts.id, otherUserPost.id)
-      });
+      const [notDeletedPost] = await db.select()
+        .from(posts)
+        .where(eq(posts.id, otherUserPost.id))
+        .limit(1);
       
       expect(notDeletedPost).not.toBeNull();
       expect(notDeletedPost?.is_deleted).toBe(false);

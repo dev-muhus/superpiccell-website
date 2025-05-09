@@ -227,7 +227,7 @@ const PostModal: React.FC<PostModalProps> = ({
     >
       <div
         ref={modalRef}
-        className="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden"
+        className="bg-white rounded-lg shadow-xl w-full max-w-2xl overflow-hidden"
       >
         {/* ヘッダー */}
         <div className="flex justify-between items-center border-b p-4">

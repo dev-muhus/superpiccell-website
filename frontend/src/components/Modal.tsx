@@ -10,13 +10,14 @@ interface ModalProps {
   title?: string;
   children: React.ReactNode;
   isLoading?: boolean; // 読み込み状態を管理するためのプロパティ
+  className?: string; // 追加のスタイルクラスを受け取るプロパティ
 }
 
 // クライアントサイドでのみ実行されるuseIsomorphicLayoutEffectを定義
 const useIsomorphicLayoutEffect = 
   typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
-const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, isLoading = false }) => {
+const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, isLoading = false, className = '' }) => {
   const modalRef = useRef<HTMLDivElement>(null);
   // 明示的なスクロール制御のためのフックを使用
   const { lockScroll, unlockScroll } = useScrollLock();
@@ -93,9 +94,10 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, isLoadi
       }}
     >
       <div 
-        className="relative mx-auto w-[95%] sm:w-auto max-w-[95%] sm:max-w-[85%] lg:max-w-3xl overflow-hidden rounded-lg bg-white shadow-2xl"
+        className={`relative mx-auto w-[95%] sm:w-auto max-w-[95%] sm:max-w-[85%] lg:max-w-2xl overflow-hidden rounded-lg bg-white shadow-2xl ${className}`}
         style={{ 
-          animation: isOpen ? 'modalContentIn 300ms forwards' : 'modalContentOut 300ms forwards'
+          animation: isOpen ? 'modalContentIn 300ms forwards' : 'modalContentOut 300ms forwards',
+          width: className.includes('max-w-') ? '100%' : undefined
         }}
       >
         {/* ヘッダー部分 - 固定表示 */}
@@ -182,6 +184,36 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, isLoadi
           line-height: 1.6;
         }
         
+        /* モーダル内のフォーム要素のスタイル改善 */
+        .modal-content input[type="text"],
+        .modal-content input[type="email"],
+        .modal-content input[type="password"],
+        .modal-content textarea {
+          width: 100%;
+          padding: 0.75rem;
+          border-radius: 0.375rem;
+          border: 1px solid #d1d5db;
+          transition: border-color 0.15s ease;
+          font-size: 1rem;
+        }
+        
+        .modal-content input[type="text"]:focus,
+        .modal-content input[type="email"]:focus,
+        .modal-content input[type="password"]:focus,
+        .modal-content textarea:focus {
+          outline: none;
+          border-color: #3b82f6;
+          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        
+        /* モーダル内のラベルスタイル */
+        .modal-content label {
+          display: block;
+          font-weight: 500;
+          margin-bottom: 0.5rem;
+          color: #374151;
+        }
+        
         /* スクロールバーのスタイリング */
         .modal-content::-webkit-scrollbar {
           width: 6px;
@@ -211,6 +243,18 @@ const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, isLoadi
         
         @media (max-width: 640px) {
           .modal-content p {
+            font-size: 0.9rem;
+          }
+          
+          .modal-content {
+            padding: 1rem;
+          }
+          
+          .modal-content input[type="text"],
+          .modal-content input[type="email"],
+          .modal-content input[type="password"],
+          .modal-content textarea {
+            padding: 0.625rem;
             font-size: 0.9rem;
           }
         }

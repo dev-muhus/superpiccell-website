@@ -69,13 +69,14 @@ describe('Post Bookmark API', () => {
       expect(data.bookmark_count).toBe(1);
       
       // DBにブックマークが追加されたことを確認
-      const bookmark = await db.query.bookmarks.findFirst({
-        where: and(
+      const [bookmark] = await db.select()
+        .from(bookmarks)
+        .where(and(
           eq(bookmarks.user_id, testUser.id),
           eq(bookmarks.post_id, testPost.id),
           eq(bookmarks.is_deleted, false)
-        )
-      });
+        ))
+        .limit(1);
       
       expect(bookmark).not.toBeNull();
       expect(bookmark?.user_id).toBe(testUser.id);
@@ -102,13 +103,13 @@ describe('Post Bookmark API', () => {
       expect(data.bookmark_count).toBe(0);
       
       // DBでブックマークが論理削除されたことを確認
-      const activeBookmarks = await db.query.bookmarks.findMany({
-        where: and(
+      const activeBookmarks = await db.select()
+        .from(bookmarks)
+        .where(and(
           eq(bookmarks.user_id, testUser.id),
           eq(bookmarks.post_id, testPost.id),
           eq(bookmarks.is_deleted, false)
-        )
-      });
+        ));
       
       expect(activeBookmarks.length).toBe(0);
     });
@@ -137,13 +138,14 @@ describe('Post Bookmark API', () => {
       expect(data.bookmark_count).toBe(1);
       
       // DBに新しいブックマークが追加されたことを確認
-      const newBookmark = await db.query.bookmarks.findFirst({
-        where: and(
+      const [newBookmark] = await db.select()
+        .from(bookmarks)
+        .where(and(
           eq(bookmarks.user_id, testUser.id),
           eq(bookmarks.post_id, testPost.id),
           eq(bookmarks.is_deleted, false)
-        )
-      });
+        ))
+        .limit(1);
       
       expect(newBookmark).not.toBeNull();
     });

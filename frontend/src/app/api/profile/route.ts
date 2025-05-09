@@ -5,6 +5,7 @@ import { users } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 
 export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
 
 export async function GET(req: NextRequest) {
   try {
@@ -17,17 +18,17 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const user = await db.query.users.findFirst({
-      where: eq(users.clerk_id, userId),
-      columns: {
-        username: true,
-        email: true,
-        first_name: true,
-        last_name: true,
-        profile_image_url: true,
-        bio: true
-      }
-    });
+    const [user] = await db.select({
+      username: users.username,
+      email: users.email,
+      first_name: users.first_name,
+      last_name: users.last_name,
+      profile_image_url: users.profile_image_url,
+      bio: users.bio
+    })
+    .from(users)
+    .where(eq(users.clerk_id, userId))
+    .limit(1);
 
     if (!user) {
       return NextResponse.json(
@@ -60,10 +61,10 @@ export async function PUT(req: NextRequest) {
     const body = await req.json();
     const { username, first_name, last_name, bio } = body;
 
-    // 更新前にユーザーが存在するか確認
-    const currentUser = await db.query.users.findFirst({
-      where: eq(users.clerk_id, userId)
-    });
+    const [currentUser] = await db.select()
+      .from(users)
+      .where(eq(users.clerk_id, userId))
+      .limit(1);
 
     if (!currentUser) {
       return NextResponse.json(
@@ -72,7 +73,6 @@ export async function PUT(req: NextRequest) {
       );
     }
 
-    // ユーザー情報を更新
     await db.update(users)
       .set({
         username,
@@ -83,18 +83,17 @@ export async function PUT(req: NextRequest) {
       })
       .where(eq(users.clerk_id, userId));
 
-    // 更新後のユーザー情報を取得
-    const updatedUser = await db.query.users.findFirst({
-      where: eq(users.clerk_id, userId),
-      columns: {
-        username: true,
-        email: true,
-        first_name: true,
-        last_name: true,
-        profile_image_url: true,
-        bio: true
-      }
-    });
+    const [updatedUser] = await db.select({
+      username: users.username,
+      email: users.email,
+      first_name: users.first_name,
+      last_name: users.last_name,
+      profile_image_url: users.profile_image_url,
+      bio: users.bio
+    })
+    .from(users)
+    .where(eq(users.clerk_id, userId))
+    .limit(1);
 
     return NextResponse.json(updatedUser);
   } catch (error) {

@@ -5,6 +5,7 @@ import { eq, and, count } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
 
 export async function GET(
   req: NextRequest,
@@ -22,12 +23,13 @@ export async function GET(
     }
 
     // 指定されたユーザー名のユーザーを取得
-    const profileUser = await db.query.users.findFirst({
-      where: and(
+    const [profileUser] = await db.select()
+      .from(users)
+      .where(and(
         eq(users.username, username),
         eq(users.is_deleted, false)
-      )
-    });
+      ))
+      .limit(1);
 
     if (!profileUser) {
       return NextResponse.json(
@@ -37,18 +39,23 @@ export async function GET(
     }
 
     // フォロワー数とフォロー数を取得
+    // 削除されていないユーザーのみをカウント
     const followerCount = await db.select({ count: count() })
       .from(follows)
+      .innerJoin(users, eq(follows.follower_id, users.id))
       .where(and(
         eq(follows.following_id, profileUser.id),
-        eq(follows.is_deleted, false)
+        eq(follows.is_deleted, false),
+        eq(users.is_deleted, false)
       ));
 
     const followingCount = await db.select({ count: count() })
       .from(follows)
+      .innerJoin(users, eq(follows.following_id, users.id))
       .where(and(
         eq(follows.follower_id, profileUser.id),
-        eq(follows.is_deleted, false)
+        eq(follows.is_deleted, false),
+        eq(users.is_deleted, false)
       ));
 
     // プロフィール情報にフォロー数を追加
@@ -79,9 +86,10 @@ export async function GET(
     }
 
     // ログインユーザーの情報を取得
-    const currentUser = await db.query.users.findFirst({
-      where: eq(users.clerk_id, userId)
-    });
+    const [currentUser] = await db.select()
+      .from(users)
+      .where(eq(users.clerk_id, userId))
+      .limit(1);
 
     if (!currentUser) {
       return NextResponse.json(
@@ -96,27 +104,38 @@ export async function GET(
     // ブロック状態を確認
     let isBlocked = false;
     if (!isOwnProfile) {
-      const blockRecord = await db.query.blocks.findFirst({
-        where: and(
+      const [blockRecord] = await db.select()
+        .from(blocks)
+        .where(and(
           eq(blocks.blocker_id, currentUser.id),
           eq(blocks.blocked_id, profileUser.id),
           eq(blocks.is_deleted, false)
-        )
-      });
+        ))
+        .limit(1);
       isBlocked = !!blockRecord;
     }
 
     // フォロー状態を確認
     let isFollowing = false;
     if (!isOwnProfile) {
-      const followRecord = await db.query.follows.findFirst({
-        where: and(
-          eq(follows.follower_id, currentUser.id),
-          eq(follows.following_id, profileUser.id),
-          eq(follows.is_deleted, false)
-        )
-      });
-      isFollowing = !!followRecord;
+
+      try {
+        // 直接SQLを使用して確実にフォロー関係を確認する
+        const rawFollows = await db.select().from(follows)
+          .where(
+            and(
+              eq(follows.follower_id, currentUser.id),
+              eq(follows.following_id, profileUser.id),
+              eq(follows.is_deleted, false)
+            )
+          );
+        
+        // フォロー関係が存在するかどうかを判定
+        isFollowing = rawFollows.length > 0;
+
+      } catch (error) {
+        console.error("Error checking follow relationship:", error);
+      }
     }
 
     // プロフィール情報を返す

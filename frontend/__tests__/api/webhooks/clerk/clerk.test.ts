@@ -104,9 +104,10 @@ describe('Clerk Webhook API', () => {
       expect(response.status).toBe(200);
       
       // データベースに正しくユーザーが作成されたか確認
-      const createdUser = await db.query.users.findFirst({
-        where: eq(users.clerk_id, userData.data.id)
-      });
+      const [createdUser] = await db.select()
+        .from(users)
+        .where(eq(users.clerk_id, userData.data.id))
+        .limit(1);
       
       expect(createdUser).not.toBeNull();
       expect(createdUser?.username).toBe('test_clerk_user');
@@ -152,9 +153,10 @@ describe('Clerk Webhook API', () => {
       expect(response.status).toBe(200);
       
       // データベースのユーザーが更新されたか確認
-      const updatedUser = await db.query.users.findFirst({
-        where: eq(users.clerk_id, clerkId)
-      });
+      const [updatedUser] = await db.select()
+        .from(users)
+        .where(eq(users.clerk_id, clerkId))
+        .limit(1);
       
       expect(updatedUser).not.toBeNull();
       expect(updatedUser?.username).toBe('updated_username');
@@ -278,9 +280,10 @@ describe('Clerk Webhook API', () => {
       expect(response.status).toBe(200);
       
       // データベースのユーザーを確認
-      const createdUser = await db.query.users.findFirst({
-        where: eq(users.clerk_id, userData.data.id)
-      });
+      const [createdUser] = await db.select()
+        .from(users)
+        .where(eq(users.clerk_id, userData.data.id))
+        .limit(1);
       
       expect(createdUser).not.toBeNull();
       // ユーザー名がない場合はfirst_nameまたはIDの一部が使用される
@@ -311,9 +314,10 @@ describe('Clerk Webhook API', () => {
       expect(response.status).toBe(200);
       
       // データベースのユーザーを確認
-      const createdUser = await db.query.users.findFirst({
-        where: eq(users.clerk_id, userData.data.id)
-      });
+      const [createdUser] = await db.select()
+        .from(users)
+        .where(eq(users.clerk_id, userData.data.id))
+        .limit(1);
       
       expect(createdUser).not.toBeNull();
       expect(createdUser?.profile_image_url).toBeNull();
@@ -343,9 +347,10 @@ describe('Clerk Webhook API', () => {
       expect(response.status).toBe(200);
       
       // データベースのユーザーを確認
-      const createdUser = await db.query.users.findFirst({
-        where: eq(users.clerk_id, userData.data.id)
-      });
+      const [createdUser] = await db.select()
+        .from(users)
+        .where(eq(users.clerk_id, userData.data.id))
+        .limit(1);
       
       expect(createdUser).not.toBeNull();
       expect(createdUser?.email).toBe(''); // nullではなく空文字列

@@ -286,9 +286,10 @@ describe('Drafts API', () => {
       expect(data.draft.user_id).toBe(currentUser.id);
       
       // データベースで確認
-      const savedDraft = await db.query.drafts.findFirst({
-        where: eq(drafts.id, data.draft.id)
-      });
+      const [savedDraft] = await db.select()
+        .from(drafts)
+        .where(eq(drafts.id, data.draft.id))
+        .limit(1);
       
       expect(savedDraft).toBeTruthy();
       expect(savedDraft?.content).toBe(draftData.content);
@@ -394,9 +395,10 @@ describe('Drafts API', () => {
       expect(data.success).toBe(true);
       
       // データベースで確認 - 論理削除されている
-      const deletedDraft = await db.query.drafts.findFirst({
-        where: eq(drafts.id, draftToDelete.id)
-      });
+      const [deletedDraft] = await db.select()
+        .from(drafts)
+        .where(eq(drafts.id, draftToDelete.id))
+        .limit(1);
       
       expect(deletedDraft).toBeTruthy();
       expect(deletedDraft?.is_deleted).toBe(true);
@@ -456,9 +458,10 @@ describe('Drafts API', () => {
       expect(data.error).toBeDefined();
       
       // データベースで確認 - 削除されていないこと
-      const nonDeletedDraft = await db.query.drafts.findFirst({
-        where: eq(drafts.id, draftToDelete.id)
-      });
+      const [nonDeletedDraft] = await db.select()
+        .from(drafts)
+        .where(eq(drafts.id, draftToDelete.id))
+        .limit(1);
       
       expect(nonDeletedDraft).toBeTruthy();
       expect(nonDeletedDraft?.is_deleted).toBe(false);

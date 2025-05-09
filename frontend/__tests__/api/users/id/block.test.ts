@@ -73,13 +73,14 @@ describe('User Block API', () => {
       expect(data.blocked).toBe(true);
       
       // データベースの状態を確認
-      const blockRecord = await db.query.blocks.findFirst({
-        where: and(
+      const [blockRecord] = await db.select()
+        .from(blocks)
+        .where(and(
           eq(blocks.blocker_id, testUser.id),
           eq(blocks.blocked_id, otherUser.id),
           eq(blocks.is_deleted, false)
-        )
-      });
+        ))
+        .limit(1);
       
       expect(blockRecord).not.toBeNull();
       expect(blockRecord?.blocker_id).toBe(testUser.id);
@@ -106,7 +107,7 @@ describe('User Block API', () => {
       expect(data.success).toBe(true);
       expect(data.blocked).toBe(true);
       
-      // データベースの状態を確認 - 重複作成されていないことを確認
+      // データベースの状態を確認
       const blockRecords = await db.select()
         .from(blocks)
         .where(and(
@@ -204,13 +205,14 @@ describe('User Block API', () => {
       expect(data.blocked).toBe(false);
       
       // データベースの状態を確認
-      const blockRecord = await db.query.blocks.findFirst({
-        where: and(
+      const [blockRecord] = await db.select()
+        .from(blocks)
+        .where(and(
           eq(blocks.blocker_id, testUser.id),
           eq(blocks.blocked_id, otherUser.id),
           eq(blocks.is_deleted, false)
-        )
-      });
+        ))
+        .limit(1);
       
       // 論理削除されているためnullが返る
       expect(blockRecord).toBeUndefined();

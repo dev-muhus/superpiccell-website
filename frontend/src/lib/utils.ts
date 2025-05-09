@@ -54,4 +54,52 @@ export function isInViewport(element: HTMLElement): boolean {
     rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
     rect.right <= (window.innerWidth || document.documentElement.clientWidth)
   );
+}
+
+/**
+ * ユーザー名からハッシュ値を生成する関数
+ * @param username ユーザー名
+ * @returns number - ハッシュ値（正の整数）
+ */
+export function hashUsername(username: string): number {
+  let hash = 0;
+  for (let i = 0; i < username.length; i++) {
+    const char = username.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32bit integer
+  }
+  return Math.abs(hash);
+}
+
+/**
+ * ハッシュ値から色コードを生成する関数
+ * @param hash ハッシュ値
+ * @returns string - HSL形式の色コード
+ */
+export function generateColorFromHash(hash: number): string {
+  // 明るく鮮やかな色となるよう、HSL色空間を使用
+  // 色相（0-360）はハッシュから直接生成
+  const hue = hash % 360;
+  // 彩度は70-90%で固定（鮮やかな色にするため）
+  const saturation = 70 + (hash % 20);
+  // 明度は50-65%で固定（暗すぎず明るすぎない色にするため）
+  const lightness = 50 + (hash % 15);
+  
+  return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+}
+
+/**
+ * ユーザー名からグラデーション背景スタイルを生成する関数
+ * @param username ユーザー名
+ * @returns React.CSSProperties - CSSスタイルオブジェクト
+ */
+export function generateProfileBackgroundStyle(username: string): React.CSSProperties {
+  const hash = hashUsername(username);
+  const mainColor = generateColorFromHash(hash);
+  // 2つ目の色は少し明るめに
+  const secondColor = generateColorFromHash(hash + 40);
+  
+  return {
+    background: `linear-gradient(135deg, ${mainColor} 0%, ${secondColor} 100%)`,
+  };
 } 

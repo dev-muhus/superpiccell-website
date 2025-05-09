@@ -344,9 +344,10 @@ describe('Posts API', () => {
       expect(data.post.post_type).toBe('original');
       
       // DBに投稿が保存されていることを確認
-      const savedPost = await db.query.posts.findFirst({
-        where: eq(posts.id, data.post.id)
-      });
+      const [savedPost] = await db.select()
+        .from(posts)
+        .where(eq(posts.id, data.post.id))
+        .limit(1);
       
       expect(savedPost).not.toBeNull();
       expect(savedPost?.content).toBe('新しい投稿です');

@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
 export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
 
 // プロフィール編集のバリデーションスキーマ
 const editProfileSchema = z.object({
@@ -41,9 +42,10 @@ export async function POST(req: NextRequest) {
     const { first_name, last_name, bio } = validationResult.data;
     
     // データベースからユーザー情報を取得
-    const dbUser = await db.query.users.findFirst({
-      where: eq(users.clerk_id, userId)
-    });
+    const [dbUser] = await db.select()
+      .from(users)
+      .where(eq(users.clerk_id, userId))
+      .limit(1);
     
     if (!dbUser) {
       return NextResponse.json(
