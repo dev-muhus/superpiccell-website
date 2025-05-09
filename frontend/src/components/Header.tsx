@@ -10,7 +10,7 @@ const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const siteName = process.env.NEXT_PUBLIC_SITE_NAME || 'Super Piccell';
-  const { isSignedIn } = useUser();
+  const { isSignedIn, isLoaded } = useUser();
   const { lockScroll, unlockScroll } = useScrollLock();
   
   const headerBgColor = process.env.NEXT_PUBLIC_HEADER_BG_COLOR || '#0077cc';
@@ -110,18 +110,24 @@ const Header = () => {
             <Link href="/#gallery" onClick={closeMenu} className="hover:text-gray-300 transition-colors uppercase block py-2 px-4 w-48 md:w-auto text-center" style={{ color: headerTextColor }}>gallery</Link>
             
             {/* 認証ボタン */}
-            <div className="flex flex-col md:flex-row items-center space-y-4 md:space-y-0 md:ml-4 mt-4 md:mt-0">
-              {!isSignedIn ? (
+            <div className="flex flex-col md:flex-row items-center space-y-4 md:space-y-0 md:ml-4 mt-4 md:mt-0 auth-container">
+              {!isLoaded ? (
+                // ログイン状態確認中のスケルトンローディング
+                <div className="flex items-center space-x-3">
+                  <div className="w-[120px] h-10 bg-gray-200 animate-pulse rounded-md"></div>
+                  <div className="w-10 h-10 bg-gray-200 animate-pulse rounded-full"></div>
+                </div>
+              ) : !isSignedIn ? (
                 <>
                   {/* モバイル表示時は独立ボタン */}
                   <div className="md:hidden flex flex-col space-y-4">
                     <SignInButton mode="modal">
-                      <Button variant="outline" className="w-48">
+                      <Button variant="outline" className="w-48 h-10">
                         Sign In
                       </Button>
                     </SignInButton>
                     <SignUpButton mode="modal">
-                      <Button className="w-48">
+                      <Button className="w-48 h-10">
                         Sign Up
                       </Button>
                     </SignUpButton>
@@ -130,41 +136,43 @@ const Header = () => {
                   {/* PC表示時は一体型ボタン */}
                   <div className="hidden md:flex overflow-hidden rounded-md">
                     <SignInButton mode="modal">
-                      <Button variant="outline" className="rounded-r-none">
+                      <Button variant="outline" className="rounded-r-none h-10">
                         Sign In
                       </Button>
                     </SignInButton>
                     <SignUpButton mode="modal">
-                      <Button className="rounded-l-none">
+                      <Button className="rounded-l-none h-10">
                         Sign Up
                       </Button>
                     </SignUpButton>
                   </div>
                 </>
               ) : (
-                <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-3">
                   <Link 
                     href="/dashboard" 
                     onClick={handleProfileClick}
                   >
                     <Button 
                       variant="default"
-                      className="bg-white text-blue-600 hover:bg-gray-100 hover:text-blue-800"
+                      className="bg-white text-blue-600 hover:bg-gray-100 hover:text-blue-800 h-10"
                     >
                       DASHBOARD
                     </Button>
                   </Link>
-                  <UserButton 
-                    appearance={{
-                      elements: {
-                        avatarBox: "w-10 h-10",
-                        userButtonPopoverCard: "w-[240px]",
-                        userButtonPopoverActions: "p-2",
-                        userButtonPopoverActionButton: "px-4 py-2 rounded-md hover:bg-gray-100 transition-colors",
-                        userButtonPopoverActionButtonText: "text-sm font-medium"
-                      }
-                    }}
-                  />
+                  <div className="h-10 flex items-center">
+                    <UserButton 
+                      appearance={{
+                        elements: {
+                          avatarBox: "w-10 h-10",
+                          userButtonPopoverCard: "w-[240px]",
+                          userButtonPopoverActions: "p-2",
+                          userButtonPopoverActionButton: "px-4 py-2 rounded-md hover:bg-gray-100 transition-colors",
+                          userButtonPopoverActionButtonText: "text-sm font-medium"
+                        }
+                      }}
+                    />
+                  </div>
                 </div>
               )}
             </div>

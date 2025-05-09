@@ -280,6 +280,31 @@ header {
   z-index: 9000;
   display: flex;
   align-items: center;
+  height: 72px; /* ヘッダー高さを固定 */
+  min-height: 72px; /* 最小高さも設定 */
+}
+
+/* ヘッダーコンテナ内の要素を垂直方向中央揃え */
+header .container {
+  height: 100%;
+  display: flex;
+  align-items: center;
+}
+
+/* ボタンの高さを統一 */
+header button,
+header .auth-container button {
+  height: 40px !important;
+}
+
+/* 認証ボタンコンテナ - 一定サイズを確保 */
+.auth-container {
+  min-width: 185px;
+  height: 40px;
+  min-height: 40px;
+  position: relative;
+  display: flex;
+  align-items: center;
 }
 
 /* ヘッダー背景 */
