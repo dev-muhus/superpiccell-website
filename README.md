@@ -141,7 +141,7 @@ CLERK_WEBHOOK_SECRET=whsec_XXXXXXXXXXXXX
 
 2. ngrokパブリックURLを確認：
    ```
-   # ngrokウェブインターフェースへアクセス（http://localhost:4040またはNGROK_UI_PORTで設定したポート）
+   # ngrokウェブインターフェースへアクセス（ [http://localhost:3000](http://localhost:3000) またはNGROK_UI_PORTで設定したポート ）
    # または以下のコマンドでURLを取得
    docker compose exec ngrok ngrok config inspect
    ```
