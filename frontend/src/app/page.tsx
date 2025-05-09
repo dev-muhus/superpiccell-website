@@ -59,7 +59,7 @@ export default function Home() {
           className="header-background relative min-h-screen flex flex-col justify-center items-center pb-16"
           style={{ 
             backgroundImage: `url(${overlayImageUrl})`,
-            backgroundAttachment: 'fixed',
+            backgroundAttachment: 'scroll',
             backgroundSize: 'cover',
             backgroundPosition: 'center'
           }}
@@ -76,6 +76,8 @@ export default function Home() {
                   height={300}
                   className="w-full h-auto animate-float"
                   priority
+                  sizes="(max-width: 480px) 150px, (max-width: 768px) 200px, 300px"
+                  quality={90}
                 />
               </div>
             )}
