@@ -5,7 +5,7 @@ import { describe, test, expect, beforeEach } from '@jest/globals';
 import { GET, DELETE } from '@/app/api/posts/[id]/route';
 import { createTestRequest } from '@/utils/test/api-test-helpers';
 import { db } from '@/db';
-import { users, posts, likes, bookmarks } from '@/db/schema';
+import { users, posts, likes, bookmarks, post_media } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
 
 // テスト用のグローバル変数に型を追加
@@ -18,6 +18,7 @@ describe('Post ID API', () => {
   let otherUser: any;
   let testPost: any;
   let otherUserPost: any;
+  let mediaPost: any; // 追加：メディア付き投稿
   
   beforeEach(async () => {
     // テストユーザーを作成
@@ -76,6 +77,36 @@ describe('Post ID API', () => {
       post_id: testPost.id,
       created_at: new Date()
     });
+    
+    // メディア付き投稿の作成
+    mediaPost = await db.insert(posts).values({
+      user_id: testUser.id,
+      content: 'メディア付き投稿のテスト',
+      post_type: 'original',
+      media_count: 2,
+      created_at: new Date(),
+      updated_at: new Date()
+    }).returning().then(res => res[0]);
+    
+    // 投稿に紐づくメディアを追加
+    await db.insert(post_media).values([
+      {
+        post_id: mediaPost.id,
+        media_type: 'image',
+        url: 'https://example.com/image1.jpg',
+        width: 1200,
+        height: 800,
+        created_at: new Date()
+      },
+      {
+        post_id: mediaPost.id,
+        media_type: 'image',
+        url: 'https://example.com/image2.jpg',
+        width: 800,
+        height: 600,
+        created_at: new Date()
+      }
+    ]);
   });
   
   // 投稿詳細の取得テスト
@@ -190,6 +221,59 @@ describe('Post ID API', () => {
       expect(data.post.in_reply_to_post.content).toBe(otherUserPost.content);
     });
     
+    test('返信先投稿にメディアがある場合、メディア情報も取得できる', async () => {
+      // 返信先の投稿（メディア付き）を作成
+      const mediaOriginalPost = await db.insert(posts).values({
+        user_id: otherUser.id,
+        content: 'メディア付き返信先投稿',
+        post_type: 'original',
+        media_count: 1,
+        created_at: new Date(),
+        updated_at: new Date()
+      }).returning().then(res => res[0]);
+      
+      // 投稿に紐づくメディアを追加
+      await db.insert(post_media).values({
+        post_id: mediaOriginalPost.id,
+        media_type: 'image',
+        url: 'https://example.com/image-for-reply.jpg',
+        width: 1200,
+        height: 800,
+        created_at: new Date()
+      });
+      
+      // この投稿に対する返信投稿を作成
+      const replyToMediaPost = await db.insert(posts).values({
+        user_id: testUser.id,
+        content: 'メディア付き投稿への返信',
+        post_type: 'reply',
+        in_reply_to_post_id: mediaOriginalPost.id,
+        created_at: new Date(),
+        updated_at: new Date()
+      }).returning().then(res => res[0]);
+      
+      // 返信投稿の詳細を取得
+      const request = createTestRequest(`/api/posts/${replyToMediaPost.id}`, 'GET', null, {}, testUser.clerk_id);
+      const response = await GET(request, { params: { id: replyToMediaPost.id.toString() } });
+      
+      // レスポンスの検証
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      
+      // 返信先の投稿のメディア情報の検証
+      expect(data.post.in_reply_to_post).toBeDefined();
+      expect(data.post.in_reply_to_post.media).toBeDefined();
+      expect(Array.isArray(data.post.in_reply_to_post.media)).toBe(true);
+      expect(data.post.in_reply_to_post.media.length).toBe(1);
+      
+      // メディア情報の詳細を検証
+      const media = data.post.in_reply_to_post.media[0];
+      expect(media.mediaType).toBe('image');
+      expect(media.url).toBe('https://example.com/image-for-reply.jpg');
+      expect(media.width).toBe(1200);
+      expect(media.height).toBe(800);
+    });
+    
     test('リポスト投稿の詳細を取得できる', async () => {
       // リポスト投稿を作成
       const repostPost = await db.insert(posts).values({
@@ -259,6 +343,88 @@ describe('Post ID API', () => {
       expect(response.status).toBe(401);
       const data = await response.json();
       expect(data.error).toBeDefined();
+    });
+    
+    test('メディア付き投稿の詳細と関連メディアを取得できる', async () => {
+      // GET リクエストのテスト
+      const request = createTestRequest(`/api/posts/${mediaPost.id}`, 'GET', null, {}, testUser.clerk_id);
+      const response = await GET(request, { params: { id: mediaPost.id.toString() } });
+      
+      // レスポンスの検証
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      
+      // 投稿データの検証
+      expect(data.post).toBeDefined();
+      expect(data.post.id).toBe(mediaPost.id);
+      expect(data.post.content).toBe(mediaPost.content);
+      expect(data.post.media_count).toBe(2);
+      
+      // メディア情報の検証
+      expect(data.post.media).toBeDefined();
+      expect(Array.isArray(data.post.media)).toBe(true);
+      expect(data.post.media.length).toBe(2);
+      
+      // 各メディアアイテムの検証
+      const mediaItems = data.post.media;
+      expect(mediaItems[0].media_type).toBe('image');
+      expect(mediaItems[0].url).toBeDefined();
+      expect(mediaItems[0].width).toBeDefined();
+      expect(mediaItems[0].height).toBeDefined();
+      
+      expect(mediaItems[1].media_type).toBe('image');
+      expect(mediaItems[1].url).toBeDefined();
+    });
+    
+    // 動画付き投稿のテスト
+    test('動画付き投稿の詳細を取得できる', async () => {
+      // 動画付き投稿を作成
+      const videoPost = await db.insert(posts).values({
+        user_id: testUser.id,
+        content: '動画付き投稿のテスト',
+        post_type: 'original',
+        media_count: 1,
+        created_at: new Date(),
+        updated_at: new Date()
+      }).returning().then(res => res[0]);
+      
+      // 投稿に紐づく動画メディアを追加
+      await db.insert(post_media).values({
+        post_id: videoPost.id,
+        media_type: 'video',
+        url: 'https://example.com/video.mp4',
+        width: 1280,
+        height: 720,
+        duration_sec: 8,
+        created_at: new Date()
+      });
+      
+      // GET リクエストのテスト
+      const request = createTestRequest(`/api/posts/${videoPost.id}`, 'GET', null, {}, testUser.clerk_id);
+      const response = await GET(request, { params: { id: videoPost.id.toString() } });
+      
+      // レスポンスの検証
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      
+      // 投稿データの検証
+      expect(data.post).toBeDefined();
+      expect(data.post.id).toBe(videoPost.id);
+      expect(data.post.content).toBe('動画付き投稿のテスト');
+      expect(data.post.media_count).toBe(1);
+      
+      // メディア情報の検証
+      expect(data.post.media).toBeDefined();
+      expect(Array.isArray(data.post.media)).toBe(true);
+      expect(data.post.media.length).toBe(1);
+      
+      // 動画メディアアイテムの検証
+      const mediaItem = data.post.media[0];
+      expect(mediaItem.media_type).toBe('video');
+      expect(mediaItem.url).toBe('https://example.com/video.mp4');
+      expect(mediaItem.width).toBe(1280);
+      expect(mediaItem.height).toBe(720);
+      expect(mediaItem.duration_sec).toBe(8);
     });
   });
   

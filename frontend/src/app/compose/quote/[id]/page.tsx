@@ -7,14 +7,14 @@ import MainLayout from '@/components/MainLayout';
 import PostModal from '@/components/PostModal';
 import PostCard from '@/components/PostCard';
 
-// media_dataのインターフェース定義
-interface MediaData {
-  url?: string;
-  type?: string;
+// メディアのインターフェース定義
+interface Media {
+  id?: number;
+  url: string;
+  mediaType: 'image' | 'video';
   width?: number;
   height?: number;
-  // 明示的な型を使用してanyを避ける
-  [key: string]: string | number | boolean | null | undefined;
+  duration_sec?: number;
 }
 
 interface Post {
@@ -26,7 +26,7 @@ interface Post {
   in_reply_to_post_id?: number;
   quote_of_post_id?: number;
   repost_of_post_id?: number;
-  media_data?: MediaData;
+  media?: Media[];
   user: {
     id: number;
     username: string;

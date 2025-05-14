@@ -25,14 +25,14 @@ interface Post {
   in_reply_to_post_id?: number;
   quote_of_post_id?: number;
   repost_of_post_id?: number;
-  media_data?: {
-    url?: string;
-    type?: string;
+  media?: Array<{
+    id?: number;
+    url: string;
+    mediaType: 'image' | 'video';
     width?: number;
     height?: number;
-    // 明示的な型を使用してanyを避ける
-    [key: string]: string | number | boolean | null | undefined;
-  };
+    duration_sec?: number;
+  }>;
   user: {
     id: number;
     username: string;

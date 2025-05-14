@@ -11,14 +11,14 @@ import Loading from '@/components/Loading';
 import InfiniteScroll from '@/components/InfiniteScroll';
 import { ITEMS_PER_PAGE } from '@/constants/pagination';
 
-// メディアデータの型定義
-interface MediaData {
-  url?: string;
-  type?: string;
+// メディアのインターフェース定義
+interface Media {
+  id?: number;
+  url: string;
+  mediaType: 'image' | 'video';
   width?: number;
   height?: number;
-  // 明示的な型を使用してanyを避ける
-  [key: string]: string | number | boolean | null | undefined;
+  duration_sec?: number;
 }
 
 // 投稿の型定義
@@ -31,7 +31,7 @@ interface Post {
   in_reply_to_post_id?: number;
   quote_of_post_id?: number;
   repost_of_post_id?: number;
-  media_data?: MediaData;
+  media?: Media[];
   user: {
     id: number;
     username: string;

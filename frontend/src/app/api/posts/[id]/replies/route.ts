@@ -1,5 +1,5 @@
 import { db } from '@/db';
-import { posts, users, likes, bookmarks } from '@/db/schema';
+import { posts, users, likes, bookmarks, post_media } from '@/db/schema';
 import { getAuth } from '@clerk/nextjs/server';
 import { eq, and, desc, lt, count, inArray } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
@@ -77,8 +77,7 @@ export async function GET(
       created_at: posts.created_at,
       in_reply_to_post_id: posts.in_reply_to_post_id,
       quote_of_post_id: posts.quote_of_post_id,
-      repost_of_post_id: posts.repost_of_post_id,
-      media_data: posts.media_data
+      repost_of_post_id: posts.repost_of_post_id
     })
     .from(posts)
     .where(and(...whereConditions))
@@ -93,6 +92,65 @@ export async function GET(
     const nextCursor = hasNextPage && replies.length > 0 
       ? String(replies[replies.length - 1].id)
       : null;
+    
+    // 返信を取得したら、返信先の投稿のIDリストも取得
+    const replyToPostIds = replies
+      .filter(reply => reply.in_reply_to_post_id !== null && reply.post_type === 'reply')
+      .map(reply => reply.in_reply_to_post_id);
+    
+    // 返信先の投稿情報を取得（存在する場合）
+    const replyToPostsData = replyToPostIds.length > 0 
+      ? await db.select()
+        .from(posts)
+        .where(and(
+          inArray(posts.id, replyToPostIds as number[]),
+          eq(posts.is_deleted, false)
+        ))
+      : [];
+    
+    // 返信先の投稿ユーザー情報を取得
+    const replyToPostUserIds = replyToPostsData.map(post => post.user_id);
+    const replyToPostUsers = replyToPostUserIds.length > 0
+      ? await db.select({
+          id: users.id,
+          username: users.username,
+          profile_image_url: users.profile_image_url,
+          first_name: users.first_name,
+          last_name: users.last_name
+        })
+        .from(users)
+        .where(inArray(users.id, replyToPostUserIds))
+      : [];
+    
+    // 返信先投稿のメディア情報を取得
+    const replyToPostMediaData = replyToPostIds.length > 0
+      ? await db.select()
+        .from(post_media)
+        .where(and(
+          inArray(post_media.post_id, replyToPostIds as number[]),
+          eq(post_media.is_deleted, false)
+        ))
+      : [];
+    
+    // 返信先の投稿をマップに変換
+    const replyToPostMap = new Map();
+    replyToPostsData.forEach(post => {
+      // 投稿ユーザーを検索
+      const user = replyToPostUsers.find(user => user.id === post.user_id);
+      
+      // 投稿メディアを検索
+      const mediaItems = replyToPostMediaData.filter(media => media.post_id === post.id);
+      const media = mediaItems.map(item => ({
+        ...item,
+        mediaType: determineMediaTypeFromUrl(item.url, item.media_type)
+      }));
+      
+      replyToPostMap.set(post.id, {
+        ...post,
+        user,
+        media: media.length > 0 ? media : undefined
+      });
+    });
     
     // ユーザー情報を取得
     const userIds = [...new Set(replies.map(reply => reply.user_id))];
@@ -126,6 +184,23 @@ export async function GET(
     
     // 投稿IDのリストを取得
     const replyIds = replies.map(reply => reply.id);
+    
+    // 返信のメディア情報を取得
+    const mediaData = await db.select()
+      .from(post_media)
+      .where(and(
+        inArray(post_media.post_id, replyIds),
+        eq(post_media.is_deleted, false)
+      ));
+    
+    // 投稿IDごとのメディアデータをマップに変換
+    const mediaMap = new Map();
+    mediaData.forEach(media => {
+      if (!mediaMap.has(media.post_id)) {
+        mediaMap.set(media.post_id, []);
+      }
+      mediaMap.get(media.post_id).push(media);
+    });
     
     // 各返信に対する返信数を取得（入れ子コメント）
     const nestedReplyCounts = await db.select({
@@ -222,14 +297,52 @@ export async function GET(
         last_name: null
       };
       
+      // 返信先の投稿情報を取得
+      const replyToPost = reply.in_reply_to_post_id 
+        ? replyToPostMap.get(reply.in_reply_to_post_id) 
+        : null;
+      
+      // 投稿のメディアデータを処理
+      interface MediaItem {
+        url: string;
+        mediaType: 'image' | 'video';
+        width?: number;
+        height?: number;
+        duration_sec?: number;
+      }
+
+      interface PostMedia {
+        id: number;
+        post_id: number;
+        url: string;
+        media_type: string;
+        width?: number | null;
+        height?: number | null;
+        duration_sec?: number | null;
+        is_deleted: boolean;
+        created_at: Date;
+        updated_at: Date;
+      }
+
+      // post_mediaテーブルからメディアを取得
+      const mediaItems: MediaItem[] = (mediaMap.get(reply.id) || []).map((media: PostMedia) => ({
+        url: media.url,
+        mediaType: determineMediaTypeFromUrl(media.url, media.media_type),
+        width: media.width || undefined,
+        height: media.height || undefined,
+        duration_sec: media.duration_sec || undefined
+      }));
+      
       return {
         ...reply,
         user,
+        in_reply_to_post: replyToPost,
         reply_count: replyCountMap.get(reply.id) || 0,
         like_count: likeCountMap.get(reply.id) || 0,
         is_liked: userLikedPostIds.has(reply.id),
         bookmark_count: bookmarkCountMap.get(reply.id) || 0,
-        is_bookmarked: userBookmarkedPostIds.has(reply.id)
+        is_bookmarked: userBookmarkedPostIds.has(reply.id),
+        media: mediaItems
       };
     });
     
@@ -248,4 +361,22 @@ export async function GET(
       { status: 500 }
     );
   }
+}
+
+// URLからメディアタイプを判定するヘルパー関数
+function determineMediaTypeFromUrl(url: string, defaultType: string): 'image' | 'video' {
+  // URLに基づいてメディアタイプを判定
+  if (url.match(/\.(jpe?g|png|gif|webp)$/i) || url.includes('/image/')) {
+    return 'image';
+  } else if (url.match(/\.(mp4|webm|mov)$/i) || url.includes('/videos/')) {
+    return 'video';
+  }
+  
+  // デフォルトのmedia_typeが'image'または'video'の場合はそれを使用
+  if (defaultType === 'image' || defaultType === 'video') {
+    return defaultType as 'image' | 'video';
+  }
+  
+  // どちらでもない場合はURLの構造から判定
+  return url.includes('cloudinary') && !url.includes('/video/') ? 'image' : 'video';
 } 

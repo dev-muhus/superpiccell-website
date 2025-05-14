@@ -1,4 +1,4 @@
-import { pgTable, serial, text, timestamp, boolean, json, integer } from 'drizzle-orm/pg-core';
+import { pgTable, serial, text, timestamp, boolean, integer, smallint, doublePrecision } from 'drizzle-orm/pg-core';
 import { InferSelectModel, InferInsertModel } from 'drizzle-orm';
 
 export const users = pgTable('users', {
@@ -27,7 +27,7 @@ export type InsertUser = InferInsertModel<typeof users>;
 export const posts = pgTable('posts', {
   id: serial('id').primaryKey(),
   user_id: integer('user_id').notNull().references(() => users.id),
-  content: text('content').notNull(),
+  content: text('content'),
   post_type: text('post_type').notNull().default('original'), // original, reply, quote, repost
    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   in_reply_to_post_id: integer('in_reply_to_post_id').references((): any => posts.id),
@@ -36,7 +36,7 @@ export const posts = pgTable('posts', {
    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   repost_of_post_id: integer('repost_of_post_id').references((): any => posts.id),
   conversation_id: integer('conversation_id'),
-  media_data: json('media_data'),
+  media_count: smallint('media_count').default(0),
   created_at: timestamp('created_at').notNull().defaultNow(),
   updated_at: timestamp('updated_at').notNull().defaultNow(),
   deleted_at: timestamp('deleted_at'),
@@ -50,6 +50,24 @@ export const posts = pgTable('posts', {
 // postsテーブルの型定義
 export type Post = InferSelectModel<typeof posts>;
 export type InsertPost = InferInsertModel<typeof posts>;
+
+// 投稿メディア
+export const post_media = pgTable('post_media', {
+  id: serial('id').primaryKey(),
+  post_id: integer('post_id').notNull().references(() => posts.id, { onDelete: 'cascade' }),
+  media_type: text('media_type').notNull(), // 'image' or 'video'
+  url: text('url').notNull(),
+  width: integer('width'),
+  height: integer('height'),
+  duration_sec: doublePrecision('duration_sec'),
+  created_at: timestamp('created_at').notNull().defaultNow(),
+  is_deleted: boolean('is_deleted').notNull().default(false),
+  deleted_at: timestamp('deleted_at')
+});
+
+// post_mediaテーブルの型定義
+export type PostMedia = InferSelectModel<typeof post_media>;
+export type InsertPostMedia = InferInsertModel<typeof post_media>;
 
 // いいねテーブル
 export const likes = pgTable('likes', {
@@ -160,10 +178,10 @@ export type InsertCommunityPost = InferInsertModel<typeof community_posts>;
 export const drafts = pgTable('drafts', {
   id: serial('id').primaryKey(),
   user_id: integer('user_id').notNull().references(() => users.id),
-  content: text('content').notNull(),
+  content: text('content'),
    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   in_reply_to_post_id: integer('in_reply_to_post_id').references((): any => posts.id),
-  media_data: json('media_data'),
+  media_count: smallint('media_count').default(0),
   created_at: timestamp('created_at').notNull().defaultNow(),
   updated_at: timestamp('updated_at').notNull().defaultNow(),
   deleted_at: timestamp('deleted_at'),
@@ -172,4 +190,22 @@ export const drafts = pgTable('drafts', {
 
 // draftsテーブルの型定義
 export type Draft = InferSelectModel<typeof drafts>;
-export type InsertDraft = InferInsertModel<typeof drafts>; 
+export type InsertDraft = InferInsertModel<typeof drafts>;
+
+// 下書きメディアテーブル
+export const draft_media = pgTable('draft_media', {
+  id: serial('id').primaryKey(),
+  draft_id: integer('draft_id').notNull().references(() => drafts.id, { onDelete: 'cascade' }),
+  media_type: text('media_type').notNull(), // 'image' or 'video'
+  url: text('url').notNull(),
+  width: integer('width'),
+  height: integer('height'),
+  duration_sec: doublePrecision('duration_sec'),
+  created_at: timestamp('created_at').notNull().defaultNow(),
+  is_deleted: boolean('is_deleted').notNull().default(false),
+  deleted_at: timestamp('deleted_at')
+});
+
+// draft_mediaテーブルの型定義
+export type DraftMedia = InferSelectModel<typeof draft_media>;
+export type InsertDraftMedia = InferInsertModel<typeof draft_media>; 

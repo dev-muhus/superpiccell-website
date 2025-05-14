@@ -1,11 +1,30 @@
 import { db } from '@/db';
-import { posts, users, likes, bookmarks } from '@/db/schema';
+import { posts, users, likes, bookmarks, post_media } from '@/db/schema';
 import { getAuth } from '@clerk/nextjs/server';
 import { eq, and, count } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
+import { deleteMedia } from '@/utils/media-utils';
 
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
+
+// URLからメディアタイプを判定するヘルパー関数
+function determineMediaTypeFromUrl(url: string, defaultType: string): 'image' | 'video' {
+  // URLに基づいてメディアタイプを判定
+  if (url.match(/\.(jpe?g|png|gif|webp)$/i) || url.includes('/image/')) {
+    return 'image';
+  } else if (url.match(/\.(mp4|webm|mov)$/i) || url.includes('/videos/')) {
+    return 'video';
+  }
+  
+  // デフォルトのmedia_typeが'image'または'video'の場合はそれを使用
+  if (defaultType === 'image' || defaultType === 'video') {
+    return defaultType as 'image' | 'video';
+  }
+  
+  // どちらでもない場合はURLの構造から判定
+  return url.includes('cloudinary') && !url.includes('/video/') ? 'image' : 'video';
+}
 
 // 特定の投稿を取得するAPI
 export async function GET(
@@ -96,9 +115,26 @@ export async function GET(
         .where(eq(users.id, replyToPostData.user_id))
         .limit(1);
         
+        // 返信先投稿のメディア情報を取得
+        const replyMediaItems = await db.select()
+          .from(post_media)
+          .where(and(
+            eq(post_media.post_id, replyToPostData.id),
+            eq(post_media.is_deleted, false)
+          ));
+        
+        // メディア情報を整形
+        const replyMedia = replyMediaItems.map(item => {
+          return {
+            ...item,
+            mediaType: determineMediaTypeFromUrl(item.url, item.media_type)
+          };
+        });
+        
         replyToPost = {
           ...replyToPostData,
-          user: replyToPostUser
+          user: replyToPostUser,
+          media: replyMedia.length > 0 ? replyMedia : undefined
         };
       }
     }
@@ -220,6 +256,41 @@ export async function GET(
       ))
       .limit(1);
     
+    // メディア情報を取得
+    interface MediaItem {
+      id: number;
+      post_id: number;
+      media_type: string;
+      url: string;
+      width: number | null;
+      height: number | null;
+      duration_sec: number | null;
+      is_deleted: boolean;
+      created_at: Date;
+      mediaType: 'image' | 'video';
+    }
+
+    const media: MediaItem[] = [];
+    if (post.media_count && post.media_count > 0) {
+      const mediaItems = await db.select()
+        .from(post_media)
+        .where(and(
+          eq(post_media.post_id, post.id),
+          eq(post_media.is_deleted, false)
+        ));
+      
+      if (mediaItems && mediaItems.length > 0) {
+        // mediaItems配列を加工して必要なプロパティを追加
+        mediaItems.forEach(item => {
+          media.push({
+            ...item,
+            // URL情報からメディアタイプを判定して追加
+            mediaType: determineMediaTypeFromUrl(item.url, item.media_type)
+          });
+        });
+      }
+    }
+    
     // レスポンスデータを構築
     const postWithDetails = {
       ...post,
@@ -231,7 +302,8 @@ export async function GET(
       like_count: like_count,
       is_liked: !!userLike,
       bookmark_count: bookmark_count,
-      is_bookmarked: !!userBookmark
+      is_bookmarked: !!userBookmark,
+      media: media.length > 0 ? media : undefined
     };
     
     return NextResponse.json({
@@ -313,14 +385,43 @@ export async function DELETE(
         { status: 403 }
       );
     }
+
+    // 削除するメディアを取得
+    const mediaToDelete = await db.select()
+      .from(post_media)
+      .where(and(
+        eq(post_media.post_id, postId),
+        eq(post_media.is_deleted, false)
+      ));
     
-    // 投稿の論理削除
-    await db.update(posts)
-      .set({ 
-        is_deleted: true,
-        deleted_at: new Date()
-      })
-      .where(eq(posts.id, postId));
+    // トランザクションで投稿と関連メディアを論理削除
+    await db.transaction(async (tx) => {
+      // 投稿を論理削除
+      await tx.update(posts)
+        .set({
+          is_deleted: true,
+          deleted_at: new Date()
+        })
+        .where(eq(posts.id, postId));
+      
+      // 関連するメディアも論理削除
+      await tx.update(post_media)
+        .set({
+          is_deleted: true,
+          deleted_at: new Date()
+        })
+        .where(eq(post_media.post_id, postId));
+    });
+
+    // ストレージからメディアファイルを削除
+    // 注意: ここでのファイル削除は、他の投稿で同じファイルが使用されていないことが前提
+    // 本来は参照カウントなどの仕組みが必要だが、このサンプル実装では簡略化
+    if (mediaToDelete.length > 0) {
+      const deletePromises = mediaToDelete.map(media => 
+        deleteMedia(media.url, media.media_type as 'image' | 'video')
+      );
+      await Promise.allSettled(deletePromises);
+    }
     
     return NextResponse.json({
       success: true,

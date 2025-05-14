@@ -1,5 +1,5 @@
 import { db } from '@/db';
-import { posts, users, likes, blocks, bookmarks } from '@/db/schema';
+import { posts, users, likes, blocks, bookmarks, post_media } from '@/db/schema';
 import { getAuth } from '@clerk/nextjs/server';
 import { eq, and, desc, count, inArray, or, not, lt } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
@@ -143,8 +143,7 @@ export async function GET(req: NextRequest) {
       created_at: posts.created_at,
       in_reply_to_post_id: posts.in_reply_to_post_id,
       quote_of_post_id: posts.quote_of_post_id,
-      repost_of_post_id: posts.repost_of_post_id,
-      media_data: posts.media_data
+      repost_of_post_id: posts.repost_of_post_id
     })
     .from(posts)
     .where(and(...conditions))
@@ -172,6 +171,37 @@ export async function GET(req: NextRequest) {
         }
       });
     }
+    
+    // 投稿IDのリストを取得（メディアデータ用）
+    const mediaPostIds = finalPosts.map(post => post.id);
+    
+    // post_mediaテーブルからメディアデータを取得
+    const mediaData = await db.select()
+      .from(post_media)
+      .where(and(
+        inArray(post_media.post_id, mediaPostIds),
+        eq(post_media.is_deleted, false)
+      ));
+    
+    // 投稿IDごとのメディアデータをマップに変換
+    const mediaMap = new Map();
+    mediaData.forEach(media => {
+      if (!mediaMap.has(media.post_id)) {
+        mediaMap.set(media.post_id, []);
+      }
+      
+      // メディアの正規化処理
+      const normalizedMedia = {
+        id: media.id,
+        url: media.url,
+        mediaType: media.media_type as 'image' | 'video',
+        width: media.width,
+        height: media.height,
+        duration_sec: media.duration_sec
+      };
+      
+      mediaMap.get(media.post_id).push(normalizedMedia);
+    });
     
     // ユーザー情報を取得（削除済みユーザーも除外）
     const userIds = [...new Set(finalPosts.map(post => post.user_id))];
@@ -269,7 +299,8 @@ export async function GET(req: NextRequest) {
         is_liked: likedPostIds.includes(post.id),
         reply_count: replyCount,
         bookmark_count: bookmarkCount,
-        is_bookmarked: bookmarkedPostIds.includes(post.id)
+        is_bookmarked: bookmarkedPostIds.includes(post.id),
+        media: mediaMap.get(post.id) || [] // post_mediaテーブルから取得したメディアデータ
       };
     });
     

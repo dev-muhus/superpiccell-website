@@ -1,22 +1,33 @@
 import { db } from '@/db';
-import { posts, users, likes, bookmarks, blocks, community_posts } from '@/db/schema';
+import { posts, users, likes, bookmarks, blocks, community_posts, post_media } from '@/db/schema';
 import { getAuth } from '@clerk/nextjs/server';
 import { eq, and, desc, asc, lt, gt, count, inArray, not, or } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { ITEMS_PER_PAGE } from '@/constants/pagination';
+import { MAX_MEDIA_ATTACHMENTS } from '@/constants/media';
+import { baseContentSchema } from '@/schemas/media';
 
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
 
-// 投稿作成のバリデーションスキーマ
-const createPostSchema = z.object({
-  content: z.string().min(1).max(500),
+// 投稿作成のバリデーションスキーマ（共通のbaseContentSchemaを拡張）
+const createPostSchema = baseContentSchema.extend({
   post_type: z.enum(['original', 'reply', 'quote', 'repost']).default('original'),
   in_reply_to_post_id: z.number().optional(),
   quote_of_post_id: z.number().optional(),
   repost_of_post_id: z.number().optional(),
-});
+}).refine(
+  // contentかmediaのどちらかは必須
+  (data) => {
+    return (!!data.content && data.content.trim().length > 0) || 
+           (!!data.media && data.media.length > 0);
+  },
+  {
+    message: "投稿内容またはメディアのいずれかは入力必須です",
+    path: ["content"]
+  }
+);
 
 export async function POST(req: NextRequest) {
   try {
@@ -36,13 +47,48 @@ export async function POST(req: NextRequest) {
     // バリデーション
     const validationResult = createPostSchema.safeParse(body);
     if (!validationResult.success) {
+      // エラーメッセージの取得
+      let errorMessage = "無効なリクエストです";
+      
+      // contentのエラーがある場合
+      const contentErrors = validationResult.error.format().content?._errors;
+      if (contentErrors && contentErrors.length > 0) {
+        errorMessage = contentErrors[0];
+      }
+      
+      // mediaのエラーがある場合
+      const mediaErrors = validationResult.error.format().media?._errors;
+      if (mediaErrors && mediaErrors.length > 0) {
+        const mediaError = mediaErrors[0];
+        // 「Array must contain at most X element(s)」のようなエラーメッセージを変換
+        if (mediaError.includes('Array must contain at most')) {
+          errorMessage = `メディアは最大${MAX_MEDIA_ATTACHMENTS}つまでしか添付できません`;
+        } else {
+          errorMessage = mediaError;
+        }
+      }
+      
       return NextResponse.json(
-        { error: "無効なリクエストです", details: validationResult.error.format() },
+        { error: errorMessage, details: validationResult.error.format() },
         { status: 400 }
       );
     }
     
-    const { content, post_type, in_reply_to_post_id, quote_of_post_id, repost_of_post_id } = validationResult.data;
+    const { content, post_type, in_reply_to_post_id, quote_of_post_id, repost_of_post_id, media } = validationResult.data;
+    
+    // 入力の存在チェック（空の場合は空文字列をセット）
+    const safeContent = content?.trim() || '';
+    
+    // 画像と動画の混在チェック
+    if (media && media.length > 0) {
+      // メディア数の上限チェック（最大2つまで）
+      if (media.length > MAX_MEDIA_ATTACHMENTS) {
+        return NextResponse.json(
+          { error: `メディアは最大${MAX_MEDIA_ATTACHMENTS}つまでしか添付できません` },
+          { status: 400 }
+        );
+      }
+    }
     
     // データベースからユーザー情報を取得
     const [dbUser] = await db.select()
@@ -111,30 +157,96 @@ export async function POST(req: NextRequest) {
       }
     }
     
-    // 投稿を作成
-    const newPost = await db.insert(posts).values({
-      user_id: dbUser.id,
-      content,
-      post_type,
-      in_reply_to_post_id: in_reply_to_post_id || null,
-      quote_of_post_id: quote_of_post_id || null,
-      repost_of_post_id: repost_of_post_id || null,
-      created_at: new Date(),
-      updated_at: new Date()
-    }).returning();
-    
-    // 戻り値の型をより安全に処理
-    const createdPost = Array.isArray(newPost) && newPost.length > 0 ? newPost[0] : null;
-    
-    return NextResponse.json(
-      { success: true, post: createdPost },
-      { status: 201 }
-    );
+    // トランザクションを開始
+    try {
+      // トランザクションを使わずに実装（neon-httpドライバーがトランザクションをサポートしていないため）
+      // 1. postsテーブルにレコードを挿入
+      const newPosts = await db.insert(posts).values({
+        user_id: dbUser.id,
+        content: safeContent,
+        post_type,
+        in_reply_to_post_id: in_reply_to_post_id || null,
+        quote_of_post_id: quote_of_post_id || null,
+        repost_of_post_id: repost_of_post_id || null,
+        media_count: media?.length || 0,
+        created_at: new Date(),
+        updated_at: new Date()
+      }).returning();
+  
+      const createdPost = newPosts[0];
+      // 2. メディアがある場合、post_mediaテーブルに保存
+      if (media && media.length > 0 && createdPost) {
+
+        // メディア情報を保存
+        await db.update(posts)
+          .set({
+            media_count: media.length
+          })
+          .where(eq(posts.id, createdPost.id));
+
+        // 各メディアをpost_mediaテーブルに保存
+        const structuredMediaData = media.map(m => {
+          return {
+            post_id: createdPost.id,
+            media_type: m.mediaType,
+            url: m.url,
+            width: m.width || null,
+            height: m.height || null,
+            duration_sec: m.mediaType === 'video' ? m.duration_sec || null : null
+          };
+        });
+
+        try {
+          await db.insert(post_media).values(structuredMediaData);
+        } catch (error) {
+          console.error('post_mediaテーブル挿入エラー:', error);
+          // メディア情報の保存に失敗しても投稿自体は成功させる
+        }
+      }
+      
+      // メディア情報の取得
+      type PostMediaItem = {
+        id: number;
+        media_type: string;
+        url: string;
+        width: number | null;
+        height: number | null;
+        duration_sec: number | null;
+      };
+      
+      let mediaItems: PostMediaItem[] = [];
+      if (media && media.length > 0) {
+        mediaItems = await db.select({
+          id: post_media.id,
+          media_type: post_media.media_type,
+          url: post_media.url,
+          width: post_media.width,
+          height: post_media.height,
+          duration_sec: post_media.duration_sec
+        })
+        .from(post_media)
+        .where(eq(post_media.post_id, createdPost.id));
+      }
+
+      return NextResponse.json({
+        success: true,
+        post: {
+          ...createdPost,
+          media: mediaItems
+        }
+      }, { status: 201 });
+    } catch (dbError) {
+      console.error('投稿API: データベース操作エラー:', dbError);
+      throw dbError;
+    }
     
   } catch (error) {
-    console.error('投稿作成中にエラーが発生しました:', error);
+    console.error('投稿作成中にエラーが発生しました:', error instanceof Error ? error.message : error);
+    if (error instanceof Error && error.stack) {
+      console.error('スタックトレース:', error.stack);
+    }
     return NextResponse.json(
-      { error: "サーバーエラーが発生しました" },
+      { error: "サーバーエラーが発生しました", details: error instanceof Error ? error.message : '不明なエラー' },
       { status: 500 }
     );
   }
@@ -273,7 +385,7 @@ export async function GET(req: NextRequest) {
       in_reply_to_post_id: posts.in_reply_to_post_id,
       quote_of_post_id: posts.quote_of_post_id,
       repost_of_post_id: posts.repost_of_post_id,
-      media_data: posts.media_data
+      media_count: posts.media_count
     })
     .from(posts)
     .where(and(...conditions));
@@ -311,6 +423,49 @@ export async function GET(req: NextRequest) {
           nextCursor: null
         }
       });
+    }
+    
+    // メディアデータを取得
+    const mediaData = await db.select()
+      .from(post_media)
+      .where(and(
+        inArray(post_media.post_id, postIds),
+        eq(post_media.is_deleted, false)
+      ));
+    
+    // 投稿IDごとのメディアデータをマップに変換
+    const mediaMap = new Map();
+    mediaData.forEach(media => {
+      if (!mediaMap.has(media.post_id)) {
+        mediaMap.set(media.post_id, []);
+      }
+      
+      // メディアの正規化処理を追加
+      const normalizedMedia = {
+        ...media,
+        // URLからmediaTypeを判定
+        mediaType: determineMediaTypeFromUrl(media.url, media.media_type)
+      };
+      
+      mediaMap.get(media.post_id).push(normalizedMedia);
+    });
+
+    // URLからメディアタイプを判定するヘルパー関数を追加
+    function determineMediaTypeFromUrl(url: string, defaultType: string): 'image' | 'video' {
+      // URLに基づいてメディアタイプを判定
+      if (url.match(/\.(jpe?g|png|gif|webp)$/i) || url.includes('/image/')) {
+        return 'image';
+      } else if (url.match(/\.(mp4|webm|mov)$/i) || url.includes('/videos/')) {
+        return 'video';
+      }
+      
+      // デフォルトのmedia_typeが'image'または'video'の場合はそれを使用
+      if (defaultType === 'image' || defaultType === 'video') {
+        return defaultType as 'image' | 'video';
+      }
+      
+      // どちらでもない場合はURLの構造から判定
+      return url.includes('cloudinary') && !url.includes('/video/') ? 'image' : 'video';
     }
     
     // ユーザー情報を取得（自分の投稿だけではなく、全ての投稿のユーザー情報）
@@ -484,14 +639,20 @@ export async function GET(req: NextRequest) {
         in_reply_to_post = {
           id: replyToPost.id,
           content: replyToPost.content,
-          user: userMap.get(replyToPost.user_id) || null
+          user: userMap.get(replyToPost.user_id) || null,
+          // 返信先投稿のメディア情報を追加
+          media: mediaMap.get(replyToPost.id) || []
         };
       }
+      
+      // メディア情報を追加
+      const media = mediaMap.get(post.id) || [];
       
       return {
         ...post,
         user,
         in_reply_to_post,
+        media,
         reply_count: replyCountMap.get(post.id) || 0,
         like_count: likeCountMap.get(post.id) || 0,
         is_liked: userLikedPostIds.has(post.id),

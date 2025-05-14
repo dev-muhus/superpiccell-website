@@ -1,12 +1,12 @@
 import { NextRequest } from 'next/server';
 
-export const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+export const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
 
 /**
  * テスト用のNextRequestオブジェクトを作成するヘルパー関数
  * @param url リクエストURL
  * @param method HTTPメソッド
- * @param body リクエストボディ（JSON形式）
+ * @param body リクエストボディ（JSON形式またはFormData）
  * @param headers リクエストヘッダー
  * @param userId Clerk認証でモックするユーザーID（認証済みテスト用）
  * @returns NextRequestオブジェクト
@@ -14,30 +14,40 @@ export const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:300
 export function createTestRequest(
   url: string,
   method: string,
-  body: Record<string, unknown> | null = null,
+  body: Record<string, unknown> | FormData | null = null,
   headers: Record<string, string> = {},
   userId: string | null = null
 ): NextRequest {
   // Clerk認証をバイパスするためのヘッダーを設定
   if (userId) {
     headers['x-clerk-auth-test-user-id'] = userId;
+    headers['x-auth-user-id'] = userId;
   }
 
   // テストモードであることを明示
   headers['x-test-mode'] = 'true';
+  headers['x-test-auth'] = 'true';
 
-  // Bodyが存在する場合はJSONに変換
+  // Bodyの処理
+  let requestBody: BodyInit | null = null;
+  
+  if (body instanceof FormData) {
+    requestBody = body as FormData;
+  } else if (body) {
+    requestBody = JSON.stringify(body);
+  }
+
+  // NextRequestオブジェクトを作成して返す
   const requestInit = {
     method,
     headers: new Headers(headers),
-    body: body ? JSON.stringify(body) : undefined
+    body: requestBody
   };
 
-  // NextRequestオブジェクトを作成して返す
   const request = new NextRequest(new URL(url, BASE_URL), requestInit);
 
   // テスト用にjsonメソッドをオーバーライド
-  if (body) {
+  if (body && !(body instanceof FormData)) {
     const originalJson = request.json;
     request.json = async () => {
       try {

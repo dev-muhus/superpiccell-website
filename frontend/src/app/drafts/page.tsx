@@ -13,15 +13,17 @@ import { toast } from 'sonner';
 import PostModal from '@/components/PostModal';
 import { formatDistanceToNow } from 'date-fns';
 import { ja } from 'date-fns/locale';
+import Image from 'next/image';
 
-// メディアデータのインターフェース
-interface MediaData {
-  url?: string;
-  type?: string;
+// メディアのインターフェース定義
+interface Media {
+  id?: number;
+  url: string;
+  mediaType: 'image' | 'video';
+  media_type?: 'image' | 'video'; // APIレスポンスで返る形式に対応
   width?: number;
   height?: number;
-  // 明示的な型を使用してanyを避ける
-  [key: string]: string | number | boolean | null | undefined;
+  duration_sec?: number;
 }
 
 // 返信先投稿のインターフェース - PostModalのPostData型に合わせる
@@ -37,7 +39,7 @@ interface Draft {
   id: number;
   content: string;
   in_reply_to_post_id?: number | null;
-  media_data?: MediaData;
+  media?: Media[];
   created_at: string;
   updated_at: string;
   replyToPost?: ReplyToPost;
@@ -237,6 +239,40 @@ export default function DraftsPage() {
                     最終更新: {formatDistanceToNow(new Date(draft.updated_at), { addSuffix: true, locale: ja })}
                   </div>
                   <div className="mb-3 line-clamp-3">{draft.content}</div>
+                  
+                  {/* メディア表示エリア */}
+                  {draft.media && draft.media.length > 0 && (
+                    <div className="mb-3 flex flex-wrap gap-2">
+                      {draft.media.map((mediaItem, index) => (
+                        <div key={index} className="relative rounded overflow-hidden" style={{ maxWidth: '200px', maxHeight: '150px' }}>
+                          {(mediaItem.mediaType === 'image' || mediaItem.media_type === 'image') ? (
+                            <div className="relative w-[200px] h-[150px]">
+                              <Image 
+                                src={mediaItem.url} 
+                                alt="添付画像" 
+                                className="object-cover"
+                                fill
+                                sizes="200px"
+                              />
+                            </div>
+                          ) : (
+                            <div className="relative w-[200px] h-[150px] bg-gray-100 flex items-center justify-center">
+                              <video 
+                                src={mediaItem.url} 
+                                className="object-cover w-full h-full"
+                                controls
+                                muted
+                              />
+                              <div className="absolute bottom-0 right-0 bg-black bg-opacity-70 text-white text-xs px-1 py-0.5">
+                                動画
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
                   <div className="flex justify-end space-x-2">
                     <button
                       onClick={() => handleDeleteDraft(draft.id)}
@@ -273,6 +309,7 @@ export default function DraftsPage() {
           replyToPost={selectedDraft?.replyToPost}
           replyToPostId={selectedDraft?.in_reply_to_post_id || null}
           draftId={selectedDraft?.id || null}
+          initialMedia={selectedDraft?.media}
         />
       )}
     </PageLayout>

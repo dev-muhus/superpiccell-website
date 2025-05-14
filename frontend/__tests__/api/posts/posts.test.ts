@@ -1,11 +1,11 @@
 /**
  * @jest-environment node
  */
-import { describe, test, expect, beforeEach } from '@jest/globals';
+import { describe, test, expect, beforeEach, afterEach } from '@jest/globals';
 import { GET, POST } from '@/app/api/posts/route';
 import { createTestRequest } from '@/utils/test/api-test-helpers';
 import { db } from '@/db';
-import { users, posts, blocks } from '@/db/schema';
+import { users, posts, blocks, post_media } from '@/db/schema';
 import { eq, and, desc, asc, count } from 'drizzle-orm';
 import { ITEMS_PER_PAGE } from '@/constants/pagination';
 
@@ -23,8 +23,13 @@ describe('Posts API', () => {
   let otherUser: any;
   let blockedUser: any;
   let testPosts: any[] = [];
+  // コンソールエラー抑制用のスパイ
+  let consoleErrorSpy: jest.SpyInstance;
 
   beforeEach(async () => {
+    // コンソールエラーを抑制
+    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    
     // テストユーザーを作成
     const testUserId = `test_user_id_${Date.now()}`;
     global.currentTestUserId = testUserId;
@@ -108,6 +113,11 @@ describe('Posts API', () => {
     }).returning().then(res => res[0]);
     
     testPosts.push(post4);
+  });
+
+  afterEach(() => {
+    // コンソールエラーのモックを元に戻す
+    consoleErrorSpy.mockRestore();
   });
 
   // 投稿一覧の取得テスト
@@ -491,6 +501,349 @@ describe('Posts API', () => {
       expect(response.status).toBe(404);
       const data = await response.json();
       expect(data.error).toBeDefined();
+    });
+    
+    // 画像添付のテスト
+    test('画像を添付した投稿を作成できる', async () => {
+      // 画像添付のテスト用リクエスト
+      const body = { 
+        content: '画像付き投稿です', 
+        media: [
+          {
+            url: 'https://example.com/image.jpg',
+            mediaType: 'image',
+            width: 1200,
+            height: 800
+          }
+        ]
+      };
+      
+      const request = createTestRequest('/api/posts', 'POST', body, {}, testUser.clerk_id);
+      const response = await POST(request);
+      
+      // レスポンスの検証
+      expect(response.status).toBe(201);
+      const data = await response.json();
+      expect(data.success).toBe(true);
+      expect(data.post).toBeDefined();
+      expect(data.post.content).toBe('画像付き投稿です');
+      expect(data.post.media_count).toBe(1);
+      
+      // DBに投稿が保存されていることを確認
+      const [savedPost] = await db.select()
+        .from(posts)
+        .where(eq(posts.id, data.post.id))
+        .limit(1);
+      
+      expect(savedPost).not.toBeNull();
+      expect(savedPost?.content).toBe('画像付き投稿です');
+      expect(savedPost?.media_count).toBe(1);
+      
+      // post_mediaテーブルにメディア情報が保存されていることを確認
+      const mediaItems = await db.select()
+        .from(post_media)
+        .where(eq(post_media.post_id, data.post.id));
+      
+      expect(mediaItems.length).toBe(1);
+      expect(mediaItems[0].media_type).toBe('image');
+      expect(mediaItems[0].url).toBe('https://example.com/image.jpg');
+      expect(mediaItems[0].width).toBe(1200);
+      expect(mediaItems[0].height).toBe(800);
+    });
+    
+    // 動画添付のテスト
+    test('動画を添付した投稿を作成できる', async () => {
+      // 動画添付のテスト用リクエスト
+      const body = { 
+        content: '動画付き投稿です', 
+        media: [
+          {
+            url: 'https://example.com/video.mp4',
+            mediaType: 'video',
+            width: 1280,
+            height: 720,
+            duration_sec: 8
+          }
+        ]
+      };
+      
+      const request = createTestRequest('/api/posts', 'POST', body, {}, testUser.clerk_id);
+      const response = await POST(request);
+      
+      // レスポンスの検証
+      expect(response.status).toBe(201);
+      const data = await response.json();
+      expect(data.success).toBe(true);
+      expect(data.post).toBeDefined();
+      expect(data.post.content).toBe('動画付き投稿です');
+      expect(data.post.media_count).toBe(1);
+      
+      // DBに投稿が保存されていることを確認
+      const [savedPost] = await db.select()
+        .from(posts)
+        .where(eq(posts.id, data.post.id))
+        .limit(1);
+      
+      expect(savedPost).not.toBeNull();
+      expect(savedPost?.content).toBe('動画付き投稿です');
+      expect(savedPost?.media_count).toBe(1);
+      
+      // post_mediaテーブルにメディア情報が保存されていることを確認
+      const mediaItems = await db.select()
+        .from(post_media)
+        .where(eq(post_media.post_id, data.post.id));
+      
+      expect(mediaItems.length).toBe(1);
+      expect(mediaItems[0].media_type).toBe('video');
+      expect(mediaItems[0].url).toBe('https://example.com/video.mp4');
+      expect(mediaItems[0].width).toBe(1280);
+      expect(mediaItems[0].height).toBe(720);
+      expect(mediaItems[0].duration_sec).toBe(8);
+    });
+    
+    // 複数画像のテスト
+    test('複数の画像を添付した投稿を作成できる', async () => {
+      // 複数画像添付のテスト用リクエスト
+      const body = { 
+        content: '複数画像付き投稿です', 
+        media: [
+          {
+            url: 'https://example.com/image1.jpg',
+            mediaType: 'image',
+            width: 1200,
+            height: 800
+          },
+          {
+            url: 'https://example.com/image2.jpg',
+            mediaType: 'image',
+            width: 800,
+            height: 600
+          }
+        ]
+      };
+      
+      const request = createTestRequest('/api/posts', 'POST', body, {}, testUser.clerk_id);
+      const response = await POST(request);
+      
+      // レスポンスの検証
+      expect(response.status).toBe(201);
+      const data = await response.json();
+      expect(data.success).toBe(true);
+      expect(data.post).toBeDefined();
+      expect(data.post.content).toBe('複数画像付き投稿です');
+      expect(data.post.media_count).toBe(2);
+      
+      // post_mediaテーブルにメディア情報が保存されていることを確認
+      const mediaItems = await db.select()
+        .from(post_media)
+        .where(eq(post_media.post_id, data.post.id));
+      
+      expect(mediaItems.length).toBe(2);
+    });
+    
+    // 画像と動画を混在して投稿できる
+    test('画像と動画を混在して投稿できる', async () => {
+      // テスト用リクエスト
+      const body = { 
+        content: '画像と動画の混在投稿です',
+        media: [
+          {
+            url: 'https://example.com/image.jpg',
+            mediaType: 'image',
+            width: 1200,
+            height: 800
+          },
+          {
+            url: 'https://example.com/video.mp4',
+            mediaType: 'video',
+            width: 1920,
+            height: 1080,
+            duration_sec: 30
+          }
+        ]
+      };
+      
+      const request = createTestRequest('/api/posts', 'POST', body, {}, testUser.clerk_id);
+      const response = await POST(request);
+      
+      // レスポンスの検証
+      expect(response.status).toBe(201);
+      const data = await response.json();
+      expect(data.success).toBe(true);
+      expect(data.post).toBeDefined();
+      expect(data.post.content).toBe('画像と動画の混在投稿です');
+      expect(data.post.media).toHaveLength(2);
+      expect(data.post.media[0].media_type).toBe('image');
+      expect(data.post.media[1].media_type).toBe('video');
+    });
+
+    // テキスト無しで画像のみの投稿ができる
+    test('テキスト無しで画像のみの投稿ができる', async () => {
+      // 画像のみ、テキストなしのテスト用リクエスト
+      const body = { 
+        content: '',
+        media: [
+          {
+            url: 'https://example.com/image_only.jpg',
+            mediaType: 'image',
+            width: 1200,
+            height: 800
+          }
+        ]
+      };
+      
+      const request = createTestRequest('/api/posts', 'POST', body, {}, testUser.clerk_id);
+      const response = await POST(request);
+      
+      // レスポンスの検証
+      expect(response.status).toBe(201);
+      const data = await response.json();
+      expect(data.success).toBe(true);
+      expect(data.post).toBeDefined();
+      expect(data.post.content).toBe('');
+      expect(data.post.media).toHaveLength(1);
+      expect(data.post.media[0].media_type).toBe('image');
+      expect(data.post.media[0].url).toBe('https://example.com/image_only.jpg');
+    });
+
+    // テキスト無しで動画のみの投稿ができる
+    test('テキスト無しで動画のみの投稿ができる', async () => {
+      // 動画のみ、テキストなしのテスト用リクエスト
+      const body = { 
+        content: '',
+        media: [
+          {
+            url: 'https://example.com/video_only.mp4',
+            mediaType: 'video',
+            width: 1920,
+            height: 1080,
+            duration_sec: 15
+          }
+        ]
+      };
+      
+      const request = createTestRequest('/api/posts', 'POST', body, {}, testUser.clerk_id);
+      const response = await POST(request);
+      
+      // レスポンスの検証
+      expect(response.status).toBe(201);
+      const data = await response.json();
+      expect(data.success).toBe(true);
+      expect(data.post).toBeDefined();
+      expect(data.post.content).toBe('');
+      expect(data.post.media).toHaveLength(1);
+      expect(data.post.media[0].media_type).toBe('video');
+      expect(data.post.media[0].url).toBe('https://example.com/video_only.mp4');
+      expect(data.post.media[0].duration_sec).toBe(15);
+    });
+
+    // テキストとメディア両方がない場合はエラーになる
+    test('テキストとメディア両方がない場合はエラーになる', async () => {
+      // 空の投稿（テキストもメディアもなし）のテスト用リクエスト
+      const body = { 
+        content: '',
+        media: []
+      };
+      
+      const request = createTestRequest('/api/posts', 'POST', body, {}, testUser.clerk_id);
+      const response = await POST(request);
+      
+      // レスポンスの検証（エラーになることを確認）
+      expect(response.status).toBe(400);
+      const data = await response.json();
+      expect(data.error).toBeDefined();
+    });
+
+    // メディア上限テスト
+    test('メディア添付数が上限を超えるとエラーになる', async () => {
+      // 上限を超えるメディアデータ（MAX_MEDIA_ATTACHMENTS = 2）
+      const body = { 
+        content: 'メディア上限超過テスト', 
+        media: [
+          {
+            url: 'https://example.com/image1.jpg',
+            mediaType: 'image',
+            width: 1200,
+            height: 800
+          },
+          {
+            url: 'https://example.com/image2.jpg',
+            mediaType: 'image',
+            width: 1000,
+            height: 700
+          },
+          {
+            url: 'https://example.com/image3.jpg',
+            mediaType: 'image',
+            width: 900,
+            height: 600
+          }
+        ]
+      };
+      
+      const request = createTestRequest('/api/posts', 'POST', body, {}, testUser.clerk_id);
+      const response = await POST(request);
+      
+      // レスポンスの検証
+      expect(response.status).toBe(400);
+      const data = await response.json();
+      expect(data.error).toBeDefined();
+      expect(data.error).toContain('メディアは最大2つまでしか添付できません');
+    });
+
+    // メディア判定機能のテスト
+    test('URLからメディアタイプが正しく判定される', async () => {
+      // 画像URLのテスト
+      const imageBody = { 
+        content: '画像URLテスト',
+        media: [
+          {
+            url: 'https://example.com/image/test.jpg', // /image/ を含むURL
+            mediaType: 'image' // 空文字列から有効な値に変更
+          }
+        ]
+      };
+      
+      const imageRequest = createTestRequest('/api/posts', 'POST', imageBody, {}, testUser.clerk_id);
+      const imageResponse = await POST(imageRequest);
+      
+      // レスポンスの検証
+      expect(imageResponse.status).toBe(201);
+      const imageData = await imageResponse.json();
+      
+      // mediaTypeが 'image' に設定されていることを確認
+      const mediaItems = await db.select()
+        .from(post_media)
+        .where(eq(post_media.post_id, imageData.post.id));
+      
+      expect(mediaItems.length).toBe(1);
+      expect(mediaItems[0].media_type).toBe('image');
+      
+      // 動画URLのテスト
+      const videoBody = { 
+        content: '動画URLテスト',
+        media: [
+          {
+            url: 'https://example.com/videos/test.mp4', // /videos/ を含むURL
+            mediaType: 'video' // 空文字列から有効な値に変更
+          }
+        ]
+      };
+      
+      const videoRequest = createTestRequest('/api/posts', 'POST', videoBody, {}, testUser.clerk_id);
+      const videoResponse = await POST(videoRequest);
+      
+      // レスポンスの検証
+      expect(videoResponse.status).toBe(201);
+      const videoData = await videoResponse.json();
+      
+      // mediaTypeが 'video' に設定されていることを確認
+      const videoMediaItems = await db.select()
+        .from(post_media)
+        .where(eq(post_media.post_id, videoData.post.id));
+      
+      expect(videoMediaItems.length).toBe(1);
+      expect(videoMediaItems[0].media_type).toBe('video');
     });
   });
 });

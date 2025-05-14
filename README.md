@@ -130,6 +130,16 @@ CLERK_SECRET_KEY=sk_test_XXXXXXXXXXXXX
 CLERK_WEBHOOK_SECRET=whsec_XXXXXXXXXXXXX
 ```
 
+### Google OAuthの設定
+
+本番環境では、Google OAuth認証を正しく機能させるために追加設定が必要です。「Missing required parameter: client_id」などのエラーを防ぐため、以下の手順に従ってください：
+
+1. Google Cloud Consoleでプロジェクトを設定し、OAuth資格情報を取得
+2. ClerkダッシュボードでGoogle OAuth設定を適切に構成
+3. リダイレクトURIの正確な設定
+
+詳細な手順については、[Clerk + Google OAuth 本番環境セットアップ手順](docs/clerk-google-oauth-setup.md)を参照してください。
+
 ### Clerkウェブフックの設定
 
 ウェブフックは、Clerkとデータベースとのユーザーデータの同期に不可欠です。ウェブフックを設定するには、以下の手順に従ってください：
@@ -213,6 +223,32 @@ export const users = pgTable('users', {
   // ... その他のフィールド
 });
 ```
+
+### 【重要】マイグレーション適用ルール
+
+データベースマイグレーションを適用する際は、以下のルールに従ってください：
+
+1. **開発環境へのマイグレーション**
+   - 開発環境へのマイグレーションは必ず `NODE_ENV=development` を指定して実行してください
+   - コマンド例: `docker compose exec frontend sh -c "NODE_ENV=development npm run db:migrate"`
+
+2. **本番環境へのマイグレーション**
+   - 本番環境へのマイグレーションは必ず事前に確認を取ってから実行してください
+   - チームリードの承認なしに本番環境マイグレーションを実行してはいけません
+   - 本番環境マイグレーション前にステージング環境でテストを行ってください
+   - 本番マイグレーション実行前に必ずバックアップを取得してください
+   - マイグレーション実行コマンド: `docker compose exec frontend sh -c "NODE_ENV=production npm run db:migrate"`
+
+3. **データベーススキーマの変更について**
+   - スキーマ変更を行う場合は必ずPRでコードレビューを受けてください
+   - 破壊的変更（カラム削除やNOT NULL制約の追加など）には特に注意してください
+   - ダウンタイムが必要な変更の場合は、事前に計画を立ててから実施してください
+
+4. **データ移行が必要な場合**
+   - データ移行スクリプトは必ず別途用意し、レビューを受けてください
+   - 大量データの移行はバックグラウンドジョブとして実行することを検討してください
+
+これらのルールに従うことで、データベースの整合性を保ち、予期しない問題を防ぐことができます。
 
 ---
 

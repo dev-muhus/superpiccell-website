@@ -13,14 +13,16 @@ import PostModal from '@/components/PostModal';
 import InfiniteScroll from '@/components/InfiniteScroll';
 import { ITEMS_PER_PAGE } from '@/constants/pagination';
 
-// メディアデータのインターフェース
-interface MediaData {
-  url?: string;
-  type?: string;
+// 共通インターフェース定義
+
+// メディアアイテムの定義
+interface MediaItem {
+  id?: number;
+  url: string;
+  mediaType: 'image' | 'video';
   width?: number;
   height?: number;
-  // 明示的な型を使用してanyを避ける
-  [key: string]: string | number | boolean | null | undefined;
+  duration_sec?: number;
 }
 
 interface Post {
@@ -32,7 +34,7 @@ interface Post {
   in_reply_to_post_id?: number;
   quote_of_post_id?: number;
   repost_of_post_id?: number;
-  media_data?: MediaData;
+  media?: MediaItem[];
   user: {
     id: number;
     username: string;

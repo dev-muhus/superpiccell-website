@@ -1,13 +1,30 @@
 /**
  * @jest-environment node
  */
-import { describe, test, expect, beforeEach } from '@jest/globals';
-import { GET, POST, DELETE } from '@/app/api/drafts/route';
+import { describe, test, expect, beforeEach, afterAll } from '@jest/globals';
+import { GET, POST } from '@/app/api/drafts/route';
+import { DELETE } from '@/app/api/drafts/[id]/route';
 import { createTestRequest } from '@/utils/test/api-test-helpers';
 import { db } from '@/db';
-import { users, drafts, posts } from '@/db/schema';
+import { users, drafts, posts, draft_media } from '@/db/schema';
 import { eq, and, desc, count, asc, isNull } from 'drizzle-orm';
 import { ITEMS_PER_PAGE } from '@/constants/pagination';
+
+// コンソールログとエラーを抑制
+let consoleErrorSpy: jest.SpyInstance;
+let consoleLogSpy: jest.SpyInstance;
+
+beforeEach(() => {
+  // コンソールログとエラーを抑制
+  consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+  consoleLogSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+});
+
+afterAll(() => {
+  // スパイをリストア
+  consoleErrorSpy.mockRestore();
+  consoleLogSpy.mockRestore();
+});
 
 // テスト用のグローバル変数に型を追加
 declare global {
@@ -385,8 +402,10 @@ describe('Drafts API', () => {
       const draftToDelete = testDrafts[0];
       const testUserId = currentUser.clerk_id;
       
-      const request = createTestRequest(`/api/drafts?id=${draftToDelete.id}`, 'DELETE', null, {}, testUserId);
-      const response = await DELETE(request);
+      // URLとパラメータを更新
+      const request = createTestRequest(`/api/drafts/${draftToDelete.id}`, 'DELETE', null, {}, testUserId);
+      const params = { id: draftToDelete.id.toString() };
+      const response = await DELETE(request, { params });
       
       // レスポンスの検証
       expect(response.status).toBe(200);
@@ -417,9 +436,10 @@ describe('Drafts API', () => {
     test('draft_idが指定されていない場合は400エラーを返す', async () => {
       const testUserId = currentUser.clerk_id;
       
-      // IDなしでリクエスト
-      const request = createTestRequest('/api/drafts', 'DELETE', null, {}, testUserId);
-      const response = await DELETE(request);
+      // 無効なIDでリクエスト
+      const request = createTestRequest('/api/drafts/invalid', 'DELETE', null, {}, testUserId);
+      const params = { id: 'invalid' };
+      const response = await DELETE(request, { params });
       
       // レスポンスの検証
       expect(response.status).toBe(400);
@@ -432,8 +452,9 @@ describe('Drafts API', () => {
       const testUserId = currentUser.clerk_id;
       const nonexistentId = 9999999;
       
-      const request = createTestRequest(`/api/drafts?id=${nonexistentId}`, 'DELETE', null, {}, testUserId);
-      const response = await DELETE(request);
+      const request = createTestRequest(`/api/drafts/${nonexistentId}`, 'DELETE', null, {}, testUserId);
+      const params = { id: nonexistentId.toString() };
+      const response = await DELETE(request, { params });
       
       // レスポンスの検証
       expect(response.status).toBe(404);
@@ -448,8 +469,9 @@ describe('Drafts API', () => {
       const otherUserId = otherUser.clerk_id;
       global.currentTestUserId = otherUserId;
       
-      const request = createTestRequest(`/api/drafts?id=${draftToDelete.id}`, 'DELETE', null, {}, otherUserId);
-      const response = await DELETE(request);
+      const request = createTestRequest(`/api/drafts/${draftToDelete.id}`, 'DELETE', null, {}, otherUserId);
+      const params = { id: draftToDelete.id.toString() };
+      const response = await DELETE(request, { params });
       
       // レスポンスの検証 - 404が返される（存在しないか削除済みと表示）
       expect(response.status).toBe(404);
@@ -473,13 +495,45 @@ describe('Drafts API', () => {
       global.currentTestUserId = null as unknown as string;
       
       const draftToDelete = testDrafts[0];
-      const request = createTestRequest(`/api/drafts?id=${draftToDelete.id}`, 'DELETE');
-      const response = await DELETE(request);
+      const request = createTestRequest(`/api/drafts/${draftToDelete.id}`, 'DELETE');
+      const params = { id: draftToDelete.id.toString() };
+      const response = await DELETE(request, { params });
       
       // レスポンスの検証
       expect(response.status).toBe(401);
       const data = await response.json();
       expect(data.error).toBeDefined();
+    });
+
+    test('削除した下書きが一覧から除外されることを確認', async () => {
+      const testUserId = currentUser.clerk_id;
+      
+      // 現在の下書き数を確認
+      const initialRequest = createTestRequest('/api/drafts', 'GET', null, {}, testUserId);
+      const initialResponse = await GET(initialRequest);
+      
+      const initialData = await initialResponse.json();
+      const initialCount = initialData.drafts.length;
+      
+      // 下書きを削除
+      const draftToDelete = testDrafts[0];
+      const deleteRequest = createTestRequest(`/api/drafts/${draftToDelete.id}`, 'DELETE', null, {}, testUserId);
+      const params = { id: draftToDelete.id.toString() };
+      await DELETE(deleteRequest, { params });
+      
+      // 削除後の下書き数を確認
+      const afterRequest = createTestRequest('/api/drafts', 'GET', null, {}, testUserId);
+      const afterResponse = await GET(afterRequest);
+      
+      const afterData = await afterResponse.json();
+      const afterCount = afterData.drafts.length;
+      
+      // 件数が1つ減っていることを確認
+      expect(afterCount).toBe(initialCount - 1);
+      
+      // 削除した下書きが含まれていないことを確認
+      const deletedDraftInList = afterData.drafts.find((d: any) => d.id === draftToDelete.id);
+      expect(deletedDraftInList).toBeUndefined();
     });
   });
 
@@ -564,11 +618,14 @@ describe('Drafts API', () => {
       // メディアデータを含む下書き
       const draftData = {
         content: 'メディアデータつき下書き',
-        media_data: {
-          type: 'image',
-          url: 'https://example.com/test.jpg',
-          alt: 'テスト画像'
-        }
+        media: [
+          {
+            url: 'https://example.com/test.jpg',
+            mediaType: 'image',
+            width: 800,
+            height: 600
+          }
+        ]
       };
       
       const testUserId = currentUser.clerk_id;
@@ -582,7 +639,9 @@ describe('Drafts API', () => {
       expect(data.success).toBe(true);
       expect(data.draft).toBeDefined();
       expect(data.draft.content).toBe(draftData.content);
-      expect(data.draft.media_data).toEqual(draftData.media_data);
+      expect(data.draft.media).toBeDefined();
+      expect(data.draft.media.length).toBe(1);
+      expect(data.draft.media[0].url).toBe(draftData.media[0].url);
       
       // 一覧取得でメディアデータが含まれることを確認
       const listRequest = createTestRequest('/api/drafts', 'GET', null, {}, testUserId);
@@ -592,37 +651,9 @@ describe('Drafts API', () => {
       const savedDraft = listData.drafts.find((d: any) => d.id === data.draft.id);
       
       expect(savedDraft).toBeDefined();
-      expect(savedDraft.media_data).toEqual(draftData.media_data);
-    });
-    
-    test('削除した下書きが一覧から除外されることを確認', async () => {
-      const testUserId = currentUser.clerk_id;
-      
-      // 現在の下書き数を確認
-      const initialRequest = createTestRequest('/api/drafts', 'GET', null, {}, testUserId);
-      const initialResponse = await GET(initialRequest);
-      
-      const initialData = await initialResponse.json();
-      const initialCount = initialData.drafts.length;
-      
-      // 下書きを削除
-      const draftToDelete = testDrafts[0];
-      const deleteRequest = createTestRequest(`/api/drafts?id=${draftToDelete.id}`, 'DELETE', null, {}, testUserId);
-      await DELETE(deleteRequest);
-      
-      // 削除後の下書き数を確認
-      const afterRequest = createTestRequest('/api/drafts', 'GET', null, {}, testUserId);
-      const afterResponse = await GET(afterRequest);
-      
-      const afterData = await afterResponse.json();
-      const afterCount = afterData.drafts.length;
-      
-      // 件数が1つ減っていることを確認
-      expect(afterCount).toBe(initialCount - 1);
-      
-      // 削除した下書きが含まれていないことを確認
-      const deletedDraftInList = afterData.drafts.find((d: any) => d.id === draftToDelete.id);
-      expect(deletedDraftInList).toBeUndefined();
+      expect(savedDraft.media).toBeDefined();
+      expect(savedDraft.media.length).toBe(1);
+      expect(savedDraft.media[0].url).toBe(draftData.media[0].url);
     });
   });
 }); 

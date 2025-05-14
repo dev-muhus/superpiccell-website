@@ -19,10 +19,15 @@ interface User {
   clerk_id?: string;
 }
 
-// Define a safe media_data type
-interface MediaData {
-  url?: string;
-  [key: string]: string | number | boolean | null | undefined;
+// Define media type
+export interface Media {
+  id?: number;
+  post_id?: number;
+  url: string;
+  mediaType: 'image' | 'video';
+  width?: number | null;
+  height?: number | null;
+  duration_sec?: number | null;
 }
 
 export interface PostCardProps {
@@ -31,7 +36,14 @@ export interface PostCardProps {
     content: string;
     created_at: string;
     post_type: 'original' | 'reply' | 'quote' | 'repost';
-    media_data?: MediaData;
+    media?: Array<{
+      id?: number;
+      url: string;
+      mediaType: 'image' | 'video';
+      width?: number;
+      height?: number;
+      duration_sec?: number;
+    }>;
     user_id: number;
     in_reply_to_post_id?: number;
     quote_of_post_id?: number;
@@ -41,12 +53,27 @@ export interface PostCardProps {
       id: number;
       content: string;
       user: User | null;
+      media?: Array<{
+        id?: number;
+        url: string;
+        mediaType: 'image' | 'video';
+        width?: number;
+        height?: number;
+        duration_sec?: number;
+      }>;
     } | null;
     quote_of_post?: {
       id: number;
       content: string;
       created_at: string;
-      media_data?: MediaData;
+      media?: Array<{
+        id?: number;
+        url: string;
+        mediaType: 'image' | 'video';
+        width?: number;
+        height?: number;
+        duration_sec?: number;
+      }>;
       user: User | null;
     } | null;
     repost_of_post?: {
@@ -541,20 +568,64 @@ export default function PostCard({
 
         {/* 返信の場合、返信先のプレビューを表示 - hideReplyInfoがfalseの場合のみ表示 */}
         {!hideReplyInfo && post.post_type === 'reply' && replyToPostData && (
-          <div className="mb-3 ml-6 pl-3 border-l-2 border-gray-200">
-            <div className="text-sm text-gray-500">
-              <Link href={`/post/${post.in_reply_to_post_id}`} className="hover:underline">
-                <div className="flex items-center mb-1">
-                  <UserAvatar 
-                    imageUrl={replyToPostData.user?.profile_image_url} 
-                    username={replyToPostData.user?.username || 'ユーザー'} 
-                    size={20} 
-                  />
-                  <span className="ml-1 font-medium">{replyToPostData.user?.username || 'ユーザー'}</span>
-                </div>
-                <p className="line-clamp-2">{replyToPostData.content}</p>
-              </Link>
+          <div className="mb-3 border-l-2 border-gray-200 pl-3 text-sm text-gray-600">
+            <div className="flex items-center">
+              <UserAvatar 
+                imageUrl={replyToPostData.user?.profile_image_url} 
+                username={replyToPostData.user?.username || 'ユーザー'} 
+                size={16} 
+              />
+              <span className="ml-1 font-medium">{replyToPostData.user?.username || 'ユーザー'}</span>
             </div>
+            <p className="line-clamp-2 mt-1">{replyToPostData.content}</p>
+            
+            {/* 返信先投稿のメディアを表示 */}
+            {replyToPostData.media && replyToPostData.media.length > 0 && (
+              <div className="mt-2 rounded-lg overflow-hidden relative">
+                <div className="h-24 w-32 relative rounded-lg overflow-hidden">
+                  {(() => {
+                    // メディアの判定ロジックを強化
+                    const media = replyToPostData.media[0];
+                    const url = media.url;
+                    const mediaType = media.mediaType || 'image';
+                    
+                    // URLのパターンも確認して画像か動画かを判定
+                    const isImage = 
+                      mediaType === 'image' || 
+                      url.match(/\.(jpe?g|png|gif|webp)$/i) || 
+                      url.includes('/image/');
+                      
+                    if (isImage) {
+                      return (
+                        <Image
+                          src={url}
+                          alt="返信先の画像"
+                          fill
+                          className="object-cover"
+                          sizes="128px"
+                        />
+                      );
+                    } else {
+                      return (
+                        <video
+                          src={url}
+                          className="w-full h-full object-cover"
+                          controls
+                        >
+                          お使いのブラウザは動画再生をサポートしていません。
+                        </video>
+                      );
+                    }
+                  })()}
+                </div>
+                
+                {replyToPostData.media.length > 1 && (
+                  <div className="absolute bottom-1 right-1 bg-black bg-opacity-60 text-white text-xs px-1 rounded">
+                    +{replyToPostData.media.length - 1}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 
@@ -574,10 +645,10 @@ export default function PostCard({
                   <span className="text-gray-500 text-xs">{formatDate(post.quote_of_post.created_at)}</span>
                 </div>
                 <p className="line-clamp-3 mt-1">{post.quote_of_post.content}</p>
-                {post.quote_of_post.media_data?.url && typeof post.quote_of_post.media_data.url === 'string' && (
+                {post.quote_of_post.media && post.quote_of_post.media.length > 0 && (
                   <div className="mt-2 rounded-lg overflow-hidden h-20 w-20 bg-gray-100">
                     <Image
-                      src={post.quote_of_post.media_data.url}
+                      src={post.quote_of_post.media[0].url}
                       alt="引用元画像"
                       width={80}
                       height={80}
@@ -689,19 +760,61 @@ export default function PostCard({
               />
             </div>
             
-            {/* 画像がある場合 */}
-            {post.media_data?.url && typeof post.media_data.url === 'string' && (
-              <div className="rounded-lg overflow-hidden mb-3 relative max-h-96">
-                <Image
-                  src={post.media_data.url}
-                  alt="投稿画像"
-                  width={500}
-                  height={300}
-                  className="object-contain"
-                  onError={() => console.log('投稿画像の読み込みに失敗しました')}
-                />
+            {/* メディア表示部分 */}
+            {post.media && post.media.length > 0 ? (
+              <div className={`rounded-lg overflow-hidden mb-3 relative ${post.media.length > 1 ? 'grid grid-cols-2 gap-1' : ''}`}>
+                {post.media.map((media, index) => (
+                  <div key={`media-${post.id}-${index}`} className={`${post.media && post.media.length > 1 ? (index === 0 && post.media.length === 3 ? 'col-span-2' : '') : ''} overflow-hidden rounded-lg`}>
+                    {media.mediaType === 'image' || media.url.match(/\.(jpe?g|png|gif|webp)$/i) ? (
+                      <div className="relative aspect-video">
+                        <Image
+                          src={media.url}
+                          alt={`投稿画像 ${index + 1}`}
+                          fill
+                          className="object-cover"
+                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                          onError={() => console.log(`投稿画像 ${index + 1} の読み込みに失敗しました`)}
+                        />
+                      </div>
+                    ) : media.mediaType === 'video' || media.url.match(/\.(mp4|webm|mov)$/i) ? (
+                      <div className="relative aspect-video">
+                        <video
+                          src={media.url}
+                          controls
+                          className="w-full h-full"
+                          onError={() => console.log(`投稿動画 ${index + 1} の読み込みに失敗しました`)}
+                        >
+                          お使いのブラウザは動画再生をサポートしていません。
+                        </video>
+                      </div>
+                    ) : (
+                      // mediaTypeが不明な場合、ファイル拡張子から判定
+                      <div className="relative aspect-video">
+                        {media.url.includes('/image/') ? (
+                          <Image
+                            src={media.url}
+                            alt={`投稿画像 ${index + 1}`}
+                            fill
+                            className="object-cover"
+                            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                            onError={() => console.log(`投稿画像 ${index + 1} の読み込みに失敗しました`)}
+                          />
+                        ) : (
+                          <video
+                            src={media.url}
+                            controls
+                            className="w-full h-full"
+                            onError={() => console.log(`投稿動画 ${index + 1} の読み込みに失敗しました`)}
+                          >
+                            お使いのブラウザは動画再生をサポートしていません。
+                          </video>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
-            )}
+            ) : null}
             
             {/* アクションボタン */}
             {showActions && (

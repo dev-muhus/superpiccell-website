@@ -1,7 +1,7 @@
 import { db } from '@/db';
-import { blocks, community_posts, users } from '@/db/schema';
+import { blocks, community_posts, users, post_media } from '@/db/schema';
 import { getAuth } from '@clerk/nextjs/server';
-import { eq, and, sql } from 'drizzle-orm';
+import { eq, and, sql, inArray } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 import { ITEMS_PER_PAGE } from '@/constants/pagination';
 
@@ -18,7 +18,6 @@ interface PostWithUser {
   in_reply_to_post_id?: number;
   quote_of_post_id?: number;
   repost_of_post_id?: number;
-  media_data?: unknown;
   username: string;
   profile_image_url?: string;
   first_name?: string;
@@ -30,7 +29,6 @@ interface RelatedPost {
   content: string;
   post_type: string;
   created_at: string;
-  media_data?: unknown;
   user: {
     id: number;
     username: string;
@@ -49,12 +47,19 @@ interface FormattedPost {
   in_reply_to_post_id?: number;
   quote_of_post_id?: number;
   repost_of_post_id?: number;
-  media_data?: unknown;
   like_count: number;
   is_liked: boolean;
   bookmark_count: number;
   is_bookmarked: boolean;
   reply_count: number;
+  media: {
+    id: number;
+    url: string;
+    mediaType: string;
+    width?: number | null;
+    height?: number | null;
+    duration_sec?: number | null;
+  }[];
   user: {
     id: number;
     username: string;
@@ -211,6 +216,34 @@ export async function GET(req: NextRequest) {
     // 投稿IDのリスト
     const postIds = postsToShow.map(row => row.id);
     
+    // post_mediaテーブルからメディアデータを取得
+    const mediaData = await db.select()
+      .from(post_media)
+      .where(and(
+        inArray(post_media.post_id, postIds),
+        eq(post_media.is_deleted, false)
+      ));
+    
+    // 投稿IDごとのメディアデータをマップに変換
+    const mediaMap = new Map();
+    mediaData.forEach(media => {
+      if (!mediaMap.has(media.post_id)) {
+        mediaMap.set(media.post_id, []);
+      }
+      
+      // メディアの正規化処理
+      const normalizedMedia = {
+        id: media.id,
+        url: media.url,
+        mediaType: media.media_type as 'image' | 'video',
+        width: media.width,
+        height: media.height,
+        duration_sec: media.duration_sec
+      };
+      
+      mediaMap.get(media.post_id).push(normalizedMedia);
+    });
+    
     // 文字列化されたID配列を作成（SQLクエリ用）
     const postIdsForQuery = postIds.map(id => `${id}`).join(',');
 
@@ -328,7 +361,6 @@ export async function GET(req: NextRequest) {
                 content: row.content as string,
                 post_type: row.post_type as string,
                 created_at: row.created_at as string,
-                media_data: row.media_data,
                 user: {
                   id: Number(row.user_id),
                   username: row.username as string,
@@ -354,12 +386,12 @@ export async function GET(req: NextRequest) {
         in_reply_to_post_id: row.in_reply_to_post_id,
         quote_of_post_id: row.quote_of_post_id,
         repost_of_post_id: row.repost_of_post_id,
-        media_data: row.media_data,
         like_count: likeCountsMap.get(row.id) || 0,
         is_liked: userLikedPostIds.has(row.id),
         bookmark_count: bookmarkCountsMap.get(row.id) || 0,
         is_bookmarked: true, // ブックマークページなので必ずtrue
         reply_count: replyCountsMap.get(row.id) || 0,
+        media: mediaMap.get(row.id) || [], // post_mediaテーブルから取得したメディアデータ
         user: {
           id: row.user_id,
           username: row.username,

@@ -1,12 +1,29 @@
 import { db } from '@/db';
-import { drafts, users, posts } from '@/db/schema';
+import { drafts, users, posts, draft_media } from '@/db/schema';
 import { getAuth } from '@clerk/nextjs/server';
-import { desc, eq, and, isNull, lt } from 'drizzle-orm';
+import { desc, eq, and, isNull, lt, inArray } from 'drizzle-orm';
 import { NextRequest, NextResponse } from 'next/server';
 import { ITEMS_PER_PAGE } from '@/constants/pagination';
+import { z } from 'zod';
+import { baseContentSchema, MediaItem } from '@/schemas/media';
 
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
+
+// 下書き作成のバリデーションスキーマ（共通のbaseContentSchemaを拡張）
+const createDraftSchema = baseContentSchema.extend({
+  in_reply_to_post_id: z.number().optional(),
+}).refine(
+  // contentかmediaのどちらかは必須
+  (data) => {
+    return (!!data.content && data.content.trim().length > 0) || 
+           (!!data.media && data.media.length > 0);
+  },
+  {
+    message: "投稿内容またはメディアのいずれかは入力必須です",
+    path: ["content"]
+  }
+);
 
 // 下書き一覧取得API
 export async function GET(req: NextRequest) {
@@ -57,7 +74,7 @@ export async function GET(req: NextRequest) {
       user_id: drafts.user_id,
       content: drafts.content,
       in_reply_to_post_id: drafts.in_reply_to_post_id,
-      media_data: drafts.media_data,
+      media_count: drafts.media_count,
       created_at: drafts.created_at,
       updated_at: drafts.updated_at,
     })
@@ -66,8 +83,31 @@ export async function GET(req: NextRequest) {
     .orderBy(desc(drafts.updated_at))
     .limit(limit + 1);
 
+    // 下書きIDのリストを取得
+    const draftIds = draftItems.map(draft => draft.id);
+
+    // メディアデータを取得
+    const mediaData = await db.select()
+      .from(draft_media)
+      .where(and(
+        inArray(draft_media.draft_id, draftIds),
+        eq(draft_media.is_deleted, false)
+      ));
+
+    // 下書きIDごとのメディアデータをマップに変換
+    const mediaMap = new Map();
+    mediaData.forEach(media => {
+      if (!mediaMap.has(media.draft_id)) {
+        mediaMap.set(media.draft_id, []);
+      }
+      mediaMap.get(media.draft_id).push(media);
+    });
+
     // 返信先の投稿情報を取得
     const draftsWithReplyInfo = await Promise.all(draftItems.map(async (draft) => {
+      // メディア情報を追加
+      const media = mediaMap.get(draft.id) || [];
+      
       // 返信下書きの場合のみ返信先投稿情報を取得
       if (draft.in_reply_to_post_id) {
         try {
@@ -95,6 +135,7 @@ export async function GET(req: NextRequest) {
             // 返信先情報を追加
             return {
               ...draft,
+              media,
               replyToPost: {
                 ...replyToPost,
                 user: replyToUser
@@ -106,8 +147,11 @@ export async function GET(req: NextRequest) {
         }
       }
       
-      // 返信でない場合はそのまま返す
-      return draft;
+      // 返信でない場合はそのまま返す（メディア情報は追加）
+      return {
+        ...draft,
+        media
+      };
     }));
 
     // ページネーション情報の構築
@@ -146,19 +190,20 @@ export async function POST(req: NextRequest) {
 
     // リクエストボディの取得
     const requestData = await req.json();
-    const { content, in_reply_to_post_id, media_data } = requestData;
-
-    // コンテンツのバリデーション
-    if (!content || typeof content !== 'string' || content.trim() === '') {
-      return NextResponse.json({ error: 'Content is required' }, { status: 400 });
-    }
-
-    if (content.length > 500) {
+    
+    // バリデーション
+    const validationResult = createDraftSchema.safeParse(requestData);
+    if (!validationResult.success) {
+      console.error('下書き保存API: バリデーションエラー:', {
+        error: validationResult.error.format()
+      });
       return NextResponse.json(
-        { error: 'Content must be less than 500 characters' },
+        { error: '入力内容が無効です', details: validationResult.error.format() },
         { status: 400 }
       );
     }
+    
+    const { content, in_reply_to_post_id, media } = validationResult.data;
 
     // DBユーザーの取得
     const [dbUser] = await db.select()
@@ -170,86 +215,69 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // 下書きの保存
-    const draft = await db.insert(drafts).values({
-      user_id: dbUser.id,
-      content: content.trim(),
-      in_reply_to_post_id: in_reply_to_post_id || null,
-      media_data: media_data || null,
-      created_at: new Date(),
-      updated_at: new Date(),
-      is_deleted: false
-    }).returning();
+    try {
+      
+      // 1. draftsテーブルにレコードを挿入
+      const draft = await db.insert(drafts).values({
+        user_id: dbUser.id,
+        content: content?.trim() || '',
+        in_reply_to_post_id: in_reply_to_post_id || null,
+        media_count: media ? media.length : 0,
+        created_at: new Date(),
+        updated_at: new Date(),
+        is_deleted: false
+      }).returning();
 
-    // レスポンス返却
-    return NextResponse.json({
-      success: true,
-      draft: draft[0]
-    });
+      const createdDraft = draft[0];
+
+      // 2. メディアがある場合、draft_mediaテーブルに保存
+      if (media && media.length > 0 && createdDraft) {
+        // 各メディアをdraft_mediaテーブルに保存
+        const mediaValues = media.map((m: MediaItem) => ({
+          draft_id: createdDraft.id,
+          media_type: m.mediaType,
+          url: m.url,
+          width: m.width || null,
+          height: m.height || null,
+          duration_sec: m.mediaType === 'video' ? m.duration_sec || null : null,
+          created_at: new Date(),
+          is_deleted: false
+        }));
+        
+        try {
+          await db.insert(draft_media).values(mediaValues);
+        } catch (error) {
+          console.error('draft_mediaテーブル挿入エラー:', error);
+          // メディア情報の保存に失敗しても下書き自体は成功させる
+        }
+      }
+      
+      console.log('下書き保存API: データベース操作成功', { draftId: createdDraft.id });
+
+      // draft_mediaを取得
+      const draftMediaItems = await db.select()
+        .from(draft_media)
+        .where(and(
+          eq(draft_media.draft_id, createdDraft.id),
+          eq(draft_media.is_deleted, false)
+        ));
+
+      // レスポンス返却
+      return NextResponse.json({
+        success: true,
+        draft: {
+          ...createdDraft,
+          media: draftMediaItems
+        }
+      });
+    } catch (dbError) {
+      console.error('下書き保存API: データベース操作エラー:', dbError);
+      throw dbError;
+    }
   } catch (error) {
     console.error('下書き保存エラー:', error);
     return NextResponse.json(
       { error: '下書きの保存中にエラーが発生しました' },
-      { status: 500 }
-    );
-  }
-}
-
-// 下書き削除API
-export async function DELETE(req: NextRequest) {
-  try {
-    // ユーザー認証
-    const { userId } = getAuth(req);
-    if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    // URLからdraft_idを取得
-    const url = new URL(req.url);
-    const draftId = url.searchParams.get('id');
-
-    if (!draftId) {
-      return NextResponse.json({ error: 'Draft ID is required' }, { status: 400 });
-    }
-
-    // DBユーザーの取得
-    const [dbUser] = await db.select()
-      .from(users)
-      .where(eq(users.clerk_id, userId))
-      .limit(1);
-
-    if (!dbUser) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-
-    // ユーザーの下書きであることを確認
-    const [draftToDelete] = await db.select()
-      .from(drafts)
-      .where(and(
-        eq(drafts.id, parseInt(draftId)),
-        eq(drafts.user_id, dbUser.id),
-        eq(drafts.is_deleted, false)
-      ))
-      .limit(1);
-
-    if (!draftToDelete) {
-      return NextResponse.json({ error: 'Draft not found or already deleted' }, { status: 404 });
-    }
-
-    // 論理削除
-    await db.update(drafts)
-      .set({
-        is_deleted: true,
-        deleted_at: new Date(),
-      })
-      .where(eq(drafts.id, parseInt(draftId)));
-
-    // レスポンス返却
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('下書き削除エラー:', error);
-    return NextResponse.json(
-      { error: '下書きの削除中にエラーが発生しました' },
       { status: 500 }
     );
   }
