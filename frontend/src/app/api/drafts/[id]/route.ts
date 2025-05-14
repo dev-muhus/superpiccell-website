@@ -298,6 +298,10 @@ export async function DELETE(
       return NextResponse.json({ error: "無効な下書きIDです" }, { status: 400 });
     }
 
+    // クエリパラメータから投稿への変換かどうかを取得
+    const url = new URL(req.url);
+    const convertToPost = url.searchParams.get('convertToPost') === 'true';
+
     // DBユーザーの取得
     const [dbUser] = await db.select()
       .from(users)
@@ -331,10 +335,7 @@ export async function DELETE(
       ));
 
     try {
-      console.log('下書き削除API: データベース操作開始');
-      
       // 1. 下書きを論理削除
-      console.log('下書き削除API: draftsテーブルの論理削除');
       await db.update(drafts)
         .set({
           is_deleted: true,
@@ -343,7 +344,6 @@ export async function DELETE(
         .where(eq(drafts.id, draftId));
 
       // 2. 関連するメディアも論理削除
-      console.log('下書き削除API: 関連メディアの論理削除');
       await db.update(draft_media)
         .set({
           is_deleted: true,
@@ -351,20 +351,20 @@ export async function DELETE(
         })
         .where(eq(draft_media.draft_id, draftId));
         
-      console.log('下書き削除API: データベース操作成功');
     } catch (dbError) {
       console.error('下書き削除API: データベース操作エラー:', dbError);
       throw dbError;
     }
 
     // ストレージからメディアファイルを削除
-    // 注意: ここでのファイル削除は、他の下書きや投稿で同じファイルが使用されていないことが前提
-    // 本来は参照カウントなどの仕組みが必要だが、このサンプル実装では簡略化
-    if (mediaToDelete.length > 0) {
+    // 投稿への変換の場合はファイル削除をスキップ（ファイルは投稿でも使用されるため）
+    if (mediaToDelete.length > 0 && !convertToPost) {
       const deletePromises = mediaToDelete.map(media => 
         deleteMedia(media.url, media.media_type as 'image' | 'video')
       );
       await Promise.allSettled(deletePromises);
+    } else if (convertToPost) {
+      console.log('下書き削除API: 投稿への変換のため実ファイルの削除をスキップ', { mediaCount: mediaToDelete.length });
     }
 
     // レスポンス返却

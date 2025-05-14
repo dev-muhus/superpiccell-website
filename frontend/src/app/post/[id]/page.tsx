@@ -161,7 +161,6 @@ export default function PostDetailPage() {
 
   // いいね状態が変更された時のコールバック
   const handleLikeStateChange = (postId: number, isLiked: boolean, likeCount: number) => {
-    console.log(`Post ${postId} like state changed: ${isLiked}, count: ${likeCount}`);
     // メイン投稿のいいね状態を更新
     if (post && post.id === postId) {
       setPost({
@@ -182,7 +181,6 @@ export default function PostDetailPage() {
 
   // リポスト状態が変更された時のコールバック
   const handleRepostStateChange = (postId: number, isReposted: boolean) => {
-    console.log(`Post ${postId} repost state changed: ${isReposted}`);
     // リポストが行われたら詳細を再取得
     if (isReposted) {
       fetchPostDetail();
@@ -191,7 +189,6 @@ export default function PostDetailPage() {
 
   // ブックマーク状態が変更された時のコールバック
   const handleBookmarkStateChange = (postId: number, isBookmarked: boolean, bookmarkCount: number) => {
-    console.log(`Post ${postId} bookmark state changed: ${isBookmarked}, count: ${bookmarkCount}`);
     // メイン投稿のブックマーク状態を更新
     if (post && post.id === postId) {
       setPost({

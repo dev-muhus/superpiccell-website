@@ -88,13 +88,6 @@ const MediaDropzone: React.FC<MediaDropzoneProps> = ({
       if (isVideo) videoFiles.push(file);
     });
 
-    console.log('【デバッグ】ドロップされたファイル:', {
-      totalFiles: acceptedFiles.length,
-      imageFiles: imageFiles.length,
-      videoFiles: videoFiles.length,
-      fileTypes: acceptedFiles.map(f => ({ type: f.type, name: f.name }))
-    });
-
     // 各メディアタイプの制限をチェック
     const currentImages = files.filter(f => f.mediaType === 'image').length;
     const currentVideos = files.filter(f => f.mediaType === 'video').length;
@@ -444,6 +437,12 @@ const getVideoLength = (file: File): Promise<number> => {
   return new Promise((resolve, reject) => {
     // ファイルデータからBlobURLを作成
     const objectUrl = URL.createObjectURL(file);
+    
+    console.log('動画の長さを取得しています:', { 
+      name: file.name, 
+      size: file.size, 
+      type: file.type 
+    });
     
     // video要素を作成
     const video = document.createElement('video');

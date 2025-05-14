@@ -79,8 +79,6 @@ export default function EngagementPage() {
       const currentCursor = isInitialLoad ? null : cursor || pagination.nextCursor;
       if (!isInitialLoad && !currentCursor) return;
       
-      console.log(`Fetching posts with cursor: ${currentCursor}, type: ${activeTab}, limit: ${ITEMS_PER_PAGE}`);
-      
       const response = await fetch(
         `/api/engagement?type=${activeTab}&limit=${ITEMS_PER_PAGE}${currentCursor ? `&cursor=${currentCursor}` : ''}`
       );
@@ -90,7 +88,6 @@ export default function EngagementPage() {
       }
       
       const data = await response.json();
-      console.log(`Fetched ${data.posts.length} posts, hasNextPage: ${data.pagination.hasNextPage}, nextCursor: ${data.pagination.nextCursor}`);
       
       if (isInitialLoad) {
         setPosts(data.posts);
@@ -149,7 +146,6 @@ export default function EngagementPage() {
   
   // リポスト状態変更ハンドラ
   const handleRepostStateChange = (postId: number, isReposted: boolean) => {
-    console.log(`Post ${postId} repost state changed: ${isReposted}`);
     // リポストが行われたらタイムラインを更新
     if (isReposted) {
       setRefreshKey(prev => prev + 1);

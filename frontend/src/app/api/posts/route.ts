@@ -6,7 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { ITEMS_PER_PAGE } from '@/constants/pagination';
 import { MAX_MEDIA_ATTACHMENTS } from '@/constants/media';
-import { baseContentSchema } from '@/schemas/media';
+import { baseContentSchema, MediaItem } from '@/schemas/media';
 
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
@@ -185,7 +185,7 @@ export async function POST(req: NextRequest) {
           .where(eq(posts.id, createdPost.id));
 
         // 各メディアをpost_mediaテーブルに保存
-        const structuredMediaData = media.map(m => {
+        const structuredMediaData = media.map((m: MediaItem) => {
           return {
             post_id: createdPost.id,
             media_type: m.mediaType,

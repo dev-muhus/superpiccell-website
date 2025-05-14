@@ -32,8 +32,7 @@ interface PostData {
 interface DraftMedia {
   id?: number;
   url: string;
-  media_type?: 'image' | 'video';
-  mediaType?: 'image' | 'video';
+  mediaType: 'image' | 'video';  // media_typeを削除し、mediaTypeのみを使用
   width?: number | null;
   height?: number | null;
   duration_sec?: number | null;
@@ -91,7 +90,7 @@ const PostModal: React.FC<PostModalProps> = ({
       const existingMedia: MediaFile[] = initialMedia.map((media: DraftMedia) => ({
         file: new File([], media.url.split('/').pop() || 'file'),
         preview: media.url,
-        mediaType: media.media_type || media.mediaType || 'image',
+        mediaType: media.mediaType || (media.url.includes('videos') ? 'video' : 'image'),
         url: media.url,
         width: media.width,
         height: media.height,
@@ -124,7 +123,7 @@ const PostModal: React.FC<PostModalProps> = ({
             const existingMedia: MediaFile[] = draftData.draft.media.map((media: DraftMedia) => ({
               file: new File([], media.url.split('/').pop() || 'file'),
               preview: media.url,
-              mediaType: media.media_type || 'image',
+              mediaType: media.mediaType || (media.url.includes('videos') ? 'video' : 'image'),
               url: media.url,
               width: media.width,
               height: media.height,
@@ -341,7 +340,8 @@ const PostModal: React.FC<PostModalProps> = ({
               ...mediaFile,
               uploading: false,
               uploaded: true,
-              url: data.publicUrl
+              url: data.publicUrl || data.url,
+              mediaType: mediaFile.mediaType
             };
           } catch (error) {
             console.error('メディアアップロードエラー:', error);
@@ -424,13 +424,15 @@ const PostModal: React.FC<PostModalProps> = ({
           }
           
           // アップロードしたメディア情報を整形
-          mediaList = uploadResult.files.map(file => ({
-            url: file.url as string,
-            mediaType: file.mediaType,
-            width: file.width || null,
-            height: file.height || null,
-            duration_sec: file.duration_sec || null
-          })) as DraftMedia[];
+          mediaList = uploadResult.files.map(file => {
+            return {
+              url: file.url as string,
+              mediaType: file.mediaType, // 明示的にmediaTypeを設定
+              width: file.width || null,
+              height: file.height || null,
+              duration_sec: file.mediaType === 'video' ? file.duration_sec || null : null
+            };
+          }) as DraftMedia[];
         } catch (error) {
           console.error('メディアアップロードエラー:', error);
           setError('メディアのアップロードに失敗しました');
@@ -489,9 +491,10 @@ const PostModal: React.FC<PostModalProps> = ({
       // 下書きがある場合は削除
       if (draftId) {
         try {
-          await fetch(`/api/drafts/${draftId}`, {
+          await fetch(`/api/drafts/${draftId}?convertToPost=true`, {
             method: 'DELETE',
           });
+          console.log('下書きが正常に削除されました:', draftId);
         } catch (deleteError) {
           console.error('下書き削除エラー:', deleteError);
           // 下書き削除に失敗しても投稿は成功しているので、エラーとはしない
@@ -543,13 +546,15 @@ const PostModal: React.FC<PostModalProps> = ({
         }
         
         // アップロードしたメディア情報を整形
-        mediaList = uploadResult.files.map(file => ({
-          url: file.url as string,
-          mediaType: file.mediaType,
-          width: file.width || null,
-          height: file.height || null,
-          duration_sec: file.duration_sec || null
-        })) as DraftMedia[];
+        mediaList = uploadResult.files.map(file => {
+          return {
+            url: file.url as string,
+            mediaType: file.mediaType, // media_typeではなくmediaTypeを使用
+            width: file.width || null,
+            height: file.height || null,
+            duration_sec: file.mediaType === 'video' ? file.duration_sec || null : null
+          };
+        }) as DraftMedia[];
       }
       
       // 下書きデータの準備
