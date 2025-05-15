@@ -14,6 +14,14 @@ services:
     environment:
       - PORT=${PORT}
       - TEST_DATABASE_URL=postgresql://${TEST_DB_USER}:${TEST_DB_PASSWORD}@${TEST_DB_HOST}:${TEST_DB_PORT}/${TEST_DB_NAME}
+    command: >
+      sh -c "
+        if [ ! -d node_modules ] || [ ! -f node_modules/.package-lock.json ]; then
+          echo '[entrypoint] node_modules が無いので npm ci を実行します'; 
+          npm ci --legacy-peer-deps;
+        fi &&
+        npm run dev
+      "
     depends_on:
       test-db:
         condition: service_healthy
