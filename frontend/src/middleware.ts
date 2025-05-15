@@ -1,31 +1,37 @@
-import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
+import {
+  clerkMiddleware,
+  createRouteMatcher,
+  clerkClient,
+} from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-// テスト環境用のミドルウェアラッパー
+/* -------- privateMetadata 型 -------- */
+type PrivateUsersMetadata = {
+  users?: {
+    is_banned?: boolean;
+    is_deleted?: boolean;
+  };
+};
+
+/* -------- テスト環境バイパス -------- */
 function testMiddleware(req: NextRequest) {
-  const isTest = process.env.NODE_ENV === 'test' || 
-                req.headers.get('x-test-auth') === 'true' ||
-                process.env.TEST_MODE === 'true';
-  
+  const isTest =
+    process.env.NODE_ENV === 'test' ||
+    req.headers.get('x-test-auth') === 'true' ||
+    process.env.TEST_MODE === 'true';
+
   if (isTest) {
-    // テストリクエストからユーザーIDを取得、または動的なデフォルトIDを使用
-    const testUserId = req.headers.get('x-auth-user-id') || `test_user_id_${Date.now()}`;
-    
-    // Clerk認証をバイパスするためのヘッダーを設定
-    const requestHeaders = new Headers(req.headers);
-    requestHeaders.set('x-auth-user-id', testUserId);
-    
-    // テスト環境では認証を常に許可
-    return NextResponse.next({
-      request: { headers: requestHeaders },
-    });
+    const testUserId =
+      req.headers.get('x-auth-user-id') || `test_user_id_${Date.now()}`;
+    const headers = new Headers(req.headers);
+    headers.set('x-auth-user-id', testUserId);
+    return NextResponse.next({ request: { headers } });
   }
-  
   return null;
 }
 
-// 保護されていないルート
+/* -------- 公開ルート -------- */
 const isPublicRoute = createRouteMatcher([
   '/',
   '/sign-in(.*)',
@@ -40,24 +46,41 @@ const isPublicRoute = createRouteMatcher([
   '/api/webhooks(.*)',
 ]);
 
-// Clerkのミドルウェアをエクスポート
+/* -------- Clerk ミドルウェア -------- */
 export default clerkMiddleware(async (auth, req) => {
-  // テスト環境の場合は独自の処理を行う
-  const testResponse = testMiddleware(req);
-  if (testResponse) return testResponse;
-  
-  // 公開ルート以外は認証を要求
+  const testResp = testMiddleware(req);
+  if (testResp) return testResp;
+
   if (!isPublicRoute(req)) {
-    await auth.protect();
+    const { userId, sessionId } = await auth.protect(); // 認証必須
+    if (!userId) return;
+
+    /* ここで env が読めているか確認 */
+    console.log('SECRET_KEY length', process.env.CLERK_SECRET_KEY?.length || 0);
+
+    const client = await clerkClient();   // ← env がないとここから内部で失敗
+    const user = await client.users.getUser(userId);
+    console.log('privateMetadata', user.privateMetadata);
+
+    const meta = user.privateMetadata as PrivateUsersMetadata;
+    const flags = meta.users ?? {};
+    const shouldLogout = flags.is_banned === true || flags.is_deleted === true;
+
+    if (shouldLogout) {
+      /* --- 現セッションが判明していれば revoke --- */
+      if (sessionId) {
+        await client.sessions.revokeSession(sessionId);
+      }
+      /* セッションが取れない場合は revoke せずリダイレクトのみ */
+      return NextResponse.redirect(new URL('/', req.url));
+    }
   }
 });
 
-// ミドルウェアが処理するパスを指定
+/* -------- 適用パス設定 -------- */
 export const config = {
   matcher: [
-    // 静的ファイルとNext.js内部ファイルを除外
     '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
-    // APIルートに適用
     '/(api|trpc)(.*)',
   ],
-}; 
+};
