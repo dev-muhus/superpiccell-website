@@ -55,12 +55,8 @@ export default clerkMiddleware(async (auth, req) => {
     const { userId, sessionId } = await auth.protect(); // 認証必須
     if (!userId) return;
 
-    /* ここで env が読めているか確認 */
-    console.log('SECRET_KEY length', process.env.CLERK_SECRET_KEY?.length || 0);
-
-    const client = await clerkClient();   // ← env がないとここから内部で失敗
+    const client = await clerkClient();
     const user = await client.users.getUser(userId);
-    console.log('privateMetadata', user.privateMetadata);
 
     const meta = user.privateMetadata as PrivateUsersMetadata;
     const flags = meta.users ?? {};
