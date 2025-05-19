@@ -10,6 +10,43 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
+ * YouTubeのURLからビデオIDを抽出する関数
+ * @param url YouTubeのURL（youtu.beやyoutube.comなど様々な形式に対応）
+ * @returns string - 抽出されたビデオID、無効なURLの場合は空文字
+ */
+export function extractYouTubeVideoId(url: string): string {
+  if (!url) return '';
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+  const match = url.match(regExp);
+  return (match && match[2].length === 11) ? match[2] : '';
+}
+
+/**
+ * YouTubeの埋め込み用URLを生成する関数
+ * @param url YouTubeの動画URL
+ * @param options オプション（autoplay, controls, loopなど）
+ * @returns string - 埋め込み用のURL、無効なURLの場合は空文字
+ */
+export function getYouTubeEmbedUrl(url: string, options?: { autoplay?: boolean }): string {
+  const videoId = extractYouTubeVideoId(url);
+  if (!videoId) return '';
+  
+  let embedUrl = `https://www.youtube.com/embed/${videoId}`;
+  
+  // オプションの処理
+  if (options) {
+    const params = new URLSearchParams();
+    if (options.autoplay) params.append('autoplay', '1');
+    
+    if (params.toString()) {
+      embedUrl += `?${params.toString()}`;
+    }
+  }
+  
+  return embedUrl;
+}
+
+/**
  * 指定されたURLの画像をプリロードする関数
  * @param src 画像のURL
  * @returns Promise<HTMLImageElement> - 読み込まれた画像要素

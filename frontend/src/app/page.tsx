@@ -6,6 +6,7 @@ import Gallery from '../components/Gallery';
 import Character from '../components/Character';
 import WalletConnector from "../components/WalletConnector";
 import MultilineText from '../components/MultilineText';
+import { getYouTubeEmbedUrl } from '../lib/utils';
 import textContent from '../../content/textContent';
 import { FaHome, FaStar, FaHeart, FaUser, FaImages, FaSmile, FaDiscord, FaBook, FaChevronDown } from 'react-icons/fa';
 
@@ -18,6 +19,9 @@ const centeredImageUrl = process.env.NEXT_PUBLIC_OVERLAY_IMAGE_URL?.startsWith('
   : process.env.NEXT_PUBLIC_OVERLAY_IMAGE_URL ? `/${process.env.NEXT_PUBLIC_OVERLAY_IMAGE_URL}` : null;
 
 const overlayText = process.env.NEXT_PUBLIC_OVERLAY_TEXT || "Welcome to Super Piccell";
+
+// 環境変数からプロジェクト動画URLを取得
+const projectVideoUrl = process.env.NEXT_PUBLIC_PROJECT_VIDEO_URL || "";
 
 export default function Home() {
   const [isLoaded, setIsLoaded] = useState(false);
@@ -50,6 +54,9 @@ export default function Home() {
       observer.disconnect();
     };
   }, []);
+
+  // YouTube埋め込みURLの取得
+  const embedUrl = getYouTubeEmbedUrl(projectVideoUrl);
 
   return (
     <div className={`w-full transition-opacity duration-1000 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}>
@@ -144,9 +151,24 @@ export default function Home() {
             
             <div className="max-w-4xl mx-auto slide-in-left delay-100">
               <div className="bg-white p-8 rounded-xl shadow-lg">
-                <p className="text-lg leading-relaxed text-gray-700">
+                <p className="text-lg leading-relaxed text-gray-700 mb-8">
                   <MultilineText text={textContent.ABOUT_TEXT} />
                 </p>
+                
+                {/* YouTube動画の埋め込み */}
+                {embedUrl && (
+                  <div>
+                    <div className="video-container max-w-3xl mx-auto rounded-lg overflow-hidden shadow-lg">
+                      <iframe
+                        src={embedUrl}
+                        title="SuperPiccellコアプロジェクト概要"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                        className="w-full h-full"
+                      ></iframe>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
