@@ -12,9 +12,7 @@ jobs:
 
       - uses: Ostrich-Cyber-Risk/ai-codereviewer@v2.7.1
         with:
-          OCTOKIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}   # ← 正しい入力名
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          # （任意）使うモデルを明示したい場合
-          # OPENAI_API_MODEL: gpt-4o-mini
-          # （任意）レビュー対象から除外したいパス
-          # exclude: 'frontend/node_modules/**'
+          OCTOKIT_TOKEN:   ${{ secrets.GITHUB_TOKEN }}
+          OPENAI_API_KEY:  ${{ secrets.OPENAI_API_KEY }}
+          # OPENAI_API_MODEL: gpt-4o-mini          # 任意
+          exclude: 'frontend/node_modules/**'   # 任意
