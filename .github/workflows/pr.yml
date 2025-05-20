@@ -26,7 +26,7 @@ jobs:
       PGPASSWORD: ${{ secrets.PGPASSWORD_TEST }}
       PGDATABASE: ${{ secrets.PGDB_TEST }}
       DATABASE_URL:  postgresql://${{ secrets.PGUSER_TEST }}:${{ secrets.PGPASSWORD_TEST }}@localhost:5432/${{ secrets.PGDB_TEST }}
-      TEST_DATABASE_URL: ${{ env.DATABASE_URL }}   # ← ここは OK（自己参照ではなく上で定義済み）
+      TEST_DATABASE_URL: postgresql://${{ secrets.PGUSER_TEST }}:${{ secrets.PGPASSWORD_TEST }}@localhost:5432/${{ secrets.PGDB_TEST }}
 
       # ---- Cloudinary ----
       NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: ${{ vars.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME }}
