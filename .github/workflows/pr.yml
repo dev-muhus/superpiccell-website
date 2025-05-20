@@ -12,6 +12,6 @@ jobs:
 
       - uses: Ostrich-Cyber-Risk/ai-codereviewer@v2.7.1
         with:
-          GITHUB_TOKEN:   ${{ secrets.GITHUB_TOKEN }}
+          OCTOKIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}   # ← 正しい入力名
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           root: frontend
