@@ -10,6 +10,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx src/db/migrate.ts",
     "db:reset": "tsx src/db/reset.ts",
+    "test": "cross-env TEST_MODE=true jest --runInBand",
     "test:api": "cross-env TEST_MODE=true jest --runInBand",
     "test:api:ci": "cross-env TEST_MODE=true CI=true jest --runInBand --ci",
     "test:db:start": "docker compose up -d test-db",
