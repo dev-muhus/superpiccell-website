@@ -1,17 +1,12 @@
 name: PR Checks
 on: [pull_request]
 
-concurrency:
-  group: pr-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   ci:
     runs-on: ubuntu-latest
 
-    # ① Postgres service コンテナ
     services:
-      postgres:
+      test-db:                      # ← ホスト名をアプリに合わせる
         image: postgres:15
         env:
           POSTGRES_USER: test
@@ -24,9 +19,8 @@ jobs:
           --health-timeout=5s
           --health-retries=5
 
-    # ② アプリが読む DB 接続情報
     env:
-      PGHOST: localhost
+      PGHOST: test-db              # ← service 名と同じ
       PGUSER: test
       PGPASSWORD: test
       PGDATABASE: test
@@ -38,27 +32,18 @@ jobs:
         working-directory: frontend
 
     steps:
-      # 1. ソース取得
       - uses: actions/checkout@v4
 
-      # 2. Node + npm キャッシュ
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
-      # 3. 依存インストール
-      - name: Install deps
-        run: npm ci
-
-      # 4. Lint
+      - run: npm ci
       - run: npm run lint
+      - run: npm test              # cross-env TEST_MODE=true jest --runInBand
 
-      # 5. テスト（Jest）
-      - run: npm test        # => "cross-env TEST_MODE=true jest --runInBand"
-
-      # 6. AI コードレビュー ★ここを追加★
       - uses: Ostrich-Cyber-Risk/ai-codereviewer@v2.7.1
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
