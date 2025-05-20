@@ -1,22 +1,43 @@
 name: PR Checks
 on: [pull_request]
 
+concurrency:
+  group: pr-${{ github.ref }}
+  cancel-in-progress: true   # 同じ PR の古いジョブを打ち切る
+
 jobs:
-  check:
+  ci:
     runs-on: ubuntu-latest
-    permissions: write-all      # PR へコメントを書くため
+    defaults:
+      run:
+        working-directory: frontend   # ← Next.js 配下に合わせる
     steps:
+      # 0) チェックアウト
       - uses: actions/checkout@v4
 
-      # Lint & Unit Test
+      # 1) Node セットアップ & キャッシュ
       - uses: actions/setup-node@v4
-        with: { node-version: 20 }
-      - run: npm ci
-      - run: npm run lint
-      - run: npm test
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
 
-      # AI Code Review (OpenAI)
+      # 2) パッケージインストール（lockfile あり）
+      - name: Install deps
+        run: npm ci
+
+      # 3) Lint
+      - run: npm run lint
+
+      # 4) 単体テスト（Jest）
+      - run: npm test          # = jest
+
+      # 5) AI コードレビュー
       - uses: Ostrich-Cyber-Risk/ai-codereviewer@v2.7.1
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          root: frontend
+          exclude: "**/*.md,frontend/.next/**"
+
+    # PR 通知を Slack 等へ飛ばしたい場合はここで追加

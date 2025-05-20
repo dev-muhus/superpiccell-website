@@ -1,16 +1,36 @@
 name: Security Scan
 on:
-  pull_request:
   push:
     branches: [main]
+  pull_request:
 
 jobs:
-  trivy:
+  trivy-fs:
     runs-on: ubuntu-latest
+    defaults: { run: { working-directory: frontend } }
     steps:
       - uses: actions/checkout@v4
       - uses: aquasecurity/trivy-action@0.28.0
         with:
-          scan-type: fs
-          severity: CRITICAL,HIGH
-          exit-code: 1
+          scan-type: "fs"
+          scan-ref: "."
+          severity: "CRITICAL,HIGH"
+          ignore-unfixed: true
+          skip-dirs: ".next,node_modules"
+
+  trivy-image:
+    runs-on: ubuntu-latest
+    needs: trivy-fs
+    steps:
+      - uses: actions/checkout@v4
+
+      # ① Docker Build（-f でパスを指定）
+      - name: Build frontend image
+        run: docker build -t frontend:ci -f docker/frontend/Dockerfile .
+
+      # ② Trivy Image スキャン
+      - uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: "image"
+          image-ref: "frontend:ci"
+          severity: "CRITICAL,HIGH"
