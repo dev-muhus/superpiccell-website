@@ -3,41 +3,65 @@ on: [pull_request]
 
 concurrency:
   group: pr-${{ github.ref }}
-  cancel-in-progress: true   # 同じ PR の古いジョブを打ち切る
+  cancel-in-progress: true
 
 jobs:
   ci:
     runs-on: ubuntu-latest
+
+    # ① Postgres service コンテナ
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test
+        ports: [ '5432:5432' ]
+        options: >-
+          --health-cmd="pg_isready -U test"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    # ② アプリが読む DB 接続情報
+    env:
+      PGHOST: localhost
+      PGUSER: test
+      PGPASSWORD: test
+      PGDATABASE: test
+      PGPORT: 5432
+      TEST_MODE: true
+
     defaults:
       run:
-        working-directory: frontend   # ← Next.js 配下に合わせる
+        working-directory: frontend
+
     steps:
-      # 0) チェックアウト
+      # 1. ソース取得
       - uses: actions/checkout@v4
 
-      # 1) Node セットアップ & キャッシュ
+      # 2. Node + npm キャッシュ
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
+          cache: npm
           cache-dependency-path: frontend/package-lock.json
 
-      # 2) パッケージインストール（lockfile あり）
+      # 3. 依存インストール
       - name: Install deps
         run: npm ci
 
-      # 3) Lint
+      # 4. Lint
       - run: npm run lint
 
-      # 4) 単体テスト（Jest）
-      - run: npm test          # = jest
+      # 5. テスト（Jest）
+      - run: npm test        # => "cross-env TEST_MODE=true jest --runInBand"
 
-      # 5) AI コードレビュー
+      # 6. AI コードレビュー ★ここを追加★
       - uses: Ostrich-Cyber-Risk/ai-codereviewer@v2.7.1
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           root: frontend
           exclude: "**/*.md,frontend/.next/**"
-
-    # PR 通知を Slack 等へ飛ばしたい場合はここで追加
