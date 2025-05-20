@@ -2,7 +2,7 @@
 
 ## 0. 目的
 GitHub 上の Next.js プロジェクトを **無料プラン**のまま  
-- PR 作成時に *AI コードレビュー* と *Lint/Test* を実行  
+- PR 作成時に *AI コードレビュー* を実行  
 - `main` ブランチへのマージを保護  
 - マージ成功時に Vercel Production へ自動デプロイ  
 - （任意）セキュリティスキャン・UX 測定を追加  
@@ -33,7 +33,7 @@ graph TD
 your-repo/
 ├─ .github/
 │  └─ workflows/
-│     ├─ pr.yml   # AI レビュー + Lint/Test
+│     ├─ pr.yml   # AI レビュー
 │     └─ sec.yml  # (任意) セキュリティスキャン
 └─ nextjs app...
 ```
@@ -49,24 +49,19 @@ name: PR Checks
 on: [pull_request]
 
 jobs:
-  check:
+  ai-review:
     runs-on: ubuntu-latest
-    permissions: write-all      # PR へコメントを書くため
+    permissions:
+      pull-requests: write
+
     steps:
       - uses: actions/checkout@v4
 
-      # Lint & Unit Test
-      - uses: actions/setup-node@v4
-        with: { node-version: 20 }
-      - run: npm ci
-      - run: npm run lint
-      - run: npm test
-
-      # AI Code Review (OpenAI)
       - uses: Ostrich-Cyber-Risk/ai-codereviewer@v2.7.1
         with:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN:   ${{ secrets.GITHUB_TOKEN }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          root: frontend
 ```
 
 ### 3.2 セキュリティスキャン (`.github/workflows/sec.yml`) *任意*
@@ -264,7 +259,7 @@ Branch protection 画面では
    - コードを書き `git push -u origin feature/foo`  
 2. **GitHub**  
    - PR 作成 → `PR Checks` ワークフロー開始  
-   - Lint/Test → AI Review 結果が PR にコメント  
+   - AI Review 結果が PR にコメント  
 3. **レビュアー**  
    - 指摘を反映し、PR が緑になれば *Merge*  
 4. **main ブランチ**  
