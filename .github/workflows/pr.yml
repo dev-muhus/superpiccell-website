@@ -1,3 +1,4 @@
+# .github/workflows/pr.yml
 name: PR Checks
 on: [pull_request]
 
@@ -8,49 +9,35 @@ jobs:
     services:
       postgres:
         image: postgres:15
+        ports: ["5432:5432"]
         env:
-          POSTGRES_USER:     test_user
-          POSTGRES_PASSWORD: test_pass
-          POSTGRES_DB:       test_db
-        ports:
-          - "5432:5432"
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test
         options: >-
-          --health-cmd="pg_isready -U test_user -d test_db"
-          --health-interval=5s
-          --health-timeout=5s
-          --health-retries=10
+          --health-cmd="pg_isready -U test -d test"
+          --health-interval=10s --health-timeout=5s --health-retries=5
 
     env:
-      # === テスト DB ===
+      # ---- DB ----
       PGHOST: localhost
       PGPORT: 5432
       PGUSER:     ${{ secrets.PGUSER_TEST }}
       PGPASSWORD: ${{ secrets.PGPASSWORD_TEST }}
       PGDATABASE: ${{ secrets.PGDB_TEST }}
-      DATABASE_URL:       postgresql://${{ secrets.PGUSER_TEST }}:${{ secrets.PGPASSWORD_TEST }}@localhost:5432/${{ secrets.PGDB_TEST }}
-      TEST_DATABASE_URL:  ${{ env.DATABASE_URL }}
-      TEST_MODE: true
+      DATABASE_URL:  postgresql://${{ secrets.PGUSER_TEST }}:${{ secrets.PGPASSWORD_TEST }}@localhost:5432/${{ secrets.PGDB_TEST }}
+      TEST_DATABASE_URL: ${{ env.DATABASE_URL }}   # ← ここは OK（自己参照ではなく上で定義済み）
 
-      # === Cloudinary ===
-      NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: superpiccell
-      NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET: dev
-      NEXT_PUBLIC_CLOUDINARY_POST_IMAGE_FOLDER: dev/post/images
-      NEXT_PUBLIC_CLOUDINARY_TEST_UPLOAD_PRESET: test
-      NEXT_PUBLIC_CLOUDINARY_TEST_POST_IMAGE_FOLDER: test/post/images
-      CLOUDINARY_API_KEY:    ${{ secrets.CLOUDINARY_API_KEY }}
-      CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+      # ---- Cloudinary ----
+      NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: ${{ vars.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME }}
+      CLOUDINARY_API_KEY:     ${{ secrets.CLOUDINARY_API_KEY }}
+      CLOUDINARY_API_SECRET:  ${{ secrets.CLOUDINARY_API_SECRET }}
 
-      # === Cloudflare R2 ===
-      R2_ACCOUNT_ID: 0b5baa2ffa10436551b3f5199bae878f
-      R2_ENDPOINT:   https://0b5baa2ffa10436551b3f5199bae878f.r2.cloudflarestorage.com
-      R2_REGION:     auto
-      R2_BUCKET:     dev-superpiccell-media
+      # ---- R2 ----
+      R2_BUCKET:            ${{ vars.R2_BUCKET }}
+      R2_ENDPOINT:          ${{ vars.R2_ENDPOINT }}
       R2_ACCESS_KEY_ID:     ${{ secrets.R2_ACCESS_KEY_ID }}
       R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-      R2_PUBLIC_URL: https://pub-f59e5e4f31e54f4e8decc2d3b497b2bd.r2.dev
-      NEXT_PUBLIC_POST_MOVIE_FOLDER: post/videos
-      R2_TEST_BUCKET:     test-superpiccell-media
-      R2_TEST_PUBLIC_URL: https://pub-3d9f5ba8165b4aadb29d6641082b5441.r2.dev
 
     defaults:
       run:
@@ -58,24 +45,17 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
-      - name: Install dependencies
-        run: npm ci
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test --runInBand
 
-      - name: Lint
-        run: npm run lint
-
-      - name: Unit & API Tests
-        run: npm test --runInBand
-
-      - name: AI Code Review
-        uses: Ostrich-Cyber-Risk/ai-codereviewer@v2.7.1
+      - uses: Ostrich-Cyber-Risk/ai-codereviewer@v2.7.1
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
