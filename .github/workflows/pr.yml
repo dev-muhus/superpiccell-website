@@ -1,4 +1,3 @@
-# .github/workflows/pr.yml
 name: PR Checks
 on: [pull_request]
 
