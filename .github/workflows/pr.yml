@@ -5,10 +5,6 @@ jobs:
   ci:
     runs-on: ubuntu-latest
 
-    # ────────────────────────────────────────────────────────
-    # 1. Postgres サービス
-    #    ※ ランナーからは localhost:5432 でアクセス
-    # ────────────────────────────────────────────────────────
     services:
       postgres:
         image: postgres:15
@@ -24,34 +20,46 @@ jobs:
           --health-timeout=5s
           --health-retries=10
 
-    # ────────────────────────────────────────────────────────
-    # 2. グローバル環境変数
-    #    jest.setup.js の優先順 (TEST_DATABASE_URL→DATABASE_URL→fallback)
-    # ────────────────────────────────────────────────────────
     env:
+      # === テスト DB ===
+      PGHOST: localhost
+      PGPORT: 5432
+      PGUSER:     ${{ secrets.PGUSER_TEST }}
+      PGPASSWORD: ${{ secrets.PGPASSWORD_TEST }}
+      PGDATABASE: ${{ secrets.PGDB_TEST }}
+      DATABASE_URL:       postgresql://${{ secrets.PGUSER_TEST }}:${{ secrets.PGPASSWORD_TEST }}@localhost:5432/${{ secrets.PGDB_TEST }}
+      TEST_DATABASE_URL:  ${{ env.DATABASE_URL }}
       TEST_MODE: true
-      TEST_DATABASE_URL: postgresql://test_user:test_pass@localhost:5432/test_db
-      DATABASE_URL:       postgresql://test_user:test_pass@localhost:5432/test_db
-      PGHOST:     localhost
-      PGUSER:     test_user
-      PGPASSWORD: test_pass
-      PGDATABASE: test_db
-      PGPORT:     5432
 
-    # すべての run コマンドを frontend/ で実行
+      # === Cloudinary ===
+      NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: superpiccell
+      NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET: dev
+      NEXT_PUBLIC_CLOUDINARY_POST_IMAGE_FOLDER: dev/post/images
+      NEXT_PUBLIC_CLOUDINARY_TEST_UPLOAD_PRESET: test
+      NEXT_PUBLIC_CLOUDINARY_TEST_POST_IMAGE_FOLDER: test/post/images
+      CLOUDINARY_API_KEY:    ${{ secrets.CLOUDINARY_API_KEY }}
+      CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+
+      # === Cloudflare R2 ===
+      R2_ACCOUNT_ID: 0b5baa2ffa10436551b3f5199bae878f
+      R2_ENDPOINT:   https://0b5baa2ffa10436551b3f5199bae878f.r2.cloudflarestorage.com
+      R2_REGION:     auto
+      R2_BUCKET:     dev-superpiccell-media
+      R2_ACCESS_KEY_ID:     ${{ secrets.R2_ACCESS_KEY_ID }}
+      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      R2_PUBLIC_URL: https://pub-f59e5e4f31e54f4e8decc2d3b497b2bd.r2.dev
+      NEXT_PUBLIC_POST_MOVIE_FOLDER: post/videos
+      R2_TEST_BUCKET:     test-superpiccell-media
+      R2_TEST_PUBLIC_URL: https://pub-3d9f5ba8165b4aadb29d6641082b5441.r2.dev
+
     defaults:
       run:
         working-directory: frontend
 
-    # ────────────────────────────────────────────────────────
-    # 3. パイプライン
-    # ────────────────────────────────────────────────────────
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
