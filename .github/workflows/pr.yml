@@ -5,48 +5,70 @@ jobs:
   ci:
     runs-on: ubuntu-latest
 
+    # ────────────────────────────────────────────────────────
+    # 1. Postgres サービス
+    #    ※ ランナーからは localhost:5432 でアクセス
+    # ────────────────────────────────────────────────────────
     services:
-      test-db:                      # ← ホスト名をアプリに合わせる
+      postgres:
         image: postgres:15
         env:
-          POSTGRES_USER: test
-          POSTGRES_PASSWORD: test
-          POSTGRES_DB: test
-        ports: [ '5432:5432' ]
+          POSTGRES_USER:     test_user
+          POSTGRES_PASSWORD: test_pass
+          POSTGRES_DB:       test_db
+        ports:
+          - "5432:5432"
         options: >-
-          --health-cmd="pg_isready -U test"
-          --health-interval=10s
+          --health-cmd="pg_isready -U test_user -d test_db"
+          --health-interval=5s
           --health-timeout=5s
-          --health-retries=5
+          --health-retries=10
 
+    # ────────────────────────────────────────────────────────
+    # 2. グローバル環境変数
+    #    jest.setup.js の優先順 (TEST_DATABASE_URL→DATABASE_URL→fallback)
+    # ────────────────────────────────────────────────────────
     env:
-      PGHOST: test-db              # ← service 名と同じ
-      PGUSER: test
-      PGPASSWORD: test
-      PGDATABASE: test
-      PGPORT: 5432
       TEST_MODE: true
+      TEST_DATABASE_URL: postgresql://test_user:test_pass@localhost:5432/test_db
+      DATABASE_URL:       postgresql://test_user:test_pass@localhost:5432/test_db
+      PGHOST:     localhost
+      PGUSER:     test_user
+      PGPASSWORD: test_pass
+      PGDATABASE: test_db
+      PGPORT:     5432
 
+    # すべての run コマンドを frontend/ で実行
     defaults:
       run:
         working-directory: frontend
 
+    # ────────────────────────────────────────────────────────
+    # 3. パイプライン
+    # ────────────────────────────────────────────────────────
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
-      - run: npm ci
-      - run: npm run lint
-      - run: npm test              # cross-env TEST_MODE=true jest --runInBand
+      - name: Install dependencies
+        run: npm ci
 
-      - uses: Ostrich-Cyber-Risk/ai-codereviewer@v2.7.1
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit & API Tests
+        run: npm test --runInBand
+
+      - name: AI Code Review
+        uses: Ostrich-Cyber-Risk/ai-codereviewer@v2.7.1
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           root: frontend
-          exclude: "**/*.md,frontend/.next/**"
