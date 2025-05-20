@@ -103,7 +103,7 @@ jobs:
    - ✓ Require pull request review  
    - （任意）Enable auto‑merge  
 3. **Dependabot**  
-   - *Settings → Security & analysis* で *Enable Dependabot alerts & security updates*  
+   - *Settings → Security → Advanced Security* で *Enable Dependabot alerts & security updates*  
 
 ---
 
@@ -125,37 +125,101 @@ jobs:
 > - 強制署名 (`Require signed commits`) や Linear history は組織ポリシーに応じて選択してください。
 
 
-### 4.3 PR を介さない「緊急直 push」運用
 
-> **要件**  
-> - 通常は PR フローでレビュー & CI を通す。  
-> - ただし緊急 hot‑fix などで **PR を作成せず直接 `main` に push** できるようにしておく。  
-> - PR を立てた場合は従来どおり *Status Checks がすべて緑* にならないとマージできない。
 
-| 設定項目 | 推奨状態 | 補足 |
-|----------|---------|------|
-| **Require a pull request before merging** | **オフ** | 直 push を許可するため無効化。 |
-| **Require status checks to pass** | ☑ | プッシュ後でも CI が回り、テストが赤ならブランチが「Failing」になる。<br>（コミットは残るが、Slack 通知などで気付けるようにしておく） |
-| **Include administrators** | 任意 | 管理者以外には直 push させたくない場合は **オン** にしておく。 |
-| **Restrict who can push to matching branch** | 任意 | 緊急対応を行えるメンバーだけに限定可能。 |
+### 4.3 **main ブランチ**に対し「PR 経由 + 自動チェックのみでマージ」する設定
 
-#### 運用フロー
+| GitHub UI の場所 | 必須設定 | 値 |
+|-----------------|----------|----|
+| Settings → **Branch protection rules** → “Add rule” | *Branch name pattern* | `main` |
+|  | **Require a pull request before merging** | ☑ 有効 |
+|  | └ Required approvals | `0` （人間レビュー不要） |
+|  | **Require status checks to pass** | ☑ `PR Checks`, `Security Scan` を選択 |
+|  | **Require branches to be up to date before merging** | *任意*（オン推奨） |
+|  | **Block force pushes** | *任意*（オン推奨） |
+|  | **Restrict deletions** | *任意*（オン推奨） |
+|  
+> **ポイント**  
+> - **PR は必須**ですが、Required approvals を 0 にすることで *レビューなしのセルフマージ* が可能です。  
+> - 自動テスト／AI レビュー／セキュリティチェック（Status checks）が **GREEN** にならない限りマージボタンは押せません。  
+> - 緊急対応時も *Draft PR → Push → Checks Pass → Merge* で数十秒の手間で本番反映できます。
 
-```
-(通常)                (緊急)
-Feature push          Hot-fix push
-     │                     │
- PR 作成               main 直 push
-     │                     │
-PR Checks 🟢         GitHub Actions 🚀
-     │                     │
-Merge → main         (CI が失敗したら即座に追加コミットで修正)
-```
+
+
+
+> **「Require pull request review before merging」は独立したチェックではありません**  
+> GitHub UI で **Require a pull request before merging** にチェックを入れると、その直下に **Required approvals** フィールドが表示されます。  
+> - `0` のまま → 人力レビュー不要（CI が緑なら即マージ可能）  
+> - `1` 以上 → 指定人数の Approve が必須  
+> 追加オプション（Dismiss stale approvals など）は運用に合わせて任意で設定してください。
+
+
+### 4.4 Ruleset (Preview) を使う場合の設定手順
+
+GitHub の *Rulesets* は従来の Branch protection を置き換える新機能です。  
+**Target branches を設定しないと一切適用されない** ので、必ずパターンを追加します。
+
+1. **Settings → Rules → `Add ruleset`**  
+2. **Ruleset name**: `main`  
+3. **Target branches → Add target** → *Include pattern* で `main` を追加  
+4. **Branch rules** セクションで上記 4.3 と同等のチェックを設定  
+5. 必要なら *Bypass list* に管理者や Bot を追加して緊急 push を許可  
+
+> Ruleset と従来の Branch rule が重複すると *Ruleset の方が優先* されます。既存の Branch rule がある場合は整理してください。
+
+
+
+
+
+
+> **Branch protection ルールが残っている理由**  
+> GitHub には現在  
+> 1. **従来の *Branch protection***（Settings → Branches）  
+> 2. **新しい *Rulesets*（Preview）**（Settings → Rules）  
+> の 2 系統が併存しています。**片方だけでも要件を満たせば OK** ですが、社内ポリシーや UI の慣れで「Branch protection を使い続ける」ケースが多いためドキュメントでは両方を併記しています。
+
+* ポイント  
+  * **Ruleset の方が優先**：同じブランチパターンが両方にある場合、Ruleset が適用されます。  
+  * **二重管理を避けたい場合**：Ruleset を `Active` にしたら *Branch protection rule (main)* を削除または無効化して構いません。  
+  * *Branch protection only* で運用しても要件（PR 必須・レビュー・ステータスチェック）は完全に満たせます。
+
+下記 2 つのうち **どちらか一方** を採用してください。
+
+| 選択肢 | 対応表 |
+|--------|--------|
+| **A. Branch protection だけ** | 4.3 の手順を設定。Ruleset は作成しない／Disabled のまま |
+| **B. Ruleset だけ** | 4.4 の手順を `Active` で設定し、Branch protection の同名ルールを削除 |
+
+
+#### Enforcement status の選択肢（2025‑05 時点）
+
+| 選択肢 | 動作 | 推奨タイミング |
+|--------|------|---------------|
+| **Active** | ルールセットを強制し、違反 push / merge をブロックする | 本番運用 |
+| **Disabled** | ルールセットを適用しない | 準備中・一時停止 |
+
+> ※ 以前存在した **Evaluate**（違反を記録するのみでブロックしない）は現 UI では廃止されています。
+
+
+### 4.5 なぜ「Branch protection」手順も残しているのか？
+#### 「Require pull request review」ではなく「Require a pull request before merging」
+
+Branch protection 画面では  
+**✓ Require a pull request before merging** のチェックをオンにすると、  
+*Automatically require a pull request review before merging* が含まれるため、個別に「Require pull request review」を指定する UI は存在しません（GitHub Docs 上の表記ゆれ）。本文は元々の目的を示した概要であり、実際の UI 操作は上記チェックで代替されます。
+
+
+### 4.5 Dependabot の有効化手順
+
+| 手順 | GitHub UI | 操作内容 |
+|------|-----------|----------|
+| 1 | **Settings → Security → Advanced Security** | 「**Dependabot alerts**」「**Dependabot security updates**」を **Enable** に切り替える |
+| 2 | （初回のみ） | スキャンが走り、既存脆弱性が *Security → Dependabot* に一覧表示される |
+| 3 | 自動 PR | `dependabot/...` ブランチでアップデート PR が作成される。CI 緑なら自動マージする Workﬂow を別途用意可 |
+| 4 | **Settings → Secrets and variables → Dependabot** | これは “Dependabot secrets”。**プライベートレジストリ用トークン** を入れる場所で、通常の npm 公開パッケージだけなら不要 |
 
 > **注意**  
-> 直 push で CI が失敗すると Production へも不安定コードが展開される恐れがあります。  
-> - Vercel の *Protected Branches* を利用し、Production デプロイ対象を `release` ブランチに切り替える  
-> - `main` は Preview only、`release` だけ Production という運用も一案です。
+> Dependabot の有効化は *Security & analysis* 画面で行い、**Dependabot secrets** はほとんどの OSS プロジェクトでは設定不要です。
 
 
 ## 5. Vercel 側設定
@@ -223,3 +287,9 @@ Merge → main         (CI が失敗したら即座に追加コミットで修�
 ---
 
 *Happy CI/CD!* :rocket:
+
+
+> **Include administrators の表示位置**  
+> - **Classic Branch protection rule** 画面では「*Include administrators*」というチェックボックスが最下部にあります。  
+> - **Rulesets (Preview)** には同名オプションは無く、代わりに **Bypass list** で `Repository administrators` を追加・除外します。  
+> したがって Ruleset で運用する場合は本チェックボックスは表示されません。
