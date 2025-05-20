@@ -14,5 +14,5 @@ jobs:
         with:
           OCTOKIT_TOKEN:   ${{ secrets.GITHUB_TOKEN }}
           OPENAI_API_KEY:  ${{ secrets.OPENAI_API_KEY }}
-          # OPENAI_API_MODEL: gpt-4o-mini          # 任意
+          OPENAI_API_MODEL: gpt-4o-mini          # 任意
           exclude: 'frontend/node_modules/**'   # 任意
