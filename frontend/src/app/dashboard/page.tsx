@@ -5,7 +5,7 @@ import { useUser } from '@clerk/nextjs';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { FaHome, FaClock, FaHeart, FaUsers, FaBookmark, FaComments, FaBan, FaUser, FaSave } from 'react-icons/fa';
+import { FaHome, FaClock, FaHeart, FaUsers, FaBookmark, FaComments, FaBan, FaUser, FaSave, FaGamepad } from 'react-icons/fa';
 import PostModal from '@/components/PostModal';
 import Loading from '@/components/Loading';
 import PageLayout from '@/components/PageLayout';
@@ -166,6 +166,15 @@ export default function DashboardPage() {
                     <p className="text-sm text-blue-100 mt-1">新しい投稿を作成</p>
                   </div>
                 </button>
+
+                {/* ゲームセンター */}
+                <Link href="/dashboard/games" className="bg-white border border-gray-200 rounded-lg p-6 hover:bg-gray-50 transition-colors flex items-center transform hover:-translate-y-1 hover:shadow-lg bg-gradient-to-br from-indigo-50 to-blue-50">
+                  <FaGamepad className="text-blue-600 mr-3 text-xl" />
+                  <div>
+                    <h3 className="font-semibold">GAME CENTRE</h3>
+                    <p className="text-sm text-gray-600">ゲームで遊ぶ</p>
+                  </div>
+                </Link>
 
                 {/* タイムライン */}
                 <Link href="/timeline" className="bg-white border border-gray-200 rounded-lg p-6 hover:bg-gray-50 transition-colors flex items-center transform hover:-translate-y-1 hover:shadow-lg">

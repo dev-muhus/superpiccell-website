@@ -1,12 +1,9 @@
 import '../styles/globals.css';
-import Header from '../components/Header';
-import Footer from '../components/Footer';
-import ScrollToTopButton from '../components/ScrollToTopButton';
-import type { Metadata, Viewport } from 'next';
 import { ClerkProvider } from '@clerk/nextjs';
 import { Toaster } from 'react-hot-toast';
-import CookieConsent from '@/components/CookieConsent';
 import ConditionalTrackingScripts from '@/components/ConditionalTrackingScripts';
+import type { Metadata, Viewport } from 'next';
+import ClientLayoutWrapper from '../components/ClientLayoutWrapper';
 
 export const metadata: Metadata = {
   title: process.env.NEXT_PUBLIC_SITE_TITLE || 'Super Piccell',
@@ -66,7 +63,6 @@ export default function RootLayout({
         />
       </head>
       <body>
-        <Header />
         {/* Toasterコンポーネント */}
         <Toaster
           position="top-center"
@@ -88,10 +84,11 @@ export default function RootLayout({
             },
           }}
         />
-        {children}
-        <Footer />
-        <ScrollToTopButton />
-        <CookieConsent privacyPolicyUrl="/privacy-policy" />
+        
+        <ClientLayoutWrapper>
+          {children}
+        </ClientLayoutWrapper>
+        
         <ConditionalTrackingScripts />
       </body>
     </html>
