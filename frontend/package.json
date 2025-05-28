@@ -13,6 +13,7 @@
     "db:generate": "drizzle-kit generate:pg",
     "db:migrate": "tsx scripts/migrate.ts",
     "db:migrate:production": "tsx scripts/migrate-production.ts",
+    "db:migrate:check": "tsx scripts/migrate-check.ts",
     "db:studio": "drizzle-kit studio",
     "db:push": "drizzle-kit push:pg",
     "db:backup": "tsx scripts/backup.ts",

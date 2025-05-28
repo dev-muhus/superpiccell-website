@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useRef, useMemo, useState, useEffect, useCallback } from 'react';
+import React, { useRef, useMemo, useState, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Sphere, Billboard, Text, useGLTF, Icosahedron, Dodecahedron, Octahedron } from '@react-three/drei';
+import { Sphere, Billboard, Text, Icosahedron, Dodecahedron, Octahedron } from '@react-three/drei';
 import * as THREE from 'three';
 import { useCollisionSystem } from '../Utils/CollisionSystem';
 
@@ -82,7 +82,7 @@ const ItemParticleEffect = ({
     return { positions, colors, sizes };
   }, [color, particleCount]);
   
-  useFrame((state, delta) => {
+  useFrame((state) => {
     if (particlesRef.current) {
       const positions = particlesRef.current.geometry.attributes.position.array as Float32Array;
       
@@ -270,7 +270,7 @@ export default function EnhancedItems({
   customItems,
   stageId = 'cyber-city'
 }: EnhancedItemsProps) {
-  const { addCollisionObject, removeCollisionObject, checkCollisions } = useCollisionSystem();
+  const { addCollisionObject, removeCollisionObject } = useCollisionSystem();
   
   // アイテム状態管理
   const [items, setItems] = useState<EnhancedCollectibleItem[]>(() => {
@@ -390,7 +390,7 @@ export default function EnhancedItems({
   }, [visibleItems, addCollisionObject, removeCollisionObject, onCollect]);
   
   // マグネット効果（プレイヤーに引き寄せられる）
-  useFrame((state, delta) => {
+  useFrame(() => {
     if (!playerPosition) return;
     
     visibleItems.forEach(item => {
@@ -405,7 +405,7 @@ export default function EnhancedItems({
           .normalize();
         
         const magneticForce = (magneticRange - distance) / magneticRange;
-        const moveSpeed = magneticForce * delta * 5;
+        const moveSpeed = magneticForce * 5;
         
         // アイテムの位置を更新
         const newPosition = itemPosition.add(direction.multiplyScalar(moveSpeed));
@@ -428,7 +428,7 @@ export default function EnhancedItems({
   // 時間のリファレンス
   const timeRef = useRef(0);
   
-  useFrame((_, delta) => {
+  useFrame((state, delta) => {
     timeRef.current += delta;
   });
   
@@ -553,29 +553,29 @@ export default function EnhancedItems({
     const hoverHeight = item.hoverHeight || 0.2;
     
     // 複雑なアニメーション
-    useFrame((state, delta) => {
+    useFrame((state) => {
       if (!itemRef.current) return;
       
       const time = state.clock.elapsedTime;
       
       switch (item.animationType) {
         case 'rotate':
-          itemRef.current.rotation.y += delta * rotationSpeed;
-          itemRef.current.rotation.x += delta * rotationSpeed * 0.5;
+          itemRef.current.rotation.y += rotationSpeed;
+          itemRef.current.rotation.x += rotationSpeed * 0.5;
           break;
         case 'pulse':
           const scale = 1 + Math.sin(time * 3) * 0.2;
           itemRef.current.scale.setScalar(scale);
-          itemRef.current.rotation.y += delta * rotationSpeed;
+          itemRef.current.rotation.y += rotationSpeed;
           break;
         case 'orbit':
-          itemRef.current.rotation.y += delta * rotationSpeed;
+          itemRef.current.rotation.y += rotationSpeed;
           const orbitRadius = 0.5;
           itemRef.current.position.x = item.position[0] + Math.cos(time) * orbitRadius;
           itemRef.current.position.z = item.position[2] + Math.sin(time) * orbitRadius;
           break;
         case 'spiral':
-          itemRef.current.rotation.y += delta * rotationSpeed;
+          itemRef.current.rotation.y += rotationSpeed;
           const spiralHeight = Math.sin(time * 2) * hoverHeight;
           const spiralRadius = Math.cos(time * 1.5) * 0.3;
           itemRef.current.position.x = item.position[0] + spiralRadius;
@@ -584,7 +584,7 @@ export default function EnhancedItems({
           break;
         case 'float':
         default:
-          itemRef.current.rotation.y += delta * rotationSpeed;
+          itemRef.current.rotation.y += rotationSpeed;
           const hoverOffset = Math.sin(time * 2) * hoverHeight;
           itemRef.current.position.y = item.position[1] + hoverOffset;
           break;

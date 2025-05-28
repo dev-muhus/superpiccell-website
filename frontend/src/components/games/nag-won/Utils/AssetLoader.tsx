@@ -1,10 +1,10 @@
 'use client';
 
-import { useLoader, useThree } from '@react-three/fiber';
+import React, { useState, useEffect } from 'react';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 import { TextureLoader } from 'three';
-import { useEffect, useState, useCallback } from 'react';
+import { useCallback } from 'react';
 import * as THREE from 'three';
 
 // アセット定義
@@ -123,8 +123,7 @@ export function useAssetLoader(stageId: string) {
     loadedSize: 0
   });
   
-  const [loadedAssets, setLoadedAssets] = useState<Map<string, any>>(new Map());
-  const { gl } = useThree();
+  const [loadedAssets, setLoadedAssets] = useState<Map<string, THREE.Object3D | THREE.Texture>>(new Map());
 
   // DRACOローダーの設定
   const setupDracoLoader = useCallback(() => {
@@ -199,9 +198,7 @@ export function useAssetLoader(stageId: string) {
                   });
                   resolve(gltf);
                 },
-                (progress) => {
-                  // 個別アセットの進捗は無視（全体の進捗で管理）
-                },
+                undefined,
                 reject
               );
             });

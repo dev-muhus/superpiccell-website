@@ -2,10 +2,17 @@
 
 import React, { useRef, useMemo, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { Box, Cylinder, Billboard, Text, useGLTF } from '@react-three/drei';
+import { Box, Cylinder, Billboard, Text } from '@react-three/drei';
 import * as THREE from 'three';
 import { useAssetLoader, LoadingOverlay } from '../Utils/AssetLoader';
 import { useCollisionSystem, CollisionDebug } from '../Utils/CollisionSystem';
+
+// GLTFアセットの型定義
+interface GLTFResult {
+  scene: THREE.Group;
+  nodes: { [name: string]: THREE.Object3D };
+  materials: { [name: string]: THREE.Material };
+}
 
 // 建物のタイプ定義（拡張版）
 type EnhancedBuildingType = {
@@ -114,7 +121,7 @@ const ModelBuilding = ({
   modelAsset 
 }: { 
   building: EnhancedBuildingType; 
-  modelAsset: any;
+  modelAsset: THREE.Object3D | THREE.Texture;
 }) => {
   const groupRef = useRef<THREE.Group>(null);
   
@@ -135,7 +142,12 @@ const ModelBuilding = ({
     }
   });
   
-  if (!modelAsset) return null;
+  // GLTFアセットかどうかをチェック
+  const isGLTFAsset = (asset: THREE.Object3D | THREE.Texture): boolean => {
+    return asset && typeof asset === 'object' && 'scene' in asset;
+  };
+  
+  if (!modelAsset || !isGLTFAsset(modelAsset)) return null;
   
   return (
     <group 
@@ -143,7 +155,7 @@ const ModelBuilding = ({
       position={building.position} 
       rotation={[0, building.rotation || 0, 0]}
     >
-      <primitive object={modelAsset.scene.clone()} />
+      <primitive object={(modelAsset as unknown as GLTFResult).scene.clone()} />
       
       {/* パーティクルエフェクト */}
       {building.hasParticles && (
@@ -160,37 +172,13 @@ const EnhancedBuilding = ({
   isAssetLoaded 
 }: { 
   building: EnhancedBuildingType;
-  getAsset: (id: string) => any;
+  getAsset: (id: string) => THREE.Object3D | THREE.Texture | undefined;
   isAssetLoaded: (id: string) => boolean;
 }) => {
   const { position, height, width, depth, color, hasNeon, neonColor, neonText, rotation, buildingType, windowDensity = 1.0, textureScale = 1.0, modelId } = building;
   const groupRef = useRef<THREE.Group>(null);
   
-  // 3Dモデルを使用する場合
-  if (modelId && isAssetLoaded(modelId)) {
-    const modelAsset = getAsset(modelId);
-    return <ModelBuilding building={building} modelAsset={modelAsset} />;
-  }
-  
-  // アニメーション
-  useFrame((state, delta) => {
-    if (groupRef.current && building.animationType) {
-      switch (building.animationType) {
-        case 'rotate':
-          groupRef.current.rotation.y += delta * 0.2;
-          break;
-        case 'float':
-          groupRef.current.position.y = position[1] + Math.sin(state.clock.elapsedTime + position[0]) * 0.3;
-          break;
-        case 'pulse':
-          const scale = 1 + Math.sin(state.clock.elapsedTime * 3 + position[0]) * 0.05;
-          groupRef.current.scale.setScalar(scale);
-          break;
-      }
-    }
-  });
-  
-  // 窓のパターンを生成（改良版）
+  // React Hooksを条件付きで呼び出さないように修正
   const windowPattern = useMemo(() => {
     const canvas = document.createElement('canvas');
     canvas.width = 512;
@@ -292,6 +280,32 @@ const EnhancedBuilding = ({
     
     return texture;
   }, [color, buildingType, windowDensity, textureScale, neonColor]);
+  
+  // アニメーション
+  useFrame((state, delta) => {
+    if (groupRef.current && building.animationType) {
+      switch (building.animationType) {
+        case 'rotate':
+          groupRef.current.rotation.y += delta * 0.2;
+          break;
+        case 'float':
+          groupRef.current.position.y = position[1] + Math.sin(state.clock.elapsedTime + position[0]) * 0.3;
+          break;
+        case 'pulse':
+          const scale = 1 + Math.sin(state.clock.elapsedTime * 3 + position[0]) * 0.05;
+          groupRef.current.scale.setScalar(scale);
+          break;
+      }
+    }
+  });
+  
+  // 3Dモデルを使用する場合
+  if (modelId && isAssetLoaded(modelId)) {
+    const modelAsset = getAsset(modelId);
+    if (modelAsset) {
+      return <ModelBuilding building={building} modelAsset={modelAsset} />;
+    }
+  }
   
   // 建物の形状（改良版）
   const BuildingShape = () => {
@@ -409,7 +423,7 @@ export default function EnhancedCyberCity() {
         const width = Math.max(10, Math.random() * 20);
         const depth = Math.max(10, Math.random() * 20);
         
-        const buildingType = buildingTypes[Math.floor(Math.random() * buildingTypes.length)] as any;
+        const buildingType = buildingTypes[Math.floor(Math.random() * buildingTypes.length)] as 'skyscraper' | 'office' | 'residential' | 'shop' | 'tower' | 'complex';
         let height;
         
         switch(buildingType) {
@@ -429,7 +443,7 @@ export default function EnhancedCyberCity() {
         const hasNeon = Math.random() > 0.05; // ほぼ全ての建物に光る要素
         const neonColor = neonColors[Math.floor(Math.random() * neonColors.length)];
         const neonText = neonTexts[Math.floor(Math.random() * neonTexts.length)];
-        const animationType = animationTypes[Math.floor(Math.random() * animationTypes.length)] as any;
+        const animationType = animationTypes[Math.floor(Math.random() * animationTypes.length)] as 'none' | 'rotate' | 'float' | 'pulse';
         
         // 特別な建物には3Dモデルを使用
         let modelId;

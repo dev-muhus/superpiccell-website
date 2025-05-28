@@ -1,8 +1,7 @@
 'use client';
 
+import React, { useRef, useCallback } from 'react';
 import * as THREE from 'three';
-import { useFrame } from '@react-three/fiber';
-import { useRef, useCallback, useMemo } from 'react';
 
 // 衝突判定の種類
 export type CollisionType = 'sphere' | 'box' | 'capsule' | 'mesh';
@@ -90,7 +89,6 @@ export class CollisionSystem {
   // 近隣のオブジェクトを取得
   private getNearbyObjects(position: THREE.Vector3): CollisionObject[] {
     const nearby: CollisionObject[] = [];
-    const centerKey = this.getGridKey(position);
     
     // 周囲9グリッドをチェック
     for (let dx = -1; dx <= 1; dx++) {
@@ -101,8 +99,8 @@ export class CollisionSystem {
         
         const grid = this.spatialGrid.get(key);
         if (grid) {
-          for (const id of grid) {
-            const obj = this.objects.get(id);
+          for (const objId of grid) {
+            const obj = this.objects.get(objId);
             if (obj) {
               nearby.push(obj);
             }
@@ -224,7 +222,7 @@ export class CollisionSystem {
     let closestResult: CollisionResult | null = null;
     let closestDistance = maxDistance;
     
-    for (const [id, obj] of this.objects) {
+    for (const [, obj] of this.objects) {
       if (obj.type === 'sphere') {
         const sphere = new THREE.Sphere(obj.position, obj.size.x);
         const intersectionPoint = new THREE.Vector3();
