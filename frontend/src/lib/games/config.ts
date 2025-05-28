@@ -26,7 +26,7 @@ export const GAMES_CONFIG: Record<string, GameConfig> = {
   'nag-won': {
     id: 'nag-won',
     title: 'Nag-Won',
-    description: 'サイバーシティを探索するメタバースゲーム',
+    description: '各種ステージを探索するメタバースゲーム',
     thumbnail: '/image/games/nag-won.webp',
     isNew: true,
     settings: {
