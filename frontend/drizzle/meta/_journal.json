@@ -57,6 +57,13 @@
       "when": 1747205661261,
       "tag": "0007_young_zodiak",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1748409630565,
+      "tag": "0008_damp_paper_doll",
+      "breakpoints": true
     }
   ]
 }

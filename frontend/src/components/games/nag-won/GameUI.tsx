@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import GameSettings from './GameSettings';
+import GameRankingModal from './UI/GameRankingModal';
 
 interface GameUIProps {
   score: number;
@@ -30,6 +31,8 @@ export default function GameUI({
 }: GameUIProps) {
   // 設定モーダルの表示状態
   const [showSettings, setShowSettings] = useState(false);
+  // ランキングモーダルの表示状態
+  const [showRanking, setShowRanking] = useState(false);
   // モバイルデバイスかどうかを判定
   const [isMobile, setIsMobile] = useState(false);
   
@@ -127,10 +130,11 @@ export default function GameUI({
               <h3 className="font-bold mb-1 sm:mb-2 text-sm sm:text-base">操作方法:</h3>
               {isMobile ? (
                 <ul className="list-disc pl-5 space-y-0.5 sm:space-y-1 text-xs sm:text-sm">
-                  <li>移動: 画面左側の仮想ジョイスティック</li>
-                  <li>視点移動: 画面を指でドラッグ</li>
-                  <li>ジャンプ: 画面右下の青い↑ボタン</li>
-                  <li>ダッシュ: 画面右下の赤い→→ボタン</li>
+                  <li>移動: 画面左下のジョイスティック</li>
+                  <li>視点移動: 画面をスワイプ</li>
+                  <li>ジャンプ: 画面右下の青いボタン</li>
+                  <li>ダッシュ: 画面右下の赤いボタン</li>
+                  <li>ズーム: 画面左上のボタンまたはピンチ操作</li>
                   <li>アイテム収集: 接近で自動収集</li>
                   <li>メニュー表示: 画面左上のメニューボタン</li>
                 </ul>
@@ -161,6 +165,14 @@ export default function GameUI({
               >
                 ゲーム設定
               </button>
+
+              {/* ランキングボタン */}
+              <button
+                onClick={() => setShowRanking(true)}
+                className="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-1.5 sm:py-2 px-4 sm:px-8 rounded transition-colors text-sm sm:text-base"
+              >
+                🏆 ランキング
+              </button>
               
               <div className="grid grid-cols-2 gap-2 mt-2 sm:mt-4">
                 <button
@@ -186,6 +198,14 @@ export default function GameUI({
             )}
           </div>
         </div>
+
+        {/* ランキングモーダル */}
+        <GameRankingModal
+          isOpen={showRanking}
+          onClose={() => setShowRanking(false)}
+          gameId="nag-won"
+          stageId={selectedStageId}
+        />
       </div>
     );
   }
@@ -211,13 +231,21 @@ export default function GameUI({
               おつかれさまでした！<br />
               もう一度プレイして、より高いスコアに挑戦しましょう！
             </p>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2 mb-4">
               <button
                 onClick={onRestart}
                 className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-1.5 sm:py-2 px-2 sm:px-4 rounded transition-colors text-xs sm:text-sm"
               >
                 もう一度プレイ
               </button>
+              <button
+                onClick={() => setShowRanking(true)}
+                className="bg-yellow-600 hover:bg-yellow-700 text-white font-bold py-1.5 sm:py-2 px-2 sm:px-4 rounded transition-colors text-xs sm:text-sm"
+              >
+                🏆 ランキング
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
               <button
                 onClick={onBackToDashboard}
                 className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-1.5 sm:py-2 px-2 sm:px-4 rounded transition-colors text-xs sm:text-sm"
@@ -233,6 +261,14 @@ export default function GameUI({
             </div>
           </div>
         </div>
+
+        {/* ランキングモーダル */}
+        <GameRankingModal
+          isOpen={showRanking}
+          onClose={() => setShowRanking(false)}
+          gameId="nag-won"
+          stageId={selectedStageId}
+        />
       </div>
     );
   }
@@ -262,6 +298,7 @@ export default function GameUI({
           onClick={triggerEscKeyEvent}
           className="absolute top-2 left-2 z-30 bg-gray-800 bg-opacity-80 p-2 rounded-full w-10 h-10 flex items-center justify-center touch-manipulation"
           aria-label="メニュー"
+          data-ui-element="menu-button"
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -288,38 +325,6 @@ export default function GameUI({
         </div>
       )}
       
-      {/* モバイル用操作ボタン */}
-      {isMobile && isGameActive && (
-        <div className="absolute bottom-4 right-4 z-30 grid grid-cols-2 gap-4">
-          <div className="col-span-1">
-            {/* ジャンプボタン */}
-            <button
-              className="w-14 h-14 bg-blue-600 bg-opacity-70 rounded-full flex items-center justify-center touch-manipulation active:bg-blue-700"
-              onTouchStart={() => window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Space' }))}
-              onTouchEnd={() => window.dispatchEvent(new KeyboardEvent('keyup', { code: 'Space' }))}
-              aria-label="ジャンプ"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
-              </svg>
-            </button>
-          </div>
-          <div className="col-span-1">
-            {/* ダッシュボタン */}
-            <button
-              className="w-14 h-14 bg-red-600 bg-opacity-70 rounded-full flex items-center justify-center touch-manipulation active:bg-red-700"
-              onTouchStart={() => window.dispatchEvent(new KeyboardEvent('keydown', { code: 'ShiftLeft' }))}
-              onTouchEnd={() => window.dispatchEvent(new KeyboardEvent('keyup', { code: 'ShiftLeft' }))}
-              aria-label="ダッシュ"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
-              </svg>
-            </button>
-          </div>
-        </div>
-      )}
-      
       {/* モバイル操作ボタンのヒント - 最初の数秒間だけ表示 */}
       {isMobile && isGameActive && (
         <ControlHint />
@@ -341,14 +346,33 @@ const ControlHint = () => {
   if (!show) return null;
   
   return (
-    <div className="absolute bottom-20 right-4 z-30 bg-black bg-opacity-80 p-2 rounded-lg text-white text-xs max-w-[160px]">
-      <div className="flex items-center mb-1">
-        <span className="w-4 h-4 rounded-full bg-blue-600 mr-2 flex-shrink-0"></span>
-        <span>ジャンプ</span>
-      </div>
-      <div className="flex items-center">
-        <span className="w-4 h-4 rounded-full bg-red-600 mr-2 flex-shrink-0"></span>
-        <span>ダッシュ（加速）</span>
+    <div className="absolute top-1/3 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30 bg-black bg-opacity-90 p-3 rounded-lg text-white text-xs max-w-[300px] border border-white border-opacity-20">
+      <div className="text-center mb-2 font-bold text-yellow-400">操作ガイド</div>
+      <div className="grid grid-cols-2 gap-2 text-xs">
+        <div className="flex items-center">
+          <span className="w-3 h-3 rounded-full bg-blue-600 mr-2 flex-shrink-0"></span>
+          <span>移動（左下）</span>
+        </div>
+        <div className="flex items-center">
+          <span className="w-3 h-3 rounded-full bg-green-600 mr-2 flex-shrink-0"></span>
+          <span>視点（スワイプ）</span>
+        </div>
+        <div className="flex items-center">
+          <span className="w-3 h-3 rounded-full bg-blue-600 mr-2 flex-shrink-0"></span>
+          <span>ジャンプ（右下）</span>
+        </div>
+        <div className="flex items-center">
+          <span className="w-3 h-3 rounded-full bg-red-600 mr-2 flex-shrink-0"></span>
+          <span>ダッシュ（右下）</span>
+        </div>
+        <div className="flex items-center">
+          <span className="w-3 h-3 rounded-full bg-gray-600 mr-2 flex-shrink-0"></span>
+          <span>ズーム（左上）</span>
+        </div>
+        <div className="flex items-center">
+          <span className="w-3 h-3 rounded-full bg-gray-800 mr-2 flex-shrink-0"></span>
+          <span>ピンチズーム</span>
+        </div>
       </div>
     </div>
   );

@@ -166,8 +166,29 @@ Super Piccellプラットフォームには、さまざまなゲームコンテ�
 - **ゲーム管理ダッシュボード** - 中央管理インターフェースからのゲーム設定と監視
 - **共通コンポーネント** - 再利用可能なUI要素、フック、ユーティリティ
 - **状態管理ソリューション** - Zustandを活用したゲーム状態の効率的な管理
+- **スコア保存・ランキング機能** - プレイヤーのスコア記録と競争要素の提供
+- **モバイル最適化** - タッチ操作とレスポンシブデザインに対応
 
 現在、**Nag-Won**（3Dメタバース環境でのアイテム収集ゲーム）が実装されており、フレームワークの設計により将来的に新しいゲームを容易に追加できます。
+
+### ゲームスコア・ランキング機能
+
+プラットフォームには包括的なスコア管理システムが実装されています：
+
+- **スコア保存**: ゲーム終了時に自動的にスコア保存確認を表示
+- **ランキング表示**: ゲーム内からリアルタイムでランキングを確認可能
+- **プライバシー保護**: ブロック関係や削除ユーザーを適切に除外
+- **ページネーション**: 大量のランキングデータを効率的に表示
+- **セキュリティ**: 認証済みユーザーのみアクセス可能、不正なスコア操作を防止
+
+### モバイルUI/UX最適化
+
+モバイルデバイスでの快適なゲーム体験を提供：
+
+- **Pull to Refresh対策**: ゲーム中の誤操作を防止
+- **デュアルジョイスティック**: 移動とカメラ操作を分離した直感的な操作
+- **レスポンシブデザイン**: 様々な画面サイズに対応
+- **タッチ最適化**: モバイル操作に最適化されたボタン配置
 
 フレームワークの詳細な説明、開発ガイドライン、新規ゲーム追加方法については、[ゲームフレームワーク開発・運用ガイド](docs/games-framework-guide.md)を参照してください。
 
@@ -365,23 +386,119 @@ export const users = pgTable('users', {
    - 開発環境へのマイグレーションは必ず `NODE_ENV=development` を指定して実行してください
    - コマンド例: `docker compose exec frontend sh -c "NODE_ENV=development npm run db:migrate"`
 
-2. **本番環境へのマイグレーション**
-   - 本番環境へのマイグレーションは必ず事前に確認を取ってから実行してください
-   - チームリードの承認なしに本番環境マイグレーションを実行してはいけません
-   - 本番環境マイグレーション前にステージング環境でテストを行ってください
-   - 本番マイグレーション実行前に必ずバックアップを取得してください
-   - マイグレーション実行コマンド: `docker compose exec frontend sh -c "NODE_ENV=production npm run db:migrate"`
+2. **本番環境へのマイグレーション（推奨方法）**
+   - **自動マイグレーション（推奨）**: `git push origin main`時に本番データベースへの自動マイグレーションが実行されます
+   - GitHub Actionsワークフロー（`.github/workflows/production-migrate.yml`）により自動実行
+   - **注意**: マイグレーション専用ワークフローのため、Vercelへのデプロイは別途自動実行されます
+   - セキュリティ機能:
+     - GitHub Secrets経由での安全な接続情報管理
+     - Environment Protection Rules適用
+     - 実行者・実行時刻の記録
+     - 事前・事後検証の自動実行
+     - 詳細なマイグレーションレポート生成
 
-3. **データベーススキーマの変更について**
-   - スキーマ変更を行う場合は必ずPRでコードレビューを受けてください
-   - 破壊的変更（カラム削除やNOT NULL制約の追加など）には特に注意してください
-   - ダウンタイムが必要な変更の場合は、事前に計画を立ててから実施してください
+3. **本番環境への緊急マイグレーション（ローカル実行）**
+   - 緊急時のみ使用: `docker compose exec frontend npm run db:migrate:production`
+   - セキュリティ機能:
+     - 対話式確認プロンプト
+     - 環境変数検証
+     - 実行ログの自動生成
+     - 本番URL パターンの検証
+   - 実行前の必須確認事項:
+     - `.env.production`ファイルの存在確認
+     - 本番データベースURLの正確性確認
+     - バックアップの取得完了確認
 
-4. **データ移行が必要な場合**
-   - データ移行スクリプトは必ず別途用意し、レビューを受けてください
-   - 大量データの移行はバックグラウンドジョブとして実行することを検討してください
+4. **セキュリティベストプラクティス**
+   - **最小権限の原則**: 必要最小限のデータベース権限のみ付与
+   - **監査証跡**: すべての本番マイグレーション実行を記録
+   - **多要素認証**: GitHub環境保護ルールでMFA必須化
+   - **ネットワークセキュリティ**: Neon DBの接続制限設定
+   - **定期的なアクセス権見直し**: 四半期ごとの権限監査
 
-これらのルールに従うことで、データベースの整合性を保ち、予期しない問題を防ぐことができます。
+5. **GitHub Secrets設定（必須）**
+   
+   本番マイグレーションを有効にするには、以下のGitHub Secretsを設定する必要があります：
+
+   #### 5.1 GitHub Secretsの設定手順
+   
+   1. **GitHubリポジトリの設定画面にアクセス**
+      - リポジトリページで「Settings」タブをクリック
+      - 左サイドバーの「Secrets and variables」→「Actions」を選択
+
+   2. **Environment Secretsの設定**
+      - 「Environments」タブで「production」環境を作成
+      - 「Environment secrets」で以下を追加：
+
+   ```
+   Secret名: PRODUCTION_DATABASE_URL
+   値: postgresql://xxxxxxxxxx_owner:xxxxxxxxxxxxxxx@xxxxxxxxxxxxxxxxxxx.ap-southeast-1.aws.neon.tech/xxxxxxxxx?sslmode=require
+   ```
+
+   #### 5.2 Environment Protection Rules（推奨）
+   
+   セキュリティ強化のため、以下の保護ルールを設定することを推奨します：
+
+   1. **Required reviewers**: 本番マイグレーション実行前の承認者を指定
+   2. **Wait timer**: マイグレーション実行前の待機時間（例：5分）
+   3. **Deployment branches**: mainブランチのみに制限
+
+   #### 5.3 設定確認方法
+   
+   ```bash
+   # 設定確認用のテストワークフロー実行
+   git push origin main
+   
+   # または手動実行でテスト
+   # GitHubリポジトリの「Actions」タブ → 「Production Database Migration」 → 「Run workflow」
+   ```
+
+6. **運用フロー**
+
+   #### 6.1 通常の開発フロー
+   ```bash
+   # 1. スキーマ変更
+   # frontend/src/db/schema.ts を編集
+   
+   # 2. マイグレーションファイル生成
+   docker compose exec frontend npm run db:generate
+   
+   # 3. 開発環境でテスト
+   docker compose exec frontend sh -c "NODE_ENV=development npm run db:migrate"
+   
+   # 4. コミット・プッシュ
+   git add .
+   git commit -m "feat: add game_scores table"
+   git push origin main  # 本番マイグレーション自動実行
+   ```
+
+   #### 6.2 緊急時の対応フロー
+   ```bash
+   # 1. ローカルで緊急マイグレーション実行
+   docker compose exec frontend npm run db:migrate:production
+   
+   # 2. 実行ログの確認と保存
+   # コンソール出力されるマイグレーションログを記録
+   
+   # 3. チームへの報告
+   # 実行内容、理由、結果をチームに共有
+   ```
+
+   #### 6.3 トラブルシューティング
+   
+   **マイグレーション失敗時の対応:**
+   ```bash
+   # 1. エラーログの確認
+   # GitHub Actionsの実行ログを確認
+   
+   # 2. データベース状態の確認
+   docker compose exec frontend sh -c "NODE_ENV=production npm run db:verify"
+   
+   # 3. 必要に応じてロールバック
+   # 手動でのデータ修正またはロールバックスクリプト実行
+   ```
+
+7. **データベーススキーマの変更について**
 
 ---
 

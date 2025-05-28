@@ -181,9 +181,28 @@ export const CameraSystem: React.FC<CameraSystemProps> = ({
       e.preventDefault();
     };
 
+    // モバイル用ズーム変更イベント
+    const handleZoomChange = (event: CustomEvent) => {
+      if (cameraMode !== 'thirdPerson') return;
+      
+      const { delta } = event.detail;
+      const newZoom = MathUtils.clamp(
+        zoom + delta,
+        0, // 最小ズーム（最大距離）
+        1  // 最大ズーム（最小距離）
+      );
+      
+      setZoom(newZoom);
+    };
+
     window.addEventListener('wheel', handleWheel, { passive: false });
-    return () => window.removeEventListener('wheel', handleWheel);
-  }, [zoom, cameraMode, setZoom, config.thirdPerson.maxDistance, config.thirdPerson.minDistance]);
+    window.addEventListener('zoom-change', handleZoomChange as EventListener);
+    
+    return () => {
+      window.removeEventListener('wheel', handleWheel);
+      window.removeEventListener('zoom-change', handleZoomChange as EventListener);
+    };
+  }, [zoom, cameraMode, setZoom]);
 
   return null; // このコンポーネントは視覚的要素を持たない
 }; 

@@ -10,6 +10,7 @@ import Ground from './Ground';
 import Items, { CollectibleItem, ITEM_TEMPLATES } from './Items';
 import { useGameSettingsStore, getSelectedStage } from './Utils/stores';
 import { CyberCity, ForestWorld, VolcanoWorld } from './World';
+import { EnhancedCollectibleItem } from './Items/EnhancedItems';
 
 // エラーフォールバックコンポーネントの型定義
 interface ErrorFallbackProps {
@@ -113,6 +114,7 @@ function DebugInfo({ show }: { show: boolean }) {
 interface GameCanvasProps {
   onScoreUpdate: (points: number) => void;
   showDebug?: boolean;
+  useEnhancedGraphics?: boolean; // 拡張グラフィックを使用するかどうか
 }
 
 // ステージごとのアイテム生成設定
@@ -261,7 +263,7 @@ const generateItems = (stageId: string) => {
   return items;
 };
 
-export default function GameCanvas({ onScoreUpdate, showDebug = false }: GameCanvasProps) {
+export default function GameCanvas({ onScoreUpdate, showDebug = false, useEnhancedGraphics = true }: GameCanvasProps) {
   const [playerPosition, setPlayerPosition] = useState<THREE.Vector3>(new THREE.Vector3(0, 1, 0));
   
   // ゲーム設定ストアの状態を直接購読
@@ -293,7 +295,16 @@ export default function GameCanvas({ onScoreUpdate, showDebug = false }: GameCan
     setPlayerPosition(position);
   }, []);
   
-  // アイテム収集時の処理
+  // アイテム収集時の処理（拡張版）
+  const handleEnhancedItemCollect = useCallback((item: EnhancedCollectibleItem) => {
+    // スコア更新
+    onScoreUpdate(item.points);
+    
+    // 収集エフェクト（TODO: サウンドなど）
+    console.log(`アイテム収集: ${item.id}, ポイント: ${item.points}`);
+  }, [onScoreUpdate]);
+
+  // アイテム収集時の処理（基本版）
   const handleItemCollect = useCallback((item: CollectibleItem) => {
     // スコア更新
     onScoreUpdate(item.points);
@@ -302,16 +313,90 @@ export default function GameCanvas({ onScoreUpdate, showDebug = false }: GameCan
     console.log(`アイテム収集: ${item.id}, ポイント: ${item.points}`);
   }, [onScoreUpdate]);
 
+  // ズームイベントリスナー
+  useEffect(() => {
+    const handleZoomEvent = (event: CustomEvent) => {
+      try {
+        const { delta } = event.detail;
+        
+        // 値の妥当性チェック
+        if (typeof delta === 'number' && isFinite(delta)) {
+          // Three.jsのカメラズーム処理（実装例）
+          console.log('Zoom delta:', delta);
+          // TODO: 実際のカメラズーム処理を実装
+        }
+      } catch (error) {
+        console.error('Error processing zoom event:', error);
+      }
+    };
+
+    // イベントリスナーを登録
+    window.addEventListener('zoom-change', handleZoomEvent as EventListener, { passive: true });
+    
+    return () => {
+      window.removeEventListener('zoom-change', handleZoomEvent as EventListener);
+    };
+  }, []);
+
   // ステージに対応するワールドコンポーネントを返す関数
   const renderWorldForStage = (stageId: string) => {
-    switch (stageId) {
-      case 'forest':
-        return <ForestWorld />;
-      case 'volcano':
-        return <VolcanoWorld />;
-      case 'cyber-city':
-      default:
-        return <CyberCity />;
+    // 拡張グラフィックを使用する場合
+    if (useEnhancedGraphics) {
+      // 動的インポートで拡張コンポーネントを読み込み
+      const EnhancedCyberCity = React.lazy(() => import('./World/EnhancedCyberCity'));
+      
+      switch (stageId) {
+        case 'forest':
+          return <ForestWorld />;
+        case 'volcano':
+          return <VolcanoWorld />;
+        case 'cyber-city':
+        default:
+          return (
+            <Suspense fallback={null}>
+              <EnhancedCyberCity />
+            </Suspense>
+          );
+      }
+    } else {
+      // 基本グラフィック
+      switch (stageId) {
+        case 'forest':
+          return <ForestWorld />;
+        case 'volcano':
+          return <VolcanoWorld />;
+        case 'cyber-city':
+        default:
+          return <CyberCity />;
+      }
+    }
+  };
+
+  // アイテムコンポーネントを選択
+  const renderItems = () => {
+    if (useEnhancedGraphics) {
+      // 動的インポートで拡張アイテムシステムを読み込み
+      const EnhancedItems = React.lazy(() => import('./Items/EnhancedItems'));
+      
+      return (
+        <Suspense fallback={null}>
+          <EnhancedItems
+            playerPosition={playerPosition}
+            onCollect={handleEnhancedItemCollect}
+            stageId={selectedStageId}
+          />
+        </Suspense>
+      );
+    } else {
+      // 基本アイテムシステム
+      return (
+        <Items 
+          key={`items-${selectedStageId}`}
+          playerPosition={playerPosition} 
+          onCollect={handleItemCollect}
+          customItems={stageItems}
+        />
+      );
     }
   };
 
@@ -369,12 +454,7 @@ export default function GameCanvas({ onScoreUpdate, showDebug = false }: GameCan
               <Ground />
               
               {/* 収集アイテム - ステージごとに異なるアイテムを表示 */}
-              <Items 
-                key={`items-${selectedStageId}`}
-                playerPosition={playerPosition} 
-                onCollect={handleItemCollect}
-                customItems={stageItems}
-              />
+              {renderItems()}
               
               {/* 星空 - ステージに応じて表示調整 */}
               {selectedStageId !== 'forest' && (

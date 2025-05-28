@@ -10,3 +10,4 @@ yarn-error.log*
 
 # Environment configuration file (frontend-specific)
 .env.local
+.env.production

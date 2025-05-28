@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import GameCanvas from './GameCanvas';
 import GameUI from './GameUI';
 import { VirtualJoystick } from './Controls/VirtualJoystick';
+import ScoreSaveModal from './UI/ScoreSaveModal';
 import { AvailableGameConfig } from '@/lib/games/config';
 import { useGameSettingsStore } from './Utils/stores';
 
@@ -18,6 +19,8 @@ export default function NagWonGame({ config }: NagWonGameProps) {
   const [showDebug, setShowDebug] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [isLandscape, setIsLandscape] = useState(false);
+  const [showScoreSaveModal, setShowScoreSaveModal] = useState(false);
+  const [itemsCollected, setItemsCollected] = useState(0);
   const [gameState, setGameState] = useState({
     score: 0,
     timeRemaining: config.settings.gameTime,
@@ -79,32 +82,30 @@ export default function NagWonGame({ config }: NagWonGameProps) {
     };
   }, [isMobile]);
 
-  // ESCキーイベント検出
+  // ESCキーでメニュー表示
   useEffect(() => {
-    const handleEscapeEvent = () => {
-      // ESCキーが押された時の処理
-      if (gameState.isGameActive) {
-        // ゲーム一時停止
-        setGameState(prev => ({
-          ...prev,
-          isGameActive: false
-        }));
-      } else if (!gameState.isGameOver) {
-        // 一時停止中の場合は再開
-        setGameState(prev => ({
-          ...prev,
-          isGameActive: true
-        }));
+    const handleEscapeKey = (event: KeyboardEvent) => {
+      if (event.code === 'Escape') {
+        if (gameState.isGameActive) {
+          setGameState(prev => ({ ...prev, isGameActive: false }));
+        }
       }
     };
 
-    // ESCキーのカスタムイベントリスナー
-    window.addEventListener('game-escape', handleEscapeEvent);
+    const handleGameEscape = () => {
+      if (gameState.isGameActive) {
+        setGameState(prev => ({ ...prev, isGameActive: false }));
+      }
+    };
+
+    window.addEventListener('keydown', handleEscapeKey);
+    window.addEventListener('game-escape', handleGameEscape);
     
     return () => {
-      window.removeEventListener('game-escape', handleEscapeEvent);
+      window.removeEventListener('keydown', handleEscapeKey);
+      window.removeEventListener('game-escape', handleGameEscape);
     };
-  }, [gameState.isGameActive, gameState.isGameOver]);
+  }, [gameState.isGameActive]);
 
   // デバッグモード切替（F3キー）
   useEffect(() => {
@@ -134,6 +135,7 @@ export default function NagWonGame({ config }: NagWonGameProps) {
       isGameOver: false,
       error: null
     });
+    setItemsCollected(0);
   }, [config.settings.gameTime]);
 
   // スコア更新処理
@@ -142,7 +144,9 @@ export default function NagWonGame({ config }: NagWonGameProps) {
       ...prev,
       score: prev.score + points
     }));
-  }, []);
+    // アイテム収集数も更新（1アイテム = config.settings.pointsPerItem ポイントと仮定）
+    setItemsCollected(prev => prev + Math.floor(points / config.settings.pointsPerItem));
+  }, [config.settings.pointsPerItem]);
 
   // ゲーム再開処理
   const handleRestartGame = useCallback(() => {
@@ -159,6 +163,103 @@ export default function NagWonGame({ config }: NagWonGameProps) {
     router.push('/');
   }, [router]);
 
+  // スコア保存処理
+  const handleSaveScore = useCallback(async () => {
+    try {
+      const response = await fetch('/api/games/scores', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          game_id: 'nag-won',
+          stage_id: selectedStageId,
+          score: gameState.score,
+          game_time: config.settings.gameTime - gameState.timeRemaining,
+          items_collected: itemsCollected,
+          difficulty: 'normal' // 現在は固定、将来的に設定から取得
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'スコアの保存に失敗しました');
+      }
+
+      // 保存成功
+      console.log('スコアが正常に保存されました');
+    } catch (error) {
+      console.error('スコア保存エラー:', error);
+      throw error;
+    }
+  }, [gameState.score, gameState.timeRemaining, config.settings.gameTime, itemsCollected, selectedStageId]);
+
+  // ズーム変更処理
+  const handleZoomChange = useCallback((delta: number) => {
+    // ズームイベントをGameCanvasに送信
+    const event = new CustomEvent('zoom-change', {
+      detail: { delta }
+    });
+    window.dispatchEvent(event);
+  }, []);
+
+  // ピンチズーム処理
+  useEffect(() => {
+    if (!isMobile) return;
+
+    let initialDistance = 0;
+    let isZooming = false;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        isZooming = true;
+        const touch1 = e.touches[0];
+        const touch2 = e.touches[1];
+        initialDistance = Math.sqrt(
+          Math.pow(touch2.clientX - touch1.clientX, 2) +
+          Math.pow(touch2.clientY - touch1.clientY, 2)
+        );
+      }
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches.length === 2 && isZooming) {
+        e.preventDefault();
+        const touch1 = e.touches[0];
+        const touch2 = e.touches[1];
+        const currentDistance = Math.sqrt(
+          Math.pow(touch2.clientX - touch1.clientX, 2) +
+          Math.pow(touch2.clientY - touch1.clientY, 2)
+        );
+        
+        const deltaDistance = currentDistance - initialDistance;
+        const zoomDelta = deltaDistance * 0.001; // 感度調整
+        
+        if (Math.abs(zoomDelta) > 0.01) {
+          handleZoomChange(zoomDelta);
+          initialDistance = currentDistance;
+        }
+      }
+    };
+
+    const handleTouchEnd = (e: TouchEvent) => {
+      if (e.touches.length < 2) {
+        isZooming = false;
+      }
+    };
+
+    // passive: falseを明示的に指定してpreventDefaultを有効にする
+    document.addEventListener('touchstart', handleTouchStart, { passive: true });
+    document.addEventListener('touchmove', handleTouchMove, { passive: false });
+    document.addEventListener('touchend', handleTouchEnd, { passive: true });
+
+    return () => {
+      document.removeEventListener('touchstart', handleTouchStart);
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [isMobile, handleZoomChange]);
+
   // タイマー処理
   useEffect(() => {
     let timer: NodeJS.Timeout | null = null;
@@ -169,6 +270,10 @@ export default function NagWonGame({ config }: NagWonGameProps) {
           if (prev.timeRemaining <= 1) {
             // ゲーム終了
             clearInterval(timer!);
+            // スコア保存モーダルを表示（スコアが0より大きい場合のみ）
+            if (prev.score > 0) {
+              setTimeout(() => setShowScoreSaveModal(true), 1000);
+            }
             return {
               ...prev,
               timeRemaining: 0,
@@ -228,7 +333,64 @@ export default function NagWonGame({ config }: NagWonGameProps) {
   }
 
   return (
-    <div className="relative w-full h-screen bg-black text-white overflow-hidden">
+    <div 
+      className="relative w-full h-screen bg-black text-white overflow-hidden"
+      style={{
+        // Pull to Refresh対策（国際標準）
+        overscrollBehavior: 'none',
+        touchAction: 'manipulation',
+        WebkitOverflowScrolling: 'touch',
+        // iOS Safari対策
+        WebkitTouchCallout: 'none',
+        WebkitUserSelect: 'none',
+        // Android Chrome対策
+        overscrollBehaviorY: 'none',
+        // 追加のブラウザ対策
+        msOverflowStyle: 'none',
+        scrollbarWidth: 'none'
+      }}
+      onTouchStart={(e) => {
+        // タッチイベントの伝播を制御（国際標準のアプローチ）
+        if (isMobile && gameState.isGameActive) {
+          // UI要素（ボタン、ジョイスティック）以外のタッチのみ制御
+          const target = e.target as HTMLElement;
+          const isUIElement = target.closest('button') || 
+                             target.closest('[data-joystick]') || 
+                             target.closest('[data-ui-element]');
+          
+          if (!isUIElement) {
+            e.preventDefault();
+          }
+        }
+      }}
+      onTouchMove={(e) => {
+        // Pull to Refreshを防止しつつ、UI要素は正常に動作させる
+        if (isMobile && gameState.isGameActive) {
+          const target = e.target as HTMLElement;
+          const isUIElement = target.closest('button') || 
+                             target.closest('[data-joystick]') || 
+                             target.closest('[data-ui-element]');
+          
+          if (!isUIElement) {
+            e.preventDefault();
+            e.stopPropagation();
+          }
+        }
+      }}
+      onTouchEnd={(e) => {
+        // タッチ終了時も制御
+        if (isMobile && gameState.isGameActive) {
+          const target = e.target as HTMLElement;
+          const isUIElement = target.closest('button') || 
+                             target.closest('[data-joystick]') || 
+                             target.closest('[data-ui-element]');
+          
+          if (!isUIElement) {
+            e.preventDefault();
+          }
+        }
+      }}
+    >
       <div className="absolute top-0 left-0 right-0 bottom-0">
         {/* ゲームUI */}
         <GameUI
@@ -249,19 +411,81 @@ export default function NagWonGame({ config }: NagWonGameProps) {
           <GameCanvas 
             onScoreUpdate={handleScoreUpdate} 
             showDebug={showDebug}
+            useEnhancedGraphics={true}
           />
         </div>
         
-        {/* 仮想ジョイスティック - モバイルかつゲーム開始状態の場合のみ表示 */}
+        {/* モバイル操作UI */}
         {isMobile && gameState.isGameActive && (
-          <VirtualJoystick 
-            size={100}
-            baseColor="#4a5568"
-            stickColor="#3182ce"
-            baseOpacity={0.7}
-            stickOpacity={0.9}
-            disabled={!gameState.isGameActive}
-          />
+          <>
+            {/* 移動ジョイスティック（左下） */}
+            <div className="absolute bottom-8 left-8 z-30" data-ui-element="joystick">
+              <VirtualJoystick 
+                size={80}
+                baseColor="#4a5568"
+                stickColor="#3182ce"
+                baseOpacity={0.7}
+                stickOpacity={0.9}
+                disabled={!gameState.isGameActive}
+              />
+            </div>
+
+            {/* アクションボタン（右下に移動） */}
+            <div className="absolute bottom-8 right-8 z-30 flex flex-col gap-3" data-ui-element="action-buttons">
+              {/* ジャンプボタン */}
+              <button
+                className="w-16 h-16 bg-blue-600 bg-opacity-80 rounded-full flex items-center justify-center touch-manipulation active:bg-blue-700 border-2 border-white border-opacity-40 shadow-lg"
+                onTouchStart={() => window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Space' }))}
+                onTouchEnd={() => window.dispatchEvent(new KeyboardEvent('keyup', { code: 'Space' }))}
+                aria-label="ジャンプ"
+                data-ui-element="jump-button"
+              >
+                <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M3.293 9.707a1 1 0 010-1.414l6-6a1 1 0 011.414 0l6 6a1 1 0 01-1.414 1.414L11 5.414V17a1 1 0 11-2 0V5.414L4.707 9.707a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                </svg>
+              </button>
+              
+              {/* ダッシュボタン */}
+              <button
+                className="w-16 h-16 bg-red-600 bg-opacity-80 rounded-full flex items-center justify-center touch-manipulation active:bg-red-700 border-2 border-white border-opacity-40 shadow-lg"
+                onTouchStart={() => window.dispatchEvent(new KeyboardEvent('keydown', { code: 'ShiftLeft' }))}
+                onTouchEnd={() => window.dispatchEvent(new KeyboardEvent('keyup', { code: 'ShiftLeft' }))}
+                aria-label="ダッシュ"
+                data-ui-element="dash-button"
+              >
+                <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.293l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z" clipRule="evenodd" />
+                </svg>
+              </button>
+            </div>
+
+            {/* ズームコントロール（左上に移動） */}
+            <div className="absolute left-8 top-20 z-30 flex flex-col gap-2" data-ui-element="zoom-controls">
+              {/* ズームイン */}
+              <button
+                className="w-12 h-12 bg-gray-700 bg-opacity-80 rounded-full flex items-center justify-center touch-manipulation active:bg-gray-800 border-2 border-white border-opacity-30 shadow-lg"
+                onTouchStart={() => handleZoomChange(0.1)}
+                aria-label="ズームイン"
+                data-ui-element="zoom-in-button"
+              >
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+              </button>
+              
+              {/* ズームアウト */}
+              <button
+                className="w-12 h-12 bg-gray-700 bg-opacity-80 rounded-full flex items-center justify-center touch-manipulation active:bg-gray-800 border-2 border-white border-opacity-30 shadow-lg"
+                onTouchStart={() => handleZoomChange(-0.1)}
+                aria-label="ズームアウト"
+                data-ui-element="zoom-out-button"
+              >
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+                </svg>
+              </button>
+            </div>
+          </>
         )}
         
         {/* 操作説明 - ゲーム開始後、またはゲーム終了後のみ表示 */}
@@ -281,6 +505,17 @@ export default function NagWonGame({ config }: NagWonGameProps) {
             </div>
           </div>
         )}
+
+        {/* スコア保存モーダル */}
+        <ScoreSaveModal
+          isOpen={showScoreSaveModal}
+          onClose={() => setShowScoreSaveModal(false)}
+          onSave={handleSaveScore}
+          score={gameState.score}
+          gameTime={config.settings.gameTime - gameState.timeRemaining}
+          itemsCollected={itemsCollected}
+          stageId={selectedStageId}
+        />
       </div>
     </div>
   );

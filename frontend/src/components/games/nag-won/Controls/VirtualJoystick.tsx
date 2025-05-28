@@ -43,19 +43,26 @@ export const VirtualJoystick: React.FC<VirtualJoystickProps> = ({
       });
     }
     
-    // リサイズ時にセンター位置を更新
+    // リサイズ時にセンター位置を更新（スロットリング付き）
+    let resizeTimeout: NodeJS.Timeout;
     const handleResize = () => {
-      if (containerRef.current) {
-        const rect = containerRef.current.getBoundingClientRect();
-        setCenter({
-          x: rect.left + rect.width / 2,
-          y: rect.top + rect.height / 2
-        });
-      }
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(() => {
+        if (containerRef.current) {
+          const rect = containerRef.current.getBoundingClientRect();
+          setCenter({
+            x: rect.left + rect.width / 2,
+            y: rect.top + rect.height / 2
+          });
+        }
+      }, 100); // 100ms のデバウンス
     };
     
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    window.addEventListener('resize', handleResize, { passive: true });
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      clearTimeout(resizeTimeout);
+    };
   }, []);
   
   // タッチ操作の処理
@@ -213,6 +220,8 @@ export const VirtualJoystick: React.FC<VirtualJoystickProps> = ({
         touchAction: 'none',
         userSelect: 'none'
       }}
+      data-joystick="virtual-joystick"
+      data-ui-element="virtual-joystick"
     >
       <div
         style={{

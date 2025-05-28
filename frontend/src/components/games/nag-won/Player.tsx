@@ -9,6 +9,7 @@ import { MovementSystem } from './Controls/MovementSystem';
 import { AnimationManager } from './Animation/AnimationManager';
 import { Vector3 } from 'three';
 import { AVATAR_MODELS, GAME_STAGES, createPlayerConfig } from './Utils/config';
+import { useCollisionSystem } from './Utils/CollisionSystem';
 
 // デフォルトモデルインデックス
 const DEFAULT_MODEL_INDEX = 0;
@@ -34,6 +35,9 @@ const Player: React.FC<PlayerProps> = ({ onMove, modelId }) => {
   
   // プレイヤーオブジェクトへの参照
   const playerRef = useRef<THREE.Group>(null);
+  
+  // 衝突判定システム
+  const { addCollisionObject, updateCollisionObject, checkCollisions } = useCollisionSystem();
   
   // 状態設定にアクセス
   const { setPosition } = usePlayerStore();
@@ -133,6 +137,19 @@ const Player: React.FC<PlayerProps> = ({ onMove, modelId }) => {
     setupModel();
   }, [setupModel]);
   
+  // プレイヤーの衝突判定オブジェクトを登録
+  useEffect(() => {
+    if (playerRef.current) {
+      addCollisionObject({
+        id: 'player',
+        type: 'sphere',
+        position: playerRef.current.position,
+        size: new Vector3(0.5, 1.0, 0.5), // プレイヤーのサイズ
+        layer: 'player'
+      });
+    }
+  }, [addCollisionObject]);
+  
   // 位置更新時のコールバック（playerRefが存在するときのみ実行）
   useEffect(() => {
     if (!onMove || !playerRef.current) return;
@@ -146,6 +163,17 @@ const Player: React.FC<PlayerProps> = ({ onMove, modelId }) => {
         // 位置が実際に変わった場合のみコールバックを呼び出す
         if (!currentPosition.equals(lastPosition)) {
           lastPosition = currentPosition.clone();
+          
+          // 衝突判定オブジェクトの位置を更新
+          updateCollisionObject('player', currentPosition);
+          
+          // 衝突判定をチェック
+          const collisions = checkCollisions('player');
+          if (collisions.length > 0) {
+            // 衝突が検出された場合の処理（必要に応じて）
+            console.log('Player collision detected:', collisions);
+          }
+          
           onMove(currentPosition);
         }
       }
@@ -157,7 +185,7 @@ const Player: React.FC<PlayerProps> = ({ onMove, modelId }) => {
     return () => {
       clearInterval(interval);
     };
-  }, [onMove]);
+  }, [onMove, updateCollisionObject, checkCollisions]);
   
   return (
     <>

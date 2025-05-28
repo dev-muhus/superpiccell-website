@@ -208,4 +208,23 @@ export const draft_media = pgTable('draft_media', {
 
 // draft_mediaテーブルの型定義
 export type DraftMedia = InferSelectModel<typeof draft_media>;
-export type InsertDraftMedia = InferInsertModel<typeof draft_media>; 
+export type InsertDraftMedia = InferInsertModel<typeof draft_media>;
+
+// ゲームスコアテーブル
+export const game_scores = pgTable('game_scores', {
+  id: serial('id').primaryKey(),
+  user_id: integer('user_id').notNull().references(() => users.id),
+  game_id: text('game_id').notNull(), // 'nag-won', 'future-game' など
+  stage_id: text('stage_id').notNull(), // 'cyber-city', 'forest', 'volcano' など
+  score: integer('score').notNull(),
+  game_time: integer('game_time').notNull(), // ゲーム時間（秒）
+  items_collected: integer('items_collected').default(0), // 収集したアイテム数
+  difficulty: text('difficulty').default('normal'), // 'easy', 'normal', 'hard'
+  created_at: timestamp('created_at').notNull().defaultNow(),
+  deleted_at: timestamp('deleted_at'),
+  is_deleted: boolean('is_deleted').notNull().default(false)
+});
+
+// game_scoresテーブルの型定義
+export type GameScore = InferSelectModel<typeof game_scores>;
+export type InsertGameScore = InferInsertModel<typeof game_scores>; 
