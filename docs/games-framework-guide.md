@@ -1423,55 +1423,62 @@ document.addEventListener('touchmove', handler, { passive: false }); // preventD
 - **国際標準準拠**: モバイルUI/UXベストプラクティス実装
 - **拡張可能アーキテクチャ**: 将来的な機能追加に対応
 
-## 12. 本番マイグレーション自動化
+## 12. 本番マイグレーション運用
 
 ### 12.1 概要
 
-Super Piccellプラットフォームでは、`main`ブランチへのプッシュ時に本番データベース（Neon DB）への自動マイグレーションが実行されます。
+Super Piccellプラットフォームでは、本番データベース（Neon DB）へのマイグレーションをローカル環境から手動で実行します。
 
-### 12.2 自動マイグレーションの仕組み
+### 12.2 本番マイグレーション手順
 
-#### GitHub Actionsワークフロー
-- **トリガー**: `git push origin main`
-- **ワークフロー**: `.github/workflows/production-migrate.yml`
-- **実行内容**:
-  1. 依存関係のインストール
-  2. データベースマイグレーション実行
-  3. マイグレーション結果の検証
-
-#### 必要な環境変数
-GitHub Secretsに以下の環境変数を設定する必要があります：
-
-```
-PRODUCTION_DATABASE_URL: 本番NeonDBの接続URL
+#### マイグレーション実行コマンド
+```bash
+# 本番マイグレーション実行
+docker compose exec frontend npm run db:migrate:production
 ```
 
-### 12.3 マイグレーション実行の流れ
+#### 実行される処理
+1. **環境検証**: 本番環境の設定確認
+2. **対話式確認**: 実行前の安全確認プロンプト
+3. **接続テスト**: データベース接続の検証
+4. **マイグレーション実行**: 未適用のマイグレーションを順次実行
+5. **実行ログ**: 詳細な実行結果の記録
 
-1. **開発者がmainブランチにプッシュ**
-2. **GitHub Actionsが自動実行**
-3. **マイグレーションスクリプト実行**:
-   ```bash
-   npm run db:migrate
-   ```
-4. **検証スクリプト実行**:
-   ```bash
-   npm run db:verify
-   ```
-5. **結果の通知**
+### 12.3 開発フロー
+
+#### 通常の開発手順
+```bash
+# 1. スキーマ変更
+# frontend/src/db/schema.ts を編集
+
+# 2. マイグレーションファイル生成
+docker compose exec frontend npm run db:generate
+
+# 3. 開発環境でテスト
+docker compose exec frontend npm run db:migrate
+
+# 4. 本番環境に適用
+docker compose exec frontend npm run db:migrate:production
+
+# 5. コミット・プッシュ
+git add .
+git commit -m "feat: add new database schema"
+git push origin main
+```
 
 ### 12.4 安全性の確保
 
-- **本番環境専用**: `NODE_ENV=production`で実行
-- **検証機能**: マイグレーション後の自動検証
-- **ロールバック**: 問題発生時の手動対応が可能
-- **ログ出力**: 詳細な実行ログで問題の特定が容易
+- **対話式確認**: 実行前に確認プロンプトが表示
+- **環境検証**: 本番環境への接続と設定を事前に検証
+- **実行ログ**: マイグレーション実行の詳細ログを出力
+- **セキュリティ**: 本番データベースURLの検証
 
 ### 12.5 注意事項
 
 - **破壊的変更**: データ損失の可能性がある変更は事前に十分な検証が必要
 - **バックアップ**: 重要な変更前は手動バックアップを推奨
 - **監視**: マイグレーション実行後は本番環境の動作確認が必要
+- **実行環境**: 本番マイグレーションは必ずローカル環境から実行してください
 
 ## 13. ステージリッチ化システム
 
