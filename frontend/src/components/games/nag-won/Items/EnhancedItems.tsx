@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useMemo, useState, useEffect } from 'react';
+import React, { useRef, useMemo, useState, useEffect, useCallback } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Sphere, Billboard, Text, Icosahedron, Dodecahedron, Octahedron } from '@react-three/drei';
 import * as THREE from 'three';
@@ -153,8 +153,8 @@ export const ENHANCED_ITEM_TEMPLATES: Record<string, Omit<EnhancedCollectibleIte
     effectScale: 1.0,
     rotationSpeed: 0.5,
     hoverHeight: 0.2,
-    collectRadius: 1.5,
-    magneticRange: 3.0,
+    collectRadius: 2.5,
+    magneticRange: 6.0,
     animationType: 'float',
     rarity: 0.1
   },
@@ -171,8 +171,8 @@ export const ENHANCED_ITEM_TEMPLATES: Record<string, Omit<EnhancedCollectibleIte
     effectScale: 1.5,
     rotationSpeed: 1.0,
     hoverHeight: 0.3,
-    collectRadius: 1.8,
-    magneticRange: 4.0,
+    collectRadius: 3.0,
+    magneticRange: 7.0,
     animationType: 'rotate',
     rarity: 0.3
   },
@@ -190,8 +190,8 @@ export const ENHANCED_ITEM_TEMPLATES: Record<string, Omit<EnhancedCollectibleIte
     effectScale: 2.0,
     rotationSpeed: 1.5,
     hoverHeight: 0.5,
-    collectRadius: 2.0,
-    magneticRange: 6.0,
+    collectRadius: 3.5,
+    magneticRange: 8.0,
     label: 'レジェンダリー',
     animationType: 'pulse',
     rarity: 0.7
@@ -209,8 +209,8 @@ export const ENHANCED_ITEM_TEMPLATES: Record<string, Omit<EnhancedCollectibleIte
     effectScale: 1.8,
     rotationSpeed: 1.2,
     hoverHeight: 0.4,
-    collectRadius: 1.7,
-    magneticRange: 4.5,
+    collectRadius: 3.0,
+    magneticRange: 7.5,
     label: 'スペシャル',
     animationType: 'orbit',
     rarity: 0.5
@@ -229,8 +229,8 @@ export const ENHANCED_ITEM_TEMPLATES: Record<string, Omit<EnhancedCollectibleIte
     effectScale: 2.5,
     rotationSpeed: 2.0,
     hoverHeight: 0.6,
-    collectRadius: 2.2,
-    magneticRange: 8.0,
+    collectRadius: 4.0,
+    magneticRange: 10.0,
     label: 'エピック',
     animationType: 'spiral',
     rarity: 0.9
@@ -249,8 +249,8 @@ export const ENHANCED_ITEM_TEMPLATES: Record<string, Omit<EnhancedCollectibleIte
     effectScale: 3.0,
     rotationSpeed: 2.5,
     hoverHeight: 0.8,
-    collectRadius: 2.5,
-    magneticRange: 10.0,
+    collectRadius: 4.5,
+    magneticRange: 12.0,
     label: 'ミシック',
     animationType: 'pulse',
     rarity: 1.0
@@ -262,15 +262,22 @@ interface EnhancedItemsProps {
   onCollect: (item: EnhancedCollectibleItem) => void;
   customItems?: EnhancedCollectibleItem[];
   stageId?: string; // ステージに応じたアイテム生成
+  gameKey?: number; // ゲーム再開時のキー
 }
 
 export default function EnhancedItems({ 
   playerPosition, 
   onCollect, 
   customItems,
-  stageId = 'cyber-city'
+  stageId = 'cyber-city',
+  gameKey
 }: EnhancedItemsProps) {
-  const { addCollisionObject, removeCollisionObject } = useCollisionSystem();
+  const { addCollisionObject, removeCollisionObject, updateCollisionObject } = useCollisionSystem();
+  
+  // removeCollisionObjectをメモ化して安定化
+  const stableRemoveCollisionObject = useCallback((id: string) => {
+    removeCollisionObject(id);
+  }, [removeCollisionObject]);
   
   // アイテム状態管理
   const [items, setItems] = useState<EnhancedCollectibleItem[]>(() => {
@@ -281,18 +288,18 @@ export default function EnhancedItems({
     // ステージに応じたアイテム生成
     const generateStageItems = (stage: string): EnhancedCollectibleItem[] => {
       const result: EnhancedCollectibleItem[] = [];
-      const citySize = 200; // 拡張された都市サイズに合わせる
+      const citySize = 150; // 都市サイズを調整
       
       // ステージ別のアイテム配置設定
       const stageConfigs = {
         'cyber-city': {
-          standard: 40,
-          rare: 15,
-          legendary: 5,
-          special: 3,
-          epic: 2,
-          mythic: 1,
-          heightRange: [1, 25]
+          standard: 50,
+          rare: 20,
+          legendary: 8,
+          special: 5,
+          epic: 3,
+          mythic: 2,
+          heightRange: [1, 30]
         },
         'forest': {
           standard: 35,
@@ -324,59 +331,162 @@ export default function EnhancedItems({
         if (!template || typeof count !== 'number') return;
         
         for (let i = 0; i < count; i++) {
+          // より広い範囲に配置
           const x = (Math.random() * 2 - 1) * citySize / 2;
           const z = (Math.random() * 2 - 1) * citySize / 2;
           const y = config.heightRange[0] + Math.random() * (config.heightRange[1] - config.heightRange[0]);
           
           // レア度に応じて配置高度を調整
           const rarityBonus = template.rarity || 0;
-          const finalY = y + rarityBonus * 10;
+          const finalY = y + rarityBonus * 5; // 高度ボーナスを調整
+          
+          // サイバーシティステージの場合、アイテムの色を調整
+          let itemColor = template.color;
+          if (stage === 'cyber-city') {
+            const cyberColors = ['#00ffff', '#ff00ff', '#ffff00', '#00ff00', '#ff0080'];
+            itemColor = cyberColors[Math.floor(Math.random() * cyberColors.length)];
+          }
           
           result.push({
-            id: `${type}-${i}-${stage}`,
+            id: `${type}-${i}-${stage}-${gameKey || 0}`, // gameKeyを含めてユニークIDを生成
             position: [x, finalY, z],
             ...template,
+            color: itemColor,
             collected: false
           });
         }
       });
       
+      console.log(`Generated ${result.length} items for stage: ${stage}, gameKey: ${gameKey || 0}`);
       return result;
     };
     
     return generateStageItems(stageId);
   });
   
+  // ゲーム再開時（gameKeyが変更された時）にアイテムを再生成
+  useEffect(() => {
+    if (gameKey !== undefined && gameKey > 0) {
+      console.log(`Game restarted (gameKey: ${gameKey}), regenerating items for stage: ${stageId}`);
+      
+      // 既存の衝突判定オブジェクトをクリア（現在のitemsの状態を取得）
+      setItems(currentItems => {
+        currentItems.forEach(item => {
+          stableRemoveCollisionObject(item.id);
+        });
+        
+        // アイテムを再生成
+        const generateStageItems = (stage: string): EnhancedCollectibleItem[] => {
+          const result: EnhancedCollectibleItem[] = [];
+          const citySize = 150;
+          
+          const stageConfigs = {
+            'cyber-city': {
+              standard: 50,
+              rare: 20,
+              legendary: 8,
+              special: 5,
+              epic: 3,
+              mythic: 2,
+              heightRange: [1, 30]
+            },
+            'forest': {
+              standard: 35,
+              rare: 12,
+              legendary: 4,
+              special: 4,
+              epic: 1,
+              mythic: 1,
+              heightRange: [0.5, 15]
+            },
+            'volcano': {
+              standard: 30,
+              rare: 18,
+              legendary: 6,
+              special: 2,
+              epic: 3,
+              mythic: 1,
+              heightRange: [1, 30]
+            }
+          };
+          
+          const config = stageConfigs[stage as keyof typeof stageConfigs] || stageConfigs['cyber-city'];
+          
+          Object.entries(config).forEach(([type, count]) => {
+            if (type === 'heightRange') return;
+            
+            const template = ENHANCED_ITEM_TEMPLATES[type];
+            if (!template || typeof count !== 'number') return;
+            
+            for (let i = 0; i < count; i++) {
+              const x = (Math.random() * 2 - 1) * citySize / 2;
+              const z = (Math.random() * 2 - 1) * citySize / 2;
+              const y = config.heightRange[0] + Math.random() * (config.heightRange[1] - config.heightRange[0]);
+              
+              const rarityBonus = template.rarity || 0;
+              const finalY = y + rarityBonus * 5;
+              
+              let itemColor = template.color;
+              if (stage === 'cyber-city') {
+                const cyberColors = ['#00ffff', '#ff00ff', '#ffff00', '#00ff00', '#ff0080'];
+                itemColor = cyberColors[Math.floor(Math.random() * cyberColors.length)];
+              }
+              
+              result.push({
+                id: `${type}-${i}-${stage}-${gameKey}`,
+                position: [x, finalY, z],
+                ...template,
+                color: itemColor,
+                collected: false
+              });
+            }
+          });
+          
+          return result;
+        };
+        
+        return generateStageItems(stageId);
+      });
+    }
+  }, [gameKey, stageId, stableRemoveCollisionObject]);
+  
   // 未収集のアイテムのみを表示
   const visibleItems = useMemo(() => {
     return items.filter(item => !item.collected);
   }, [items]);
   
-  // 衝突判定オブジェクトを登録
+  // 改善された衝突判定システム
   useEffect(() => {
     visibleItems.forEach(item => {
+      const collectRadius = item.collectRadius || 2.0; // 収集半径を大きく
+      
       addCollisionObject({
         id: item.id,
         type: 'sphere',
         position: new THREE.Vector3(...item.position),
-        size: new THREE.Vector3(item.collectRadius || 1.5, item.collectRadius || 1.5, item.collectRadius || 1.5),
+        size: new THREE.Vector3(collectRadius, collectRadius, collectRadius),
         isTrigger: true,
-        layer: 'items',
-        onCollision: () => {
-          // 収集処理
-          setItems(prevItems => 
-            prevItems.map(prevItem => 
-              prevItem.id === item.id 
-                ? { ...prevItem, collected: true } 
-                : prevItem
-            )
-          );
-          
-          // 衝突判定オブジェクトを削除
-          removeCollisionObject(item.id);
-          
-          // 親コンポーネントに通知
-          onCollect(item);
+        layer: 'items', // アイテムレイヤー
+        onCollision: (other) => {
+          // プレイヤーとの衝突のみ処理
+          if (other.layer === 'player' || other.id === 'player') {
+            console.log(`Item collision detected: ${item.id}, Points: ${item.points}, Other: ${other.id}, Layer: ${other.layer}`);
+            
+            // 収集処理
+            setItems(prevItems => 
+              prevItems.map(prevItem => 
+                prevItem.id === item.id 
+                  ? { ...prevItem, collected: true } 
+                  : prevItem
+              )
+            );
+            
+            // 衝突判定オブジェクトを削除
+            stableRemoveCollisionObject(item.id);
+            
+            // 親コンポーネントに通知
+            onCollect(item);
+          }
         }
       });
     });
@@ -384,31 +494,52 @@ export default function EnhancedItems({
     // クリーンアップ
     return () => {
       visibleItems.forEach(item => {
-        removeCollisionObject(item.id);
+        stableRemoveCollisionObject(item.id);
       });
     };
-  }, [visibleItems, addCollisionObject, removeCollisionObject, onCollect]);
+  }, [visibleItems, addCollisionObject, stableRemoveCollisionObject, onCollect]);
   
-  // マグネット効果（プレイヤーに引き寄せられる）
+  // 改善されたマグネット効果とリアルタイム衝突判定
   useFrame(() => {
     if (!playerPosition) return;
     
     visibleItems.forEach(item => {
-      const magneticRange = item.magneticRange || 3.0;
+      const magneticRange = item.magneticRange || 5.0; // マグネット範囲を大きく
+      const collectRadius = item.collectRadius || 2.0; // 収集半径を大きく
       const itemPosition = new THREE.Vector3(...item.position);
       const distance = itemPosition.distanceTo(playerPosition);
       
-      if (distance < magneticRange && distance > (item.collectRadius || 1.5)) {
+      // 直接的な衝突判定（フレームごと）
+      if (distance <= collectRadius) {
+        console.log(`Direct collision detected: ${item.id}, Distance: ${distance.toFixed(2)}, Player: ${playerPosition.x.toFixed(1)}, ${playerPosition.y.toFixed(1)}, ${playerPosition.z.toFixed(1)}`);
+        
+        // 即座に収集
+        setItems(prevItems => 
+          prevItems.map(prevItem => 
+            prevItem.id === item.id 
+              ? { ...prevItem, collected: true } 
+              : prevItem
+          )
+        );
+        
+        stableRemoveCollisionObject(item.id);
+        onCollect(item);
+        return;
+      }
+      
+      // マグネット効果（改善版）
+      if (distance < magneticRange && distance > collectRadius) {
         // プレイヤーに向かって移動
         const direction = new THREE.Vector3()
           .subVectors(playerPosition, itemPosition)
           .normalize();
         
-        const magneticForce = (magneticRange - distance) / magneticRange;
-        const moveSpeed = magneticForce * 5;
+        // 距離に応じた引力の強さ（2次関数）
+        const magneticForce = Math.pow((magneticRange - distance) / magneticRange, 2);
+        const moveSpeed = magneticForce * 12; // 引力をさらに強化
         
-        // アイテムの位置を更新
-        const newPosition = itemPosition.add(direction.multiplyScalar(moveSpeed));
+        // アイテムの新しい位置を計算
+        const newPosition = itemPosition.add(direction.multiplyScalar(moveSpeed * 0.016)); // 60FPS想定
         
         // アイテムの位置を更新
         setItems(prevItems => 
@@ -421,6 +552,9 @@ export default function EnhancedItems({
               : prevItem
           )
         );
+        
+        // 衝突判定オブジェクトの位置も更新
+        updateCollisionObject(item.id, newPosition);
       }
     });
   });
@@ -661,11 +795,42 @@ export default function EnhancedItems({
     );
   };
 
+  // 衝突判定データの更新
+  useEffect(() => {
+    // 衝突判定用のデータを更新
+    const newCollisionData = items.map(item => ({
+      id: item.id,
+      position: new THREE.Vector3(...item.position),
+      radius: item.collectRadius || 2.0,
+      collected: item.collected
+    }));
+    
+    // グローバルに公開（他のコンポーネントから参照可能）
+    interface WindowWithCollisionData extends Window {
+      enhancedItemsCollisionData?: typeof newCollisionData;
+    }
+    
+    (window as WindowWithCollisionData).enhancedItemsCollisionData = newCollisionData;
+    
+    return () => {
+      // クリーンアップ
+      delete (window as WindowWithCollisionData).enhancedItemsCollisionData;
+    };
+  }, [items, gameKey]);
+
   return (
     <group>
       {visibleItems.map(item => (
         <EnhancedItem key={item.id} item={item} />
       ))}
+      
+      {/* デバッグ情報 */}
+      {visibleItems.length > 0 && (
+        <mesh position={[0, 50, 0]}>
+          <sphereGeometry args={[0.1]} />
+          <meshBasicMaterial color="#ffffff" />
+        </mesh>
+      )}
     </group>
   );
 } 

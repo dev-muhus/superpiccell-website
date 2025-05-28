@@ -82,6 +82,23 @@ const Player: React.FC<PlayerProps> = ({ onMove, modelId }) => {
     }
   }, [setPosition, playerConfig.initialPosition]);
   
+  // プレイヤー位置リセットイベントのリスナー
+  useEffect(() => {
+    const handlePlayerReset = () => {
+      if (playerRef.current) {
+        playerRef.current.position.copy(playerConfig.initialPosition);
+        setPosition(playerConfig.initialPosition);
+        console.log('Player position reset to:', playerConfig.initialPosition);
+      }
+    };
+    
+    window.addEventListener('player-reset', handlePlayerReset);
+    
+    return () => {
+      window.removeEventListener('player-reset', handlePlayerReset);
+    };
+  }, [playerConfig.initialPosition, setPosition]);
+  
   // モデルの読み込み - キーをmodelToUse.pathに設定して確実に更新されるようにする
   const { scene, animations } = useGLTF(modelToUse.path);
   
@@ -167,11 +184,10 @@ const Player: React.FC<PlayerProps> = ({ onMove, modelId }) => {
           // 衝突判定オブジェクトの位置を更新
           updateCollisionObject('player', currentPosition);
           
-          // 衝突判定をチェック
+          // 衝突判定をチェック（より頻繁に）
           const collisions = checkCollisions('player');
           if (collisions.length > 0) {
-            // 衝突が検出された場合の処理（必要に応じて）
-            console.log('Player collision detected:', collisions);
+            console.log('Player collision detected with:', collisions.map(c => c.distance));
           }
           
           onMove(currentPosition);
@@ -179,8 +195,8 @@ const Player: React.FC<PlayerProps> = ({ onMove, modelId }) => {
       }
     };
     
-    // 一定間隔でチェック
-    const interval = setInterval(handlePositionChange, 100);
+    // より頻繁にチェック（60FPS想定）
+    const interval = setInterval(handlePositionChange, 16);
     
     return () => {
       clearInterval(interval);

@@ -7,10 +7,9 @@ import { Environment, Stars } from '@react-three/drei';
 import * as THREE from 'three';
 import Player from './Player';
 import Ground from './Ground';
-import Items, { CollectibleItem, ITEM_TEMPLATES } from './Items';
 import { useGameSettingsStore, getSelectedStage } from './Utils/stores';
 import { CyberCity, ForestWorld, VolcanoWorld } from './World';
-import { EnhancedCollectibleItem } from './Items/EnhancedItems';
+import EnhancedItems, { EnhancedCollectibleItem } from './Items/EnhancedItems';
 
 // エラーフォールバックコンポーネントの型定義
 interface ErrorFallbackProps {
@@ -40,7 +39,7 @@ function LoadingFallback() {
     <div className="absolute inset-0 flex flex-col items-center justify-center bg-black bg-opacity-70 text-white z-50">
       <div className="text-center p-6">
         <div className="w-16 h-16 border-t-4 border-blue-500 border-solid rounded-full animate-spin mx-auto"></div>
-        <p className="mt-4 text-gray-300">高品質の3Dコンテンツを準備しています。</p>
+        <p className="mt-4 text-gray-300">3Dワールドを準備しています。</p>
         <p className="mt-2 text-gray-400 text-sm">少々お待ちください...</p>
       </div>
     </div>
@@ -114,156 +113,10 @@ function DebugInfo({ show }: { show: boolean }) {
 interface GameCanvasProps {
   onScoreUpdate: (points: number) => void;
   showDebug?: boolean;
-  useEnhancedGraphics?: boolean; // 拡張グラフィックを使用するかどうか
+  gameKey?: number; // ゲーム再開時のキー
 }
 
-// ステージごとのアイテム生成設定
-const stageItemConfigs = {
-  'cyber-city': {
-    standardCount: 30,
-    rareCount: 10,
-    legendaryCount: 3,
-    specialCount: 2,
-    itemTemplates: {
-      standard: {
-        ...ITEM_TEMPLATES.standard,
-        color: '#00ffff', // サイバー風の青色
-      },
-      rare: {
-        ...ITEM_TEMPLATES.rare,
-        color: '#00ffff', // サイバー風の青色
-      },
-      legendary: {
-        ...ITEM_TEMPLATES.legendary,
-        color: '#00ffff', // サイバー風の青色
-      },
-      special: {
-        ...ITEM_TEMPLATES.special,
-        color: '#00ffff', // サイバー風の青色
-      }
-    },
-    citySize: 80,
-    heightRange: [1, 20]
-  },
-  'forest': {
-    standardCount: 25,
-    rareCount: 8,
-    legendaryCount: 2,
-    specialCount: 3,
-    itemTemplates: {
-      standard: {
-        ...ITEM_TEMPLATES.standard,
-        color: '#7cfc00', // 森林風の緑色
-      },
-      rare: {
-        ...ITEM_TEMPLATES.rare,
-        color: '#7cfc00', // 森林風の緑色
-      },
-      legendary: {
-        ...ITEM_TEMPLATES.legendary,
-        color: '#7cfc00', // 森林風の緑色
-      },
-      special: {
-        ...ITEM_TEMPLATES.special,
-        color: '#32cd32', // 濃い緑色
-      }
-    },
-    citySize: 80,
-    heightRange: [0.5, 15]
-  },
-  'volcano': {
-    standardCount: 20,
-    rareCount: 12,
-    legendaryCount: 4,
-    specialCount: 2,
-    itemTemplates: {
-      standard: {
-        ...ITEM_TEMPLATES.standard,
-        color: '#ff4500', // 火山風のオレンジ色
-      },
-      rare: {
-        ...ITEM_TEMPLATES.rare,
-        color: '#ff0000', // 赤色
-      },
-      legendary: {
-        ...ITEM_TEMPLATES.legendary,
-        color: '#ff4500', // 火山風のオレンジ色
-      },
-      special: {
-        ...ITEM_TEMPLATES.special,
-        color: '#ff4500', // 火山風のオレンジ色
-      }
-    },
-    citySize: 80,
-    heightRange: [1, 25]
-  }
-};
-
-// アイテム生成関数
-const generateItems = (stageId: string) => {
-  const config = stageItemConfigs[stageId as keyof typeof stageItemConfigs] || stageItemConfigs['cyber-city'];
-  const items: CollectibleItem[] = [];
-  
-  // 標準アイテム
-  for (let i = 0; i < config.standardCount; i++) {
-    const x = (Math.random() * 2 - 1) * config.citySize / 2;
-    const z = (Math.random() * 2 - 1) * config.citySize / 2;
-    const y = config.heightRange[0] + Math.random() * (config.heightRange[1] - config.heightRange[0]);
-    
-    items.push({
-      id: `standard-${i}-${stageId}`,
-      position: [x, y, z],
-      ...config.itemTemplates.standard,
-      collected: false
-    });
-  }
-  
-  // レアアイテム
-  for (let i = 0; i < config.rareCount; i++) {
-    const x = (Math.random() * 2 - 1) * config.citySize / 2;
-    const z = (Math.random() * 2 - 1) * config.citySize / 2;
-    const y = config.heightRange[0] + Math.random() * (config.heightRange[1] - config.heightRange[0]) * 1.2;
-    
-    items.push({
-      id: `rare-${i}-${stageId}`,
-      position: [x, y, z],
-      ...config.itemTemplates.rare,
-      collected: false
-    });
-  }
-  
-  // レジェンダリーアイテム
-  for (let i = 0; i < config.legendaryCount; i++) {
-    const x = (Math.random() * 2 - 1) * config.citySize / 2;
-    const z = (Math.random() * 2 - 1) * config.citySize / 2;
-    const y = config.heightRange[0] + Math.random() * (config.heightRange[1] - config.heightRange[0]) * 1.5;
-    
-    items.push({
-      id: `legendary-${i}-${stageId}`,
-      position: [x, y, z],
-      ...config.itemTemplates.legendary,
-      collected: false
-    });
-  }
-  
-  // スペシャルアイテム
-  for (let i = 0; i < config.specialCount; i++) {
-    const x = (Math.random() * 2 - 1) * config.citySize / 2;
-    const z = (Math.random() * 2 - 1) * config.citySize / 2;
-    const y = config.heightRange[0] + Math.random() * (config.heightRange[1] - config.heightRange[0]) * 1.3;
-    
-    items.push({
-      id: `special-${i}-${stageId}`,
-      position: [x, y, z],
-      ...config.itemTemplates.special,
-      collected: false
-    });
-  }
-  
-  return items;
-};
-
-export default function GameCanvas({ onScoreUpdate, showDebug = false, useEnhancedGraphics = true }: GameCanvasProps) {
+export default function GameCanvas({ onScoreUpdate, showDebug = false, gameKey }: GameCanvasProps) {
   const [playerPosition, setPlayerPosition] = useState<THREE.Vector3>(new THREE.Vector3(0, 1, 0));
   
   // ゲーム設定ストアの状態を直接購読
@@ -275,19 +128,10 @@ export default function GameCanvas({ onScoreUpdate, showDebug = false, useEnhanc
     return getSelectedStage(gameSettings);
   }, []);
   
-  // 選択されたステージに基づいてアイテムを生成
-  const [stageItems, setStageItems] = useState<CollectibleItem[]>([]);
-  
-  // ステージが変更されたときにアイテムを再生成
-  useEffect(() => {
-    setStageItems(generateItems(selectedStageId));
-  }, [selectedStageId]);
-  
   // エラーをコンソールに記録
   const handleError = (error: Error, errorInfo: React.ErrorInfo) => {
     console.error("Three.jsレンダリングエラー:", error);
     console.error("エラー詳細情報:", errorInfo);
-    // この時点で親コンポーネントにエラーを通知することも可能
   };
 
   // プレイヤー位置の更新
@@ -300,16 +144,7 @@ export default function GameCanvas({ onScoreUpdate, showDebug = false, useEnhanc
     // スコア更新
     onScoreUpdate(item.points);
     
-    // 収集エフェクト（TODO: サウンドなど）
-    console.log(`アイテム収集: ${item.id}, ポイント: ${item.points}`);
-  }, [onScoreUpdate]);
-
-  // アイテム収集時の処理（基本版）
-  const handleItemCollect = useCallback((item: CollectibleItem) => {
-    // スコア更新
-    onScoreUpdate(item.points);
-    
-    // 収集エフェクト（TODO: サウンドなど）
+    // 収集エフェクト
     console.log(`アイテム収集: ${item.id}, ポイント: ${item.points}`);
   }, [onScoreUpdate]);
 
@@ -321,9 +156,7 @@ export default function GameCanvas({ onScoreUpdate, showDebug = false, useEnhanc
         
         // 値の妥当性チェック
         if (typeof delta === 'number' && isFinite(delta)) {
-          // Three.jsのカメラズーム処理（実装例）
           console.log('Zoom delta:', delta);
-          // TODO: 実際のカメラズーム処理を実装
         }
       } catch (error) {
         console.error('Error processing zoom event:', error);
@@ -340,81 +173,44 @@ export default function GameCanvas({ onScoreUpdate, showDebug = false, useEnhanc
 
   // ステージに対応するワールドコンポーネントを返す関数
   const renderWorldForStage = (stageId: string) => {
-    // 拡張グラフィックを使用する場合
-    if (useEnhancedGraphics) {
-      // 動的インポートで拡張コンポーネントを読み込み
-      const EnhancedCyberCity = React.lazy(() => import('./World/EnhancedCyberCity'));
-      
-      switch (stageId) {
-        case 'forest':
-          return <ForestWorld />;
-        case 'volcano':
-          return <VolcanoWorld />;
-        case 'cyber-city':
-        default:
-          return (
-            <Suspense fallback={null}>
-              <EnhancedCyberCity />
-            </Suspense>
-          );
-      }
-    } else {
-      // 基本グラフィック
-      switch (stageId) {
-        case 'forest':
-          return <ForestWorld />;
-        case 'volcano':
-          return <VolcanoWorld />;
-        case 'cyber-city':
-        default:
-          return <CyberCity />;
-      }
+    switch (stageId) {
+      case 'forest':
+        return <ForestWorld />;
+      case 'volcano':
+        return <VolcanoWorld />;
+      case 'cyber-city':
+      default:
+        return <CyberCity />;
     }
   };
 
   // アイテムコンポーネントを選択
   const renderItems = () => {
-    if (useEnhancedGraphics) {
-      // 動的インポートで拡張アイテムシステムを読み込み
-      const EnhancedItems = React.lazy(() => import('./Items/EnhancedItems'));
-      
-      return (
-        <Suspense fallback={null}>
-          <EnhancedItems
-            playerPosition={playerPosition}
-            onCollect={handleEnhancedItemCollect}
-            stageId={selectedStageId}
-          />
-        </Suspense>
-      );
-    } else {
-      // 基本アイテムシステム
-      return (
-        <Items 
-          key={`items-${selectedStageId}`}
-          playerPosition={playerPosition} 
-          onCollect={handleItemCollect}
-          customItems={stageItems}
-        />
-      );
-    }
+    // 常に拡張アイテムシステムを使用
+    return (
+      <EnhancedItems
+        playerPosition={playerPosition}
+        onCollect={handleEnhancedItemCollect}
+        stageId={selectedStageId}
+        gameKey={gameKey}
+      />
+    );
   };
 
   return (
     <div className="relative w-full h-screen overflow-hidden">
       <ErrorBoundary FallbackComponent={ErrorFallback} onError={handleError} onReset={() => {
-        // エラーリセット時の処理（コンポーネントの再マウントなど）
         console.log("エラーバウンダリーをリセットしました");
       }}>
         <Suspense fallback={<LoadingFallback />}>
           <Canvas 
             camera={{ 
-              position: [0, 2, 8], // 初期カメラ位置を調整（低く、近く）
-              fov: 60, // 視野角を少し狭く
+              position: [0, 2, 8],
+              fov: 60,
               near: 0.1,
               far: 1000
             }}
-            dpr={[1, 1.5]} // パフォーマンス向上のためデバイスピクセル比を制限
+            dpr={[1, 1.5]}
             gl={{ 
               antialias: true,
               alpha: false, 
@@ -440,7 +236,7 @@ export default function GameCanvas({ onScoreUpdate, showDebug = false, useEnhanc
                 shadow-mapSize={[2048, 2048]}
               />
               
-              {/* プレイヤー - 選択したアバターを適用（keyプロパティを追加して確実に再マウント） */}
+              {/* プレイヤー */}
               <Player 
                 key={`player-${selectedStageId}-${selectedAvatarId}`} 
                 onMove={handlePlayerMove} 
@@ -453,10 +249,10 @@ export default function GameCanvas({ onScoreUpdate, showDebug = false, useEnhanc
               {/* 地面 */}
               <Ground />
               
-              {/* 収集アイテム - ステージごとに異なるアイテムを表示 */}
+              {/* 収集アイテム */}
               {renderItems()}
               
-              {/* 星空 - ステージに応じて表示調整 */}
+              {/* 星空 */}
               {selectedStageId !== 'forest' && (
                 <Stars 
                   radius={100} 
@@ -469,14 +265,14 @@ export default function GameCanvas({ onScoreUpdate, showDebug = false, useEnhanc
                 />
               )}
               
-              {/* 環境ライティング - 選択したステージの環境プリセットを適用 */}
+              {/* 環境ライティング */}
               <Environment preset={selectedStage.envPreset as 'sunset' | 'dawn' | 'night' | 'warehouse' | 'forest' | 'apartment' | 'studio' | 'city' | 'park' | 'lobby'} />
             </ErrorBoundary>
           </Canvas>
         </Suspense>
       </ErrorBoundary>
       
-      {/* デバッグ情報（showDebugがtrueの場合のみ表示） */}
+      {/* デバッグ情報 */}
       <DebugInfo show={showDebug} />
     </div>
   );

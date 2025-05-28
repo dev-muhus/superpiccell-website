@@ -265,19 +265,26 @@ export const InputManager: React.FC<InputManagerProps> = ({ canvasRef }) => {
       
       // ESCキーの処理を改善
       if (event.code === 'Escape') {
+        event.preventDefault(); // デフォルト動作を防止
+        
         // ポインターロックが有効な場合は、まずロックを解除
         if (pointerLocked) {
           document.exitPointerLock();
           // 現在時刻を記録
           escKeyPressTimeRef.current = Date.now();
         } else {
-          // ポインターロックが解除されている場合
+          // ポインターロックが解除されている場合は即座にメニュー表示
           const timeSinceLastEsc = Date.now() - escKeyPressTimeRef.current;
           
-          // 直前のESCキー押下から500ms以上経過している場合、またはESCが初めて押された場合
-          if (timeSinceLastEsc > 500 || escKeyPressTimeRef.current === 0) {
+          // 直前のESCキー押下から300ms以上経過している場合、またはESCが初めて押された場合
+          if (timeSinceLastEsc > 300 || escKeyPressTimeRef.current === 0) {
             // メニュー表示イベントを発火
-            window.dispatchEvent(new CustomEvent('game-escape'));
+            try {
+              window.dispatchEvent(new CustomEvent('game-escape'));
+              console.log('ESC key pressed - menu event dispatched');
+            } catch (error) {
+              console.warn('Failed to dispatch game-escape event:', error);
+            }
           }
           // 時間をリセット
           escKeyPressTimeRef.current = 0;
@@ -296,11 +303,13 @@ export const InputManager: React.FC<InputManagerProps> = ({ canvasRef }) => {
     // キャプチャフェーズで処理（他のイベントよりも優先）
     window.addEventListener('keydown', handleKeyDown, { capture: true });
     window.addEventListener('keyup', handleKeyUp, { capture: true });
+    console.log('InputManager keyboard event listeners added with capture: true');
     
     // クリーンアップ
     return () => {
       window.removeEventListener('keydown', handleKeyDown, { capture: true });
       window.removeEventListener('keyup', handleKeyUp, { capture: true });
+      console.log('InputManager keyboard event listeners removed');
     };
   }, [setInput, pointerLocked]);
 

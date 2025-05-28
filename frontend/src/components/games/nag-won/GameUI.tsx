@@ -9,12 +9,14 @@ interface GameUIProps {
   timeRemaining: number;
   isGameActive: boolean;
   isGameOver: boolean;
+  isPaused: boolean;
   error: Error | null;
   onStart: () => void;
   onRestart: () => void;
   onBackToDashboard: () => void;
   onBackToTop: () => void;
   selectedStageId: string;
+  onGameRestart?: () => void; // ゲーム中のリスタート用
 }
 
 export default function GameUI({
@@ -22,12 +24,14 @@ export default function GameUI({
   timeRemaining,
   isGameActive,
   isGameOver,
+  isPaused,
   error,
   onStart,
   onRestart,
   onBackToDashboard,
   onBackToTop,
-  selectedStageId
+  selectedStageId,
+  onGameRestart
 }: GameUIProps) {
   // 設定モーダルの表示状態
   const [showSettings, setShowSettings] = useState(false);
@@ -57,9 +61,12 @@ export default function GameUI({
     };
   }, []);
   
-  // ESCキーイベントを発火する関数
-  const triggerEscKeyEvent = () => {
+  // ゲーム状態を切り替える関数（ESCキーと同じ動作）
+  const toggleGamePause = () => {
+    console.log('toggleGamePause called from GameUI button');
+    // game-escapeイベントを発火してInputManagerと同じ処理を実行
     window.dispatchEvent(new CustomEvent('game-escape'));
+    console.log('game-escape event dispatched from GameUI');
   };
   
   // エラー表示
@@ -89,7 +96,7 @@ export default function GameUI({
   }
 
   // ゲーム開始前の画面（またはESCキーで一時停止した場合）
-  if (!isGameActive && !isGameOver) {
+  if ((!isGameActive && !isGameOver) || (isGameActive && isPaused)) {
     return (
       <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center z-40">
         {/* 設定モーダル（showSettingsがtrueの場合のみ表示） */}
@@ -113,7 +120,7 @@ export default function GameUI({
         <div className="bg-black bg-opacity-70 p-4 sm:p-8 rounded-lg max-w-md mx-auto text-white text-center overflow-y-auto max-h-[80vh]">
           <div className="relative">
             <button 
-              onClick={triggerEscKeyEvent}
+              onClick={toggleGamePause}
               className="absolute top-0 right-0 bg-gray-700 hover:bg-gray-600 text-white rounded-full w-8 h-8 flex items-center justify-center"
               aria-label="閉じる"
             >
@@ -155,8 +162,18 @@ export default function GameUI({
                 onClick={onStart}
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 sm:py-3 px-4 sm:px-8 rounded-lg transition-colors text-sm sm:text-lg"
               >
-                {isGameActive ? "ゲーム再開" : "ゲームスタート"}
+                {isPaused ? "ゲーム再開" : isGameActive ? "ゲーム再開" : "ゲームスタート"}
               </button>
+              
+              {/* ゲーム中のリスタートボタン（ゲームが一時停止中の場合のみ表示） */}
+              {(isGameActive || isPaused) && onGameRestart && (
+                <button
+                  onClick={onGameRestart}
+                  className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 sm:py-3 px-4 sm:px-8 rounded-lg transition-colors text-sm sm:text-lg"
+                >
+                  🔄 完全リスタート（スコア・時間リセット）
+                </button>
+              )}
               
               {/* 設定ボタン */}
               <button
@@ -217,7 +234,7 @@ export default function GameUI({
         <div className="bg-black bg-opacity-70 p-4 sm:p-8 rounded-lg max-w-md mx-auto text-white text-center">
           <div className="relative">
             <button 
-              onClick={triggerEscKeyEvent}
+              onClick={toggleGamePause}
               className="absolute top-0 right-0 bg-gray-700 hover:bg-gray-600 text-white rounded-full w-8 h-8 flex items-center justify-center"
               aria-label="閉じる"
             >
@@ -295,7 +312,7 @@ export default function GameUI({
       {/* メニューボタン - 左上 (モバイル向け) */}
       {isMobile && (
         <button 
-          onClick={triggerEscKeyEvent}
+          onClick={toggleGamePause}
           className="absolute top-2 left-2 z-30 bg-gray-800 bg-opacity-80 p-2 rounded-full w-10 h-10 flex items-center justify-center touch-manipulation"
           aria-label="メニュー"
           data-ui-element="menu-button"

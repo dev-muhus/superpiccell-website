@@ -187,8 +187,9 @@ describe('ゲームスコアAPI', () => {
 
   describe('GET /api/games/scores - ランキング取得', () => {
     beforeEach(async () => {
-      // テスト用スコアデータを作成
+      // テスト用スコアデータを作成（同一ユーザーの複数スコアを含む）
       await db.insert(game_scores).values([
+        // testUsers[0]の複数スコア（最高は2500）
         {
           user_id: testUsers[0].id,
           game_id: 'nag-won',
@@ -199,15 +200,73 @@ describe('ゲームスコアAPI', () => {
           difficulty: 'normal'
         },
         {
+          user_id: testUsers[0].id,
+          game_id: 'nag-won',
+          stage_id: 'cyber-city',
+          score: 2500, // 最高得点
+          game_time: 45,
+          items_collected: 25,
+          difficulty: 'normal'
+        },
+        {
+          user_id: testUsers[0].id,
+          game_id: 'nag-won',
+          stage_id: 'cyber-city',
+          score: 1800,
+          game_time: 70,
+          items_collected: 18,
+          difficulty: 'normal'
+        },
+        // testUsers[1]の複数スコア（最高は1500）
+        {
           user_id: testUsers[1].id,
           game_id: 'nag-won',
           stage_id: 'cyber-city',
-          score: 1500,
+          score: 1500, // 最高得点
           game_time: 60,
           items_collected: 15,
           difficulty: 'normal'
+        },
+        {
+          user_id: testUsers[1].id,
+          game_id: 'nag-won',
+          stage_id: 'cyber-city',
+          score: 1200,
+          game_time: 80,
+          items_collected: 12,
+          difficulty: 'normal'
         }
       ]);
+    });
+
+    test('ユーザーごとの最高得点のみが表示される', async () => {
+      const url = '/api/games/scores?game_id=nag-won&stage_id=cyber-city';
+      const request = createTestRequest(url, 'GET', null, {}, testUsers[0].clerk_id);
+      const response = await GET(request);
+
+      if (response.status !== 200) {
+        const errorData = await response.json();
+        console.log('Error response:', errorData);
+      }
+
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      expect(data.success).toBe(true);
+      
+      // ユーザー数は2人だが、各ユーザーの最高得点のみ表示される
+      expect(data.data).toHaveLength(2);
+      
+      // スコア順でソートされている
+      expect(data.data[0].score).toBe(2500); // testUsers[0]の最高得点
+      expect(data.data[1].score).toBe(1500); // testUsers[1]の最高得点
+      
+      // 各ユーザーが1回ずつのみ表示される
+      const userIds = data.data.map((item: GameScoreData) => item.user.id);
+      const uniqueUserIds = [...new Set(userIds)];
+      expect(userIds.length).toBe(uniqueUserIds.length);
+      
+      expect(data.data[0].user.is_current_user).toBe(true);
+      expect(data.pagination.totalCount).toBe(2); // ユニークユーザー数
     });
 
     test('ゲームランキングを取得できる', async () => {
@@ -224,7 +283,7 @@ describe('ゲームスコアAPI', () => {
       const data = await response.json();
       expect(data.success).toBe(true);
       expect(data.data).toHaveLength(2);
-      expect(data.data[0].score).toBe(2000);
+      expect(data.data[0].score).toBe(2500); // 修正：最高得点
       expect(data.data[1].score).toBe(1500);
       expect(data.data[0].user.is_current_user).toBe(true);
       expect(data.pagination.totalCount).toBe(2);
@@ -239,7 +298,7 @@ describe('ゲームスコアAPI', () => {
       const data = await response.json();
       expect(data.success).toBe(true);
       expect(data.data).toHaveLength(2);
-      expect(data.data[0].score).toBe(2000);
+      expect(data.data[0].score).toBe(2500); // 修正：最高得点
       expect(data.data[1].score).toBe(1500);
     });
 

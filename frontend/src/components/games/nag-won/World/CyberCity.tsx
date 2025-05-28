@@ -17,7 +17,7 @@ type BuildingType = {
   neonColor?: string;
   neonText?: string;
   rotation?: number;
-  buildingType?: 'skyscraper' | 'office' | 'residential' | 'shop';
+  buildingType?: 'skyscraper' | 'office' | 'residential' | 'shop' | 'tower' | 'complex';
   windowDensity?: number;
   textureScale?: number;
 };
@@ -33,77 +33,100 @@ type RoadType = {
 // 建物配置データを外部から参照可能にするためのグローバル変数
 export let cityBuildingsData: BuildingType[] = [];
 
+// ホログラムのタイプ定義
+type HologramType = {
+  id: string;
+  position: [number, number, number];
+  scale: number;
+  rotation: number;
+  type: 'advertisement' | 'info' | 'warning' | 'decoration';
+  color: string;
+  text?: string;
+  animationType: 'rotate' | 'pulse' | 'float';
+};
+
+// ドローンのタイプ定義
+type DroneType = {
+  id: string;
+  position: [number, number, number];
+  scale: number;
+  speed: number;
+  path: THREE.Vector3[];
+  color: string;
+  lightColor: string;
+};
+
+// エネルギーフィールドのタイプ定義
+type EnergyFieldType = {
+  id: string;
+  position: [number, number, number];
+  radius: number;
+  height: number;
+  color: string;
+  intensity: number;
+  type: 'barrier' | 'portal' | 'generator';
+};
+
+// サイバーパーティクルのタイプ定義
+type CyberParticleType = {
+  id: string;
+  position: [number, number, number];
+  velocity: THREE.Vector3;
+  color: string;
+  size: number;
+  lifeTime: number;
+  type: 'data' | 'energy' | 'spark';
+};
+
 export default function CyberCity() {
   // プロシージャルに生成された建物
   const buildings = useMemo<BuildingType[]>(() => {
     const result: BuildingType[] = [];
+    const citySize = 150;
+    const gridSize = 25; // グリッドサイズを小さくして密度を上げる
+    const maxHeight = 80;
+    const minHeight = 15;
     
-    // 建物の生成パラメータ - サイズを大きく調整
-    const citySize = 150; // より広い都市
-    const gridSize = 30; // 間隔を広げる
-    const maxHeight = 80; // 最大高さを2倍以上に
-    const minHeight = 20; // 最小高さも調整
-    
-    // 建物カラーパレット（サイバーパンク）
     const baseColors = [
-      '#1a1a2e', '#16213e', '#0f3460', '#252839', '#191e29', '#0d1117', '#2b2b2b'
+      '#1a1a2e', '#16213e', '#0f3460', '#252839', '#191e29', '#0d1117', '#2b2b2b', '#1e1e3f'
     ];
     
-    // ネオンカラーパレット
     const neonColors = [
-      '#ff00ff', '#00ffff', '#ff2975', '#00ff9f', '#00f2ff', '#fd4556', '#fbff00'
+      '#ff00ff', '#00ffff', '#ff2975', '#00ff9f', '#00f2ff', '#fd4556', '#fbff00', '#ff6b35'
     ];
     
-    // ネオンテキスト候補
     const neonTexts = [
       'CYBER', 'NEON', 'TECH', 'LIFE', 'BYTE', 'FLOW', 'DATA', 'SYNC', 'EDGE', 
-      'HACK', 'WAVE', 'GRID', 'CORE', 'NODE', 'PULSE', 'PIXEL', 'LINK', 'ZONE'
+      'HACK', 'WAVE', 'GRID', 'CORE', 'NODE', 'PULSE', 'PIXEL', 'LINK', 'ZONE',
+      'MATRIX', 'GHOST', 'SHELL', 'NEXUS', 'VOID', 'FLUX'
     ];
     
-    // 建物タイプ
-    const buildingTypes = ['skyscraper', 'office', 'residential', 'shop'];
-
-    // グリッド状に建物を配置
+    const buildingTypes = ['skyscraper', 'office', 'residential', 'shop', 'tower', 'complex'];
+    
     for (let x = -citySize / 2; x < citySize / 2; x += gridSize) {
       for (let z = -citySize / 2; z < citySize / 2; z += gridSize) {
-        // ランダム要素を追加してグリッドを不規則に
-        if (Math.random() > 0.7) continue;
+        // 中央の道路エリアを避ける
+        const distanceFromCenterX = Math.abs(x);
+        const distanceFromCenterZ = Math.abs(z);
+        
+        // 道路の幅を考慮して建物を配置しない範囲を設定
+        if (distanceFromCenterX < 8 || distanceFromCenterZ < 8) continue;
+        
+        // 建物生成確率を上げる（30%から80%に変更）
+        if (Math.random() > 0.8) continue;
         
         const offsetX = (Math.random() - 0.5) * 8;
         const offsetZ = (Math.random() - 0.5) * 8;
-        const width = Math.max(8, Math.random() * 15); // 幅を大きく
-        const depth = Math.max(8, Math.random() * 15); // 奥行きも大きく
+        const width = Math.max(8, Math.random() * 15);
+        const depth = Math.max(8, Math.random() * 15);
+        const height = minHeight + Math.random() * (maxHeight - minHeight);
         
-        // 建物タイプに基づいて高さを決定
-        const buildingType = buildingTypes[Math.floor(Math.random() * buildingTypes.length)] as 'skyscraper' | 'office' | 'residential' | 'shop';
-        let height;
-        
-        switch(buildingType) {
-          case 'skyscraper':
-            height = minHeight + Math.random() * (maxHeight - minHeight);
-            break;
-          case 'office':
-            height = minHeight + Math.random() * (maxHeight * 0.7 - minHeight);
-            break;
-          case 'residential':
-            height = minHeight + Math.random() * (maxHeight * 0.5 - minHeight);
-            break;
-          case 'shop':
-            height = minHeight * 0.5 + Math.random() * (minHeight * 0.8);
-            break;
-          default:
-            height = minHeight + Math.random() * maxHeight;
-        }
-        
-        // 窓の密度はタイプによって異なる
-        let windowDensity = 1.0;
-        if (buildingType === 'skyscraper') windowDensity = 1.2;
-        if (buildingType === 'residential') windowDensity = 0.8;
-        
-        // 90%の建物に光る要素を追加
         const hasNeon = Math.random() > 0.1;
         const neonColor = neonColors[Math.floor(Math.random() * neonColors.length)];
         const neonText = neonTexts[Math.floor(Math.random() * neonTexts.length)];
+        
+        const buildingType = buildingTypes[Math.floor(Math.random() * buildingTypes.length)] as 'skyscraper' | 'office' | 'residential' | 'shop' | 'tower' | 'complex';
+        const windowDensity = 0.6 + Math.random() * 0.4;
         
         const building = {
           id: `building-${x}-${z}`,
@@ -128,35 +151,224 @@ export default function CyberCity() {
     // 都市データをグローバル変数に保存
     cityBuildingsData = result;
     
+    console.log(`CyberCity: Generated ${result.length} buildings`);
+    return result;
+  }, []);
+  
+  // ホログラムの生成
+  const holograms = useMemo<HologramType[]>(() => {
+    const result: HologramType[] = [];
+    const hologramCount = 30;
+    const hologramTypes = ['advertisement', 'info', 'warning', 'decoration'] as const;
+    const hologramColors = ['#00ffff', '#ff00ff', '#ffff00', '#00ff00', '#ff0080'];
+    const animationTypes = ['rotate', 'pulse', 'float'] as const;
+    
+    for (let i = 0; i < hologramCount; i++) {
+      const x = (Math.random() * 2 - 1) * 60;
+      const z = (Math.random() * 2 - 1) * 60;
+      const y = 5 + Math.random() * 15;
+      
+      // 建物の近くに配置
+      const nearBuilding = buildings.some(building => {
+        const distance = Math.sqrt(
+          Math.pow(x - building.position[0], 2) + Math.pow(z - building.position[2], 2)
+        );
+        return distance < 20;
+      });
+      
+      if (!nearBuilding && Math.random() > 0.3) continue;
+      
+      const type = hologramTypes[Math.floor(Math.random() * hologramTypes.length)];
+      const color = hologramColors[Math.floor(Math.random() * hologramColors.length)];
+      const animationType = animationTypes[Math.floor(Math.random() * animationTypes.length)];
+      
+      result.push({
+        id: `hologram-${i}`,
+        position: [x, y, z],
+        scale: 0.5 + Math.random() * 1.5,
+        rotation: Math.random() * Math.PI * 2,
+        type,
+        color,
+        text: type === 'advertisement' ? 'AD' : type === 'info' ? 'INFO' : type === 'warning' ? '!' : '◆',
+        animationType
+      });
+    }
+    
+    return result;
+  }, [buildings]);
+  
+  // ドローンの生成
+  const drones = useMemo<DroneType[]>(() => {
+    const result: DroneType[] = [];
+    const droneCount = 15;
+    const droneColors = ['#ffffff', '#00ffff', '#ff0080', '#ffff00'];
+    const lightColors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00'];
+    
+    for (let i = 0; i < droneCount; i++) {
+      const centerX = (Math.random() * 2 - 1) * 50;
+      const centerZ = (Math.random() * 2 - 1) * 50;
+      const flightHeight = 20 + Math.random() * 30;
+      
+      // ドローンの飛行パスを生成
+      const path: THREE.Vector3[] = [];
+      const pathPoints = 6;
+      for (let j = 0; j < pathPoints; j++) {
+        const angle = (j / pathPoints) * Math.PI * 2;
+        const radius = 15 + Math.random() * 20;
+        const x = centerX + Math.cos(angle) * radius;
+        const z = centerZ + Math.sin(angle) * radius;
+        const y = flightHeight + Math.sin(angle * 3) * 5;
+        path.push(new THREE.Vector3(x, y, z));
+      }
+      
+      const color = droneColors[Math.floor(Math.random() * droneColors.length)];
+      const lightColor = lightColors[Math.floor(Math.random() * lightColors.length)];
+      const speed = 0.3 + Math.random() * 0.7;
+      
+      result.push({
+        id: `drone-${i}`,
+        position: [centerX, flightHeight, centerZ],
+        scale: 0.3 + Math.random() * 0.4,
+        speed,
+        path,
+        color,
+        lightColor
+      });
+    }
+    
+    return result;
+  }, []);
+  
+  // エネルギーフィールドの生成
+  const energyFields = useMemo<EnergyFieldType[]>(() => {
+    const result: EnergyFieldType[] = [];
+    const fieldCount = 8;
+    const fieldTypes = ['barrier', 'portal', 'generator'] as const;
+    const fieldColors = ['#00ffff', '#ff00ff', '#ffff00', '#00ff00'];
+    
+    for (let i = 0; i < fieldCount; i++) {
+      const x = (Math.random() * 2 - 1) * 70;
+      const z = (Math.random() * 2 - 1) * 70;
+      
+      // 道路を避ける
+      const distanceFromCenter = Math.sqrt(x * x + z * z);
+      if (distanceFromCenter < 15) continue;
+      
+      const type = fieldTypes[Math.floor(Math.random() * fieldTypes.length)];
+      const color = fieldColors[Math.floor(Math.random() * fieldColors.length)];
+      
+      let radius, height;
+      switch (type) {
+        case 'barrier':
+          radius = 3 + Math.random() * 5;
+          height = 8 + Math.random() * 12;
+          break;
+        case 'portal':
+          radius = 4 + Math.random() * 3;
+          height = 10 + Math.random() * 8;
+          break;
+        case 'generator':
+          radius = 2 + Math.random() * 3;
+          height = 6 + Math.random() * 6;
+          break;
+      }
+      
+      result.push({
+        id: `field-${i}`,
+        position: [x, height / 2, z],
+        radius,
+        height,
+        color,
+        intensity: 0.5 + Math.random() * 0.5,
+        type
+      });
+    }
+    
+    return result;
+  }, []);
+  
+  // サイバーパーティクルの生成
+  const cyberParticles = useMemo<CyberParticleType[]>(() => {
+    const result: CyberParticleType[] = [];
+    const particleCount = 50;
+    const particleTypes = ['data', 'energy', 'spark'] as const;
+    const particleColors = ['#00ffff', '#ff00ff', '#ffff00', '#00ff00', '#ff0080'];
+    
+    for (let i = 0; i < particleCount; i++) {
+      const x = (Math.random() * 2 - 1) * 80;
+      const z = (Math.random() * 2 - 1) * 80;
+      const y = 1 + Math.random() * 20;
+      
+      const velocity = new THREE.Vector3(
+        (Math.random() - 0.5) * 2,
+        Math.random() * 3,
+        (Math.random() - 0.5) * 2
+      );
+      
+      const type = particleTypes[Math.floor(Math.random() * particleTypes.length)];
+      const color = particleColors[Math.floor(Math.random() * particleColors.length)];
+      
+      result.push({
+        id: `particle-${i}`,
+        position: [x, y, z],
+        velocity,
+        color,
+        size: 0.1 + Math.random() * 0.3,
+        lifeTime: 5 + Math.random() * 10,
+        type
+      });
+    }
+    
     return result;
   }, []);
   
   // 道路網の生成
   const roads = useMemo<RoadType[]>(() => {
     const result: RoadType[] = [];
-    const citySize = 150; // 都市サイズに合わせる
-    const gridSize = 30; // グリッドサイズも合わせる
+    const citySize = 150;
+    const gridSize = 25; // 建物のグリッドサイズと合わせる
     
-    // 横方向の道路
+    // メイン道路（中央十字）
+    // 横方向のメイン道路
+    result.push({
+      position: [0, 0.1, 0],
+      width: citySize,
+      length: 15, // 道路幅を広げる
+      rotation: 0
+    });
+    
+    // 縦方向のメイン道路
+    result.push({
+      position: [0, 0.1, 0],
+      width: 15, // 道路幅を広げる
+      length: citySize,
+      rotation: Math.PI / 2
+    });
+    
+    // サブ道路（グリッドに沿って）
     for (let z = -citySize / 2; z <= citySize / 2; z += gridSize) {
-      result.push({
-        position: [0, 0.1, z],
-        width: citySize,
-        length: 12, // 道路幅を広げる
-        rotation: 0
-      });
+      if (Math.abs(z) > 15) { // メイン道路と重複しないように
+        result.push({
+          position: [0, 0.1, z],
+          width: citySize,
+          length: 8,
+          rotation: 0
+        });
+      }
     }
     
-    // 縦方向の道路
     for (let x = -citySize / 2; x <= citySize / 2; x += gridSize) {
-      result.push({
-        position: [x, 0.1, 0],
-        width: 12, // 道路幅を広げる
-        length: citySize,
-        rotation: Math.PI / 2
-      });
+      if (Math.abs(x) > 15) { // メイン道路と重複しないように
+        result.push({
+          position: [x, 0.1, 0],
+          width: 8,
+          length: citySize,
+          rotation: Math.PI / 2
+        });
+      }
     }
     
+    console.log(`CyberCity: Generated ${result.length} roads`);
     return result;
   }, []);
 
@@ -459,6 +671,294 @@ export default function CyberCity() {
     return result;
   }, []);
   
+  // ホログラムのコンポーネント
+  const Hologram = ({ hologram }: { hologram: HologramType }) => {
+    const { position, scale, rotation, color, text, animationType } = hologram;
+    const hologramRef = useRef<THREE.Group>(null);
+    
+    // アニメーション
+    useFrame(() => {
+      if (hologramRef.current) {
+        switch (animationType) {
+          case 'rotate':
+            hologramRef.current.rotation.y += 0.02;
+            break;
+          case 'pulse':
+            const pulseScale = 1 + Math.sin(timeRef.current * 4) * 0.2;
+            hologramRef.current.scale.setScalar(scale * pulseScale);
+            break;
+          case 'float':
+            hologramRef.current.position.y = position[1] + Math.sin(timeRef.current * 2) * 0.5;
+            break;
+        }
+      }
+    });
+    
+    return (
+      <group ref={hologramRef} position={position} rotation={[0, rotation, 0]} scale={[scale, scale, scale]}>
+        {/* ホログラムベース */}
+        <Box args={[2, 3, 0.1]} position={[0, 0, 0]}>
+          <meshStandardMaterial 
+            color={color} 
+            emissive={color}
+            emissiveIntensity={0.5}
+            transparent
+            opacity={0.7}
+          />
+        </Box>
+        
+        {/* テキスト */}
+        {text && (
+          <mesh position={[0, 0, 0.1]}>
+            <planeGeometry args={[1.5, 0.5]} />
+            <meshStandardMaterial 
+              color="#ffffff" 
+              emissive="#ffffff"
+              emissiveIntensity={0.8}
+              transparent
+              opacity={0.9}
+            />
+          </mesh>
+        )}
+      </group>
+    );
+  };
+  
+  // ドローンのコンポーネント
+  const Drone = ({ drone }: { drone: DroneType }) => {
+    const { scale, speed, path, color, lightColor } = drone;
+    const droneRef = useRef<THREE.Group>(null);
+    
+    useFrame(() => {
+      if (droneRef.current && path.length > 0) {
+        const time = timeRef.current * speed;
+        const pathIndex = Math.floor(time) % path.length;
+        const nextIndex = (pathIndex + 1) % path.length;
+        const t = time - Math.floor(time);
+        
+        const currentPos = path[pathIndex];
+        const nextPos = path[nextIndex];
+        
+        // 補間して滑らかな移動
+        droneRef.current.position.lerpVectors(currentPos, nextPos, t);
+        
+        // 進行方向を向く
+        const direction = new THREE.Vector3().subVectors(nextPos, currentPos).normalize();
+        droneRef.current.lookAt(droneRef.current.position.clone().add(direction));
+        
+        // プロペラの回転
+        droneRef.current.rotation.z += 0.3;
+      }
+    });
+    
+    return (
+      <group ref={droneRef} scale={[scale, scale, scale]}>
+        {/* ドローン本体 */}
+        <mesh>
+          <boxGeometry args={[1, 0.3, 1]} />
+          <meshStandardMaterial color={color} metalness={0.8} roughness={0.2} />
+        </mesh>
+        
+        {/* プロペラ */}
+        {(
+          [
+            [-0.4, 0.2, -0.4] as [number, number, number], 
+            [0.4, 0.2, -0.4] as [number, number, number], 
+            [-0.4, 0.2, 0.4] as [number, number, number], 
+            [0.4, 0.2, 0.4] as [number, number, number]
+          ]
+        ).map((pos, i) => (
+          <mesh key={i} position={pos}>
+            <cylinderGeometry args={[0.05, 0.05, 0.1, 8]} />
+            <meshStandardMaterial color="#333333" />
+          </mesh>
+        ))}
+        
+        {/* ライト */}
+        <mesh position={[0, -0.2, 0.6]}>
+          <sphereGeometry args={[0.1, 8, 8]} />
+          <meshStandardMaterial 
+            color={lightColor}
+            emissive={lightColor}
+            emissiveIntensity={1.5}
+          />
+        </mesh>
+        
+        {/* ライトビーム */}
+        <mesh position={[0, -1, 0.6]} rotation={[Math.PI / 2, 0, 0]}>
+          <coneGeometry args={[0.5, 2, 8]} />
+          <meshStandardMaterial 
+            color={lightColor}
+            emissive={lightColor}
+            emissiveIntensity={0.3}
+            transparent
+            opacity={0.2}
+          />
+        </mesh>
+      </group>
+    );
+  };
+  
+  // エネルギーフィールドのコンポーネント
+  const EnergyField = ({ field }: { field: EnergyFieldType }) => {
+    const { position, radius, height, color, intensity, type } = field;
+    const fieldRef = useRef<THREE.Group>(null);
+    
+    useFrame(() => {
+      if (fieldRef.current) {
+        fieldRef.current.rotation.y += 0.01;
+        
+        // タイプ別のアニメーション
+        if (type === 'portal') {
+          fieldRef.current.rotation.x += 0.005;
+        }
+      }
+    });
+    
+    const glowIntensity = intensity + Math.sin(timeRef.current * 4) * 0.3;
+    
+    return (
+      <group ref={fieldRef} position={position}>
+        {/* メインフィールド */}
+        <mesh>
+          <cylinderGeometry args={[radius, radius, height, 16]} />
+          <meshStandardMaterial 
+            color={color}
+            emissive={color}
+            emissiveIntensity={glowIntensity}
+            transparent
+            opacity={0.3}
+          />
+        </mesh>
+        
+        {/* 内部エネルギー */}
+        <mesh>
+          <cylinderGeometry args={[radius * 0.7, radius * 0.7, height * 0.9, 12]} />
+          <meshStandardMaterial 
+            color={color}
+            emissive={color}
+            emissiveIntensity={glowIntensity * 1.5}
+            transparent
+            opacity={0.5}
+          />
+        </mesh>
+        
+        {/* エネルギーリング */}
+        {[...Array(3)].map((_, i) => (
+          <mesh 
+            key={i} 
+            position={[0, (i - 1) * height * 0.3, 0]} 
+            rotation={[Math.PI / 2, 0, timeRef.current + i]}
+          >
+            <ringGeometry args={[radius * 0.8, radius * 1.2, 16]} />
+            <meshStandardMaterial 
+              color={color}
+              emissive={color}
+              emissiveIntensity={0.8}
+              transparent
+              opacity={0.4}
+              side={THREE.DoubleSide}
+            />
+          </mesh>
+        ))}
+        
+        {/* ポータル特有のエフェクト */}
+        {type === 'portal' && (
+          <mesh rotation={[Math.PI / 2, 0, 0]}>
+            <ringGeometry args={[0, radius * 0.8, 32]} />
+            <meshStandardMaterial 
+              color={color}
+              emissive={color}
+              emissiveIntensity={2.0}
+              transparent
+              opacity={0.8}
+            />
+          </mesh>
+        )}
+      </group>
+    );
+  };
+  
+  // サイバーパーティクルのコンポーネント
+  const CyberParticle = ({ particle }: { particle: CyberParticleType }) => {
+    const particleRef = useRef<THREE.Group>(null);
+    const [currentPosition, setCurrentPosition] = React.useState(new THREE.Vector3(...particle.position));
+    const [currentVelocity, setCurrentVelocity] = React.useState(particle.velocity.clone());
+    
+    useFrame((_, delta) => {
+      if (particleRef.current) {
+        // 物理シミュレーション
+        const newPosition = currentPosition.clone();
+        newPosition.add(currentVelocity.clone().multiplyScalar(delta));
+        
+        // 境界でリセット
+        if (newPosition.y > 50 || newPosition.y < 0 || 
+            Math.abs(newPosition.x) > 100 || Math.abs(newPosition.z) > 100) {
+          newPosition.set(particle.position[0], particle.position[1], particle.position[2]);
+          setCurrentVelocity(particle.velocity.clone());
+        }
+        
+        setCurrentPosition(newPosition);
+        particleRef.current.position.copy(newPosition);
+        
+        // タイプ別のアニメーション
+        switch (particle.type) {
+          case 'data':
+            particleRef.current.rotation.y += delta * 5;
+            break;
+          case 'energy':
+            particleRef.current.rotation.x += delta * 3;
+            particleRef.current.rotation.z += delta * 2;
+            break;
+          case 'spark':
+            particleRef.current.rotation.y += delta * 8;
+            break;
+        }
+      }
+    });
+    
+    const opacity = 0.7 + Math.sin(timeRef.current * 6) * 0.3;
+    
+    return (
+      <group ref={particleRef} scale={[particle.size, particle.size, particle.size]}>
+        {particle.type === 'data' ? (
+          <mesh>
+            <boxGeometry args={[1, 1, 1]} />
+            <meshStandardMaterial 
+              color={particle.color}
+              emissive={particle.color}
+              emissiveIntensity={1.0}
+              transparent
+              opacity={opacity}
+            />
+          </mesh>
+        ) : particle.type === 'energy' ? (
+          <mesh>
+            <sphereGeometry args={[1, 8, 8]} />
+            <meshStandardMaterial 
+              color={particle.color}
+              emissive={particle.color}
+              emissiveIntensity={1.5}
+              transparent
+              opacity={opacity}
+            />
+          </mesh>
+        ) : (
+          <mesh>
+            <octahedronGeometry args={[1, 0]} />
+            <meshStandardMaterial 
+              color={particle.color}
+              emissive={particle.color}
+              emissiveIntensity={2.0}
+              transparent
+              opacity={opacity}
+            />
+          </mesh>
+        )}
+      </group>
+    );
+  };
+
   return (
     <>
       {/* すべての建物をレンダリング */}
@@ -474,6 +974,26 @@ export default function CyberCity() {
       {/* 信号機をレンダリング */}
       {trafficLights.map((position, index) => (
         <TrafficLight key={`traffic-${index}`} position={position} />
+      ))}
+      
+      {/* ホログラム */}
+      {holograms.map((hologram) => (
+        <Hologram key={hologram.id} hologram={hologram} />
+      ))}
+      
+      {/* ドローン */}
+      {drones.map((drone) => (
+        <Drone key={drone.id} drone={drone} />
+      ))}
+      
+      {/* エネルギーフィールド */}
+      {energyFields.map((field) => (
+        <EnergyField key={field.id} field={field} />
+      ))}
+      
+      {/* サイバーパーティクル */}
+      {cyberParticles.map((particle) => (
+        <CyberParticle key={particle.id} particle={particle} />
       ))}
     </>
   );

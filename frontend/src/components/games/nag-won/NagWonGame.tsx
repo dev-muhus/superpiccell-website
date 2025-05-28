@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import GameCanvas from './GameCanvas';
 import GameUI from './GameUI';
@@ -21,16 +21,21 @@ export default function NagWonGame({ config }: NagWonGameProps) {
   const [isLandscape, setIsLandscape] = useState(false);
   const [showScoreSaveModal, setShowScoreSaveModal] = useState(false);
   const [itemsCollected, setItemsCollected] = useState(0);
+  const [gameKey, setGameKey] = useState(0); // ゲーム再開時にコンポーネントを強制再マウントするためのキー
   const [gameState, setGameState] = useState({
     score: 0,
     timeRemaining: config.settings.gameTime,
     isGameActive: false,
     isGameOver: false,
+    isPaused: false,
     error: null as Error | null
   });
 
   // ゲーム設定ストアから現在のステージIDを取得
   const selectedStageId = useGameSettingsStore(state => state.selectedStageId);
+  
+  // 前回のステージIDを追跡するためのRef
+  const prevStageIdRef = useRef(selectedStageId);
 
   // 初期ロード
   useEffect(() => {
@@ -84,28 +89,29 @@ export default function NagWonGame({ config }: NagWonGameProps) {
 
   // ESCキーでメニュー表示
   useEffect(() => {
-    const handleEscapeKey = (event: KeyboardEvent) => {
-      if (event.code === 'Escape') {
-        if (gameState.isGameActive) {
-          setGameState(prev => ({ ...prev, isGameActive: false }));
-        }
-      }
-    };
-
     const handleGameEscape = () => {
-      if (gameState.isGameActive) {
-        setGameState(prev => ({ ...prev, isGameActive: false }));
-      }
+      console.log('game-escape event received in NagWonGame');
+      setGameState(prev => {
+        console.log('Current game state:', prev);
+        if (prev.isGameActive && !prev.isGameOver) {
+          const newState = { ...prev, isPaused: !prev.isPaused };
+          console.log('New game state:', newState);
+          return newState;
+        }
+        console.log('Game state not changed - not active or game over');
+        return prev;
+      });
     };
 
-    window.addEventListener('keydown', handleEscapeKey);
+    // InputManagerからのgame-escapeイベントのみを処理
     window.addEventListener('game-escape', handleGameEscape);
+    console.log('game-escape event listener added in NagWonGame');
     
     return () => {
-      window.removeEventListener('keydown', handleEscapeKey);
       window.removeEventListener('game-escape', handleGameEscape);
+      console.log('game-escape event listener removed in NagWonGame');
     };
-  }, [gameState.isGameActive]);
+  }, []); // 依存関係を空にして、イベントリスナーの再登録を防ぐ
 
   // デバッグモード切替（F3キー）
   useEffect(() => {
@@ -133,6 +139,7 @@ export default function NagWonGame({ config }: NagWonGameProps) {
       timeRemaining: config.settings.gameTime,
       isGameActive: true,
       isGameOver: false,
+      isPaused: false,
       error: null
     });
     setItemsCollected(0);
@@ -151,7 +158,36 @@ export default function NagWonGame({ config }: NagWonGameProps) {
   // ゲーム再開処理
   const handleRestartGame = useCallback(() => {
     handleStartGame();
+    setGameKey(prevKey => prevKey + 1); // ゲーム再開時にキーを更新
   }, [handleStartGame]);
+
+  // ゲーム再開処理（一時停止解除）
+  const handleResumeGame = useCallback(() => {
+    setGameState(prev => ({
+      ...prev,
+      isPaused: false
+    }));
+  }, []);
+
+  // ゲーム中のリスタート処理（完全リセット：スコア、時間、アイテムをすべてリセット）
+  const handleGameRestart = useCallback(() => {
+    setGameState({
+      score: 0,
+      timeRemaining: config.settings.gameTime, // 時間も完全リセット
+      isGameActive: true, // ゲームを継続
+      isGameOver: false,
+      isPaused: false,
+      error: null
+    });
+    setItemsCollected(0);
+    setGameKey(prevKey => prevKey + 1); // アイテムとプレイヤー位置をリセット
+    
+    // プレイヤー位置リセットのイベントを発行
+    const resetEvent = new CustomEvent('player-reset');
+    window.dispatchEvent(resetEvent);
+    
+    console.log('Game completely restarted - score, time, and items reset');
+  }, [config.settings.gameTime]);
 
   // ダッシュボードに戻る
   const handleBackToDashboard = useCallback(() => {
@@ -264,7 +300,7 @@ export default function NagWonGame({ config }: NagWonGameProps) {
   useEffect(() => {
     let timer: NodeJS.Timeout | null = null;
 
-    if (gameState.isGameActive && !gameState.isGameOver) {
+    if (gameState.isGameActive && !gameState.isGameOver && !gameState.isPaused) {
       timer = setInterval(() => {
         setGameState(prev => {
           if (prev.timeRemaining <= 1) {
@@ -278,7 +314,8 @@ export default function NagWonGame({ config }: NagWonGameProps) {
               ...prev,
               timeRemaining: 0,
               isGameActive: false,
-              isGameOver: true
+              isGameOver: true,
+              isPaused: false
             };
           }
           return {
@@ -292,7 +329,32 @@ export default function NagWonGame({ config }: NagWonGameProps) {
     return () => {
       if (timer) clearInterval(timer);
     };
-  }, [gameState.isGameActive, gameState.isGameOver]);
+  }, [gameState.isGameActive, gameState.isGameOver, gameState.isPaused]);
+
+  // ステージ変更を検出してゲームをリセット
+  useEffect(() => {
+    if (prevStageIdRef.current !== selectedStageId) {
+      console.log(`ステージ変更検出: ${prevStageIdRef.current} → ${selectedStageId}`);
+      
+      // ゲームが進行中の場合はリセット
+      if (gameState.isGameActive || gameState.isGameOver) {
+        setGameState({
+          score: 0,
+          timeRemaining: config.settings.gameTime,
+          isGameActive: false,
+          isGameOver: false,
+          isPaused: false,
+          error: null
+        });
+        setItemsCollected(0);
+        setGameKey(prevKey => prevKey + 1);
+        console.log('ステージ変更によりゲーム状態をリセット');
+      }
+      
+      // 前回のステージIDを更新
+      prevStageIdRef.current = selectedStageId;
+    }
+  }, [selectedStageId, gameState.isGameActive, gameState.isGameOver, config.settings.gameTime]);
 
   // 読み込み中の表示
   if (isLoading) {
@@ -398,25 +460,28 @@ export default function NagWonGame({ config }: NagWonGameProps) {
           timeRemaining={gameState.timeRemaining}
           isGameActive={gameState.isGameActive}
           isGameOver={gameState.isGameOver}
+          isPaused={gameState.isPaused}
           error={gameState.error}
-          onStart={handleStartGame}
-          onRestart={handleRestartGame}
+          onStart={gameState.isPaused ? handleResumeGame : handleStartGame}
+          onRestart={gameState.isGameOver ? handleRestartGame : handleGameRestart}
           onBackToDashboard={handleBackToDashboard}
           onBackToTop={handleBackToTop}
           selectedStageId={selectedStageId}
+          onGameRestart={gameState.isGameActive && !gameState.isGameOver ? handleGameRestart : undefined}
         />
         
         {/* 3Dゲームキャンバス - 全画面表示 */}
         <div className="absolute inset-0 z-0">
           <GameCanvas 
+            key={gameKey}
             onScoreUpdate={handleScoreUpdate} 
             showDebug={showDebug}
-            useEnhancedGraphics={true}
+            gameKey={gameKey}
           />
         </div>
         
         {/* モバイル操作UI */}
-        {isMobile && gameState.isGameActive && (
+        {isMobile && gameState.isGameActive && !gameState.isPaused && (
           <>
             {/* 移動ジョイスティック（左下） */}
             <div className="absolute bottom-8 left-8 z-30" data-ui-element="joystick">
