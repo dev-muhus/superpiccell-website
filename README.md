@@ -351,7 +351,7 @@ docker compose exec frontend npm run db:generate
 docker compose exec frontend npm run db:migrate
 
 # 本番環境のデータベースにマイグレーションを適用
-docker compose exec frontend sh -c "NODE_ENV=production DATABASE_URL=postgresql://superpiccell_owner:xxxxxxxxxxxx@xxxxxxxxxxxx.ap-southeast-1.aws.neon.tech/superpiccell?sslmode=require npm run db:migrate"
+docker compose exec frontend npm run db:migrate:production
 
 # データベースをリセット（テーブルを削除し、マイグレーションを再生成して適用）
 docker compose exec frontend npm run db:reset
@@ -363,7 +363,8 @@ docker compose exec frontend npm run db:reset
 
 1. `schema.ts`でスキーマを修正
 2. 新しいマイグレーションを生成：`npm run db:generate`
-3. マイグレーションを適用：`npm run db:migrate`
+3. 開発環境でテスト：`npm run db:migrate`
+4. 本番環境に適用：`npm run db:migrate:production`
 
 スキーマ定義の例：
 ```typescript
@@ -378,180 +379,47 @@ export const users = pgTable('users', {
 });
 ```
 
-### 【重要】マイグレーション適用ルール
+### 本番マイグレーション運用
 
-データベースマイグレーションを適用する際は、以下のルールに従ってください：
+本番環境へのマイグレーションは、以下のコマンドでローカルから実行します：
 
-1. **開発環境へのマイグレーション**
-   - 開発環境へのマイグレーションは必ず `NODE_ENV=development` を指定して実行してください
-   - コマンド例: `docker compose exec frontend sh -c "NODE_ENV=development npm run db:migrate"`
+```bash
+# 本番マイグレーション実行
+docker compose exec frontend npm run db:migrate:production
+```
 
-2. **本番環境へのマイグレーション（推奨方法）**
-   - **自動マイグレーション（推奨）**: `git push origin main`時に本番データベースへの自動マイグレーションが実行されます
-   - GitHub Actionsワークフロー（`.github/workflows/production-migrate.yml`）により自動実行
-   - **注意**: マイグレーション専用ワークフローのため、Vercelへのデプロイは別途自動実行されます
-   - セキュリティ機能:
-     - GitHub Secrets経由での安全な接続情報管理
-     - Environment Protection Rules適用
-     - 実行者・実行時刻の記録
-     - 事前・事後検証の自動実行
-     - 詳細なマイグレーションレポート生成
+このコマンドは以下の機能を提供します：
+- **対話式確認**: 実行前に確認プロンプトが表示されます
+- **環境検証**: 本番環境への接続と設定を事前に検証
+- **実行ログ**: マイグレーション実行の詳細ログを出力
+- **セキュリティ**: 本番データベースURLの検証
 
-3. **本番環境への緊急マイグレーション（ローカル実行）**
-   - 緊急時のみ使用: `docker compose exec frontend npm run db:migrate:production`
-   - セキュリティ機能:
-     - 対話式確認プロンプト
-     - 環境変数検証
-     - 実行ログの自動生成
-     - 本番URL パターンの検証
-   - 実行前の必須確認事項:
-     - `.env.production`ファイルの存在確認
-     - 本番データベースURLの正確性確認
-     - バックアップの取得完了確認
+#### 本番マイグレーション実行手順
 
-4. **セキュリティベストプラクティス**
-   - **最小権限の原則**: 必要最小限のデータベース権限のみ付与
-   - **監査証跡**: すべての本番マイグレーション実行を記録
-   - **多要素認証**: GitHub環境保護ルールでMFA必須化
-   - **ネットワークセキュリティ**: Neon DBの接続制限設定
-   - **定期的なアクセス権見直し**: 四半期ごとの権限監査
-
-5. **GitHub Secrets設定（必須）**
-   
-   本番マイグレーションを有効にするには、以下のGitHub Secretsを設定する必要があります：
-
-   #### 5.1 GitHub Secretsの設定手順
-   
-   1. **GitHubリポジトリの設定画面にアクセス**
-      - リポジトリページで「Settings」タブをクリック
-      - 左サイドバーの「Secrets and variables」→「Actions」を選択
-
-   2. **Environment Secretsの設定**
-      - 「Environments」タブで「production」環境を作成
-      - 「Environment secrets」で以下を追加：
-
-   ```
-   Secret名: PRODUCTION_DATABASE_URL
-   値: postgresql://xxxxxxxxxx_owner:xxxxxxxxxxxxxxx@xxxxxxxxxxxxxxxxxxx.ap-southeast-1.aws.neon.tech/xxxxxxxxx?sslmode=require
-   ```
-
-   #### 5.2 Environment Protection Rules（推奨）
-   
-   セキュリティ強化のため、以下の保護ルールを設定することを推奨します：
-
-   1. **Required reviewers**: 本番マイグレーション実行前の承認者を指定
-   2. **Wait timer**: マイグレーション実行前の待機時間（例：5分）
-   3. **Deployment branches**: mainブランチのみに制限
-
-   #### 5.3 設定確認方法
-   
+1. **スキーマ変更とマイグレーション生成**
    ```bash
-   # 設定確認用のテストワークフロー実行
-   git push origin main
-   
-   # または手動実行でテスト
-   # GitHubリポジトリの「Actions」タブ → 「Production Database Migration」 → 「Run workflow」
-   ```
-
-   #### 5.4 ブランチ保護ルール（強く推奨）
-   
-   マイグレーション失敗時の影響を最小化するため、以下のブランチ保護ルールを設定することを強く推奨します：
-
-   1. **GitHubリポジトリの設定画面にアクセス**
-      - リポジトリページで「Settings」タブをクリック
-      - 左サイドバーの「Branches」を選択
-
-   2. **mainブランチの保護ルール追加**
-      - 「Add rule」をクリック
-      - Branch name pattern: `main`
-      - 以下のオプションを有効化：
-
-   ```
-   ✅ Require status checks to pass before merging
-   ✅ Require branches to be up to date before merging
-   ✅ Status checks that are required:
-      - production-migration (GitHub Actions workflow)
-   ✅ Require conversation resolution before merging
-   ✅ Include administrators (推奨)
-   ```
-
-   #### 5.5 マイグレーション失敗時の対応フロー
-   
-   **重要**: GitHub Actionsはプッシュ後に実行されるため、プッシュ自体を失敗させることはできません。しかし、以下の仕組みで安全性を確保します：
-
-   **失敗検知と対応:**
-   ```bash
-   # 1. マイグレーション失敗の即座検知
-   # GitHub Actionsが失敗すると、以下が実行されます：
-   # - 詳細なエラーログ出力
-   # - 失敗マーカーファイルの生成
-   # - クリティカル失敗通知
-
-   # 2. 緊急対応手順
-   # a) アプリケーションデプロイの停止
-   echo "🛑 DO NOT DEPLOY until migration is fixed"
-   
-   # b) 問題の調査
-   # GitHub Actionsのログを確認
-   # データベース状態の確認
-   
-   # c) 修正とリトライ
-   # 問題を修正後、再度プッシュまたは手動実行
-   ```
-
-   **自動保護メカニズム:**
-   - ✅ **即座の失敗検知**: マイグレーション失敗時に明確なエラー表示
-   - ✅ **詳細なログ**: トラブルシューティング用の包括的な情報
-   - ✅ **失敗マーカー**: 監視システム用の構造化された失敗情報
-   - ✅ **明確な指示**: 失敗時の具体的な対応手順を表示
-   - ✅ **ワークフロー失敗**: GitHub Actionsが明確に失敗状態になる
-
-6. **運用フロー**
-
-   #### 6.1 通常の開発フロー
-   ```bash
-   # 1. スキーマ変更
-   # frontend/src/db/schema.ts を編集
-   
-   # 2. マイグレーションファイル生成
+   # スキーマを編集後、マイグレーションファイルを生成
    docker compose exec frontend npm run db:generate
-   
-   # 3. 開発環境でテスト
-   docker compose exec frontend sh -c "NODE_ENV=development npm run db:migrate"
-   
-   # 4. コミット・プッシュ
-   git add .
-   git commit -m "feat: add game_scores table"
-   git push origin main  # 本番マイグレーション自動実行
    ```
 
-   #### 6.2 緊急時の対応フロー
+2. **開発環境でのテスト**
    ```bash
-   # 1. ローカルで緊急マイグレーション実行
+   # 開発環境でマイグレーションをテスト
+   docker compose exec frontend npm run db:migrate
+   ```
+
+3. **本番環境への適用**
+   ```bash
+   # 本番マイグレーション実行
    docker compose exec frontend npm run db:migrate:production
-   
-   # 2. 実行ログの確認と保存
-   # コンソール出力されるマイグレーションログを記録
-   
-   # 3. チームへの報告
-   # 実行内容、理由、結果をチームに共有
    ```
 
-   #### 6.3 トラブルシューティング
-   
-   **マイグレーション失敗時の対応:**
-   ```bash
-   # 1. エラーログの確認
-   # GitHub Actionsの実行ログを確認
-   
-   # 2. データベース状態の確認
-   docker compose exec frontend sh -c "NODE_ENV=production npm run db:verify"
-   
-   # 3. 必要に応じてロールバック
-   # 手動でのデータ修正またはロールバックスクリプト実行
-   ```
+#### 注意事項
 
-7. **データベーススキーマの変更について**
+- **破壊的変更**: データ損失の可能性がある変更は事前に十分な検証が必要
+- **バックアップ**: 重要な変更前は手動バックアップを推奨
+- **監視**: マイグレーション実行後は本番環境の動作確認が必要
+- **実行環境**: 本番マイグレーションは必ずローカル環境から実行してください
 
 ---
 
@@ -748,177 +616,5 @@ Clerk認証を本番環境で正常に動作させるには、以下のDNSレコ
 6. Clerkダッシュボードの「**Validate configuration**」ボタンをクリックして検証
 
 これらの設定が完了すると、Clerk認証が本番環境で正常に動作するようになり、サインイン/サインアップボタンが正しく機能します。
-
-## 本番マイグレーション自動化
-
-### 概要
-
-Super Piccellプラットフォームでは、`main`ブランチへのプッシュ時に本番データベース（Neon DB）への自動マイグレーションが実行されます。
-
-### 自動マイグレーションの仕組み
-
-#### GitHub Actionsワークフロー
-- **トリガー**: `git push origin main`
-- **ワークフロー**: `.github/workflows/production-migrate.yml`
-- **実行内容**:
-  1. 依存関係のインストール
-  2. データベースマイグレーション実行
-  3. マイグレーション結果の検証
-
-#### 必要なGitHub Secrets設定
-
-本番マイグレーションを有効にするには、以下のGitHub Secretsを設定する必要があります：
-
-##### 1. GitHub Secretsの設定手順
-
-1. **GitHubリポジトリの設定画面にアクセス**
-   - リポジトリページで「Settings」タブをクリック
-   - 左サイドバーの「Secrets and variables」→「Actions」を選択
-
-2. **Repository Secretsの設定**
-   - 「New repository secret」をクリック
-   - 以下の環境変数を一つずつ追加：
-
-##### 2. 必須のGitHub Secrets一覧
-
-```bash
-# データベース関連（必須）
-PRODUCTION_DATABASE_URL=postgresql://superpiccell_owner:npg_9wDKE0hZMPYs@ep-weathered-surf-a11v6oxq-pooler.ap-southeast-1.aws.neon.tech/superpiccell?sslmode=require
-
-# Clerk認証関連（本番環境用）
-CLERK_PUBLISHABLE_KEY=pk_live_xxxxxxxx（本番用キー）
-CLERK_SECRET_KEY=sk_live_xxxxxxxx（本番用キー）
-CLERK_WEBHOOK_SECRET=whsec_xxxxxxxx（本番用キー）
-
-# Cloudinary関連
-CLOUDINARY_API_KEY=968951141597363
-CLOUDINARY_API_SECRET=Q0D3rmZCC5mDYXc2_DRKZ8FmmXk
-
-# R2 Storage関連
-R2_ACCESS_KEY_ID=327217f286f41313c4f4a03cb2f340b3
-R2_SECRET_ACCESS_KEY=ea87e11f77ce530c881caf9a6e9137be4c730654ae9ab3d4fbea0f47c7e1dea1
-```
-
-##### 3. Clerk認証の重要な注意点
-
-⚠️ **現在の `.env.production` ファイルには**テスト環境用**のClerkキーが設定されています：**
-- `pk_test_` で始まるキー = テスト環境用
-- `sk_test_` で始まるキー = テスト環境用
-
-**本番環境では以下が必要です：**
-- `pk_live_` で始まるPublishable Key
-- `sk_live_` で始まるSecret Key
-- 本番用のWebhook Secret
-
-##### 4. Environment Protection Rules（推奨）
-
-セキュリティ強化のため、以下の保護ルールを設定することを推奨します：
-
-1. **Settings** → **Environments**
-2. **New environment** で `production` 環境を作成
-3. **Protection rules** を設定：
-   - Required reviewers（承認者必須）
-   - Wait timer（待機時間）
-   - Deployment branches（mainブランチのみ）
-
-##### 5. ブランチ保護ルール（強く推奨）
-
-マイグレーション失敗時の影響を最小化するため、以下のブランチ保護ルールを設定することを強く推奨します：
-
-1. **GitHubリポジトリの設定画面にアクセス**
-   - リポジトリページで「Settings」タブをクリック
-   - 左サイドバーの「Branches」を選択
-
-2. **mainブランチの保護ルール追加**
-   - 「Add rule」をクリック
-   - Branch name pattern: `main`
-   - 以下のオプションを有効化：
-
-```
-✅ Require status checks to pass before merging
-✅ Require branches to be up to date before merging
-✅ Status checks that are required:
-   - production-migration (GitHub Actions workflow)
-✅ Require conversation resolution before merging
-✅ Include administrators (推奨)
-```
-
-### 安全性の確保
-
-- **本番環境専用**: `NODE_ENV=production`で実行
-- **検証機能**: マイグレーション後の自動検証
-- **ロールバック**: 問題発生時の手動対応が可能
-- **ログ出力**: 詳細な実行ログで問題の特定が容易
-- **GitHub Secrets**: 機密情報の安全な管理
-- **Environment Protection**: 本番環境への追加保護
-
-### マイグレーション失敗時の対応
-
-**重要**: GitHub Actionsはプッシュ後に実行されるため、プッシュ自体を失敗させることはできません。しかし、以下の仕組みで安全性を確保します：
-
-#### 失敗検知と対応
-```bash
-# 1. マイグレーション失敗の即座検知
-# GitHub Actionsが失敗すると、以下が実行されます：
-# - 詳細なエラーログ出力
-# - 失敗マーカーファイルの生成
-# - クリティカル失敗通知
-
-# 2. 緊急対応手順
-# a) アプリケーションデプロイの停止
-echo "🛑 DO NOT DEPLOY until migration is fixed"
-
-# b) 問題の調査
-# GitHub Actionsのログを確認
-# データベース状態の確認
-
-# c) 修正とリトライ
-# 問題を修正後、再度プッシュまたは手動実行
-```
-
-#### 自動保護メカニズム
-- ✅ **即座の失敗検知**: マイグレーション失敗時に明確なエラー表示
-- ✅ **詳細なログ**: トラブルシューティング用の包括的な情報
-- ✅ **失敗マーカー**: 監視システム用の構造化された失敗情報
-- ✅ **明確な指示**: 失敗時の具体的な対応手順を表示
-- ✅ **ワークフロー失敗**: GitHub Actionsが明確に失敗状態になる
-
-### 運用フロー
-
-#### 通常の開発フロー
-```bash
-# 1. スキーマ変更
-# frontend/src/db/schema.ts を編集
-
-# 2. マイグレーションファイル生成
-docker compose exec frontend npm run db:generate
-
-# 3. 開発環境でテスト
-docker compose exec frontend sh -c "NODE_ENV=development npm run db:migrate"
-
-# 4. コミット・プッシュ
-git add .
-git commit -m "feat: add game_scores table"
-git push origin main  # 本番マイグレーション自動実行
-```
-
-#### 緊急時の対応フロー
-```bash
-# 1. ローカルで緊急マイグレーション実行
-docker compose exec frontend npm run db:migrate:production
-
-# 2. 実行ログの確認と保存
-# コンソール出力されるマイグレーションログを記録
-
-# 3. チームへの報告
-# 実行内容、理由、結果をチームに共有
-```
-
-### 注意事項
-
-- **破壊的変更**: データ損失の可能性がある変更は事前に十分な検証が必要
-- **バックアップ**: 重要な変更前は手動バックアップを推奨
-- **監視**: マイグレーション実行後は本番環境の動作確認が必要
-- **Clerk認証**: 本番環境では必ず本番用のAPIキーを使用すること
 
 ---
