@@ -35,6 +35,13 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
       
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
+        
     - name: Create secure environment file
       run: |
         # セキュアな環境変数ファイルを作成（GitHub Secretsから）
@@ -47,51 +54,47 @@ jobs:
         MIGRATION_ACTOR=${{ github.actor }}
         EOF
         
-    - name: Build and start Docker containers
+    - name: Install dependencies
       run: |
-        echo "🐳 Building and starting Docker containers..."
-        echo "🔒 Security: Using GitHub Secrets for database connection"
-        echo "👤 Executed by: ${{ github.actor }}"
-        echo "📝 Commit: ${{ github.sha }}"
-        
-        # 本番マイグレーション用の最小限の設定でfrontendコンテナのみ起動
-        docker compose up -d frontend
-        
-        # frontendコンテナが完全に起動するまで待機
-        echo "⏳ Waiting for frontend container to be ready..."
-        timeout 60 bash -c 'until docker compose exec frontend test -f package.json; do sleep 2; done'
-        
-    - name: Install dependencies in container
-      run: |
-        echo "📦 Installing dependencies in frontend container..."
-        docker compose exec frontend npm ci --only=production
+        echo "📦 Installing dependencies..."
+        cd frontend
+        npm ci --only=production
         
     - name: Pre-migration validation
+      env:
+        DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+        NODE_ENV: production
       run: |
         echo "🔍 Pre-migration validation..."
+        cd frontend
         # データベース接続テスト
-        docker compose exec frontend sh -c "NODE_ENV=production npm run db:verify" || {
+        npm run db:verify || {
           echo "❌ Pre-migration validation failed"
           exit 1
         }
         
     - name: Run production database migration
+      env:
+        DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+        NODE_ENV: production
       run: |
         echo "🚀 Starting production database migration..."
         echo "📅 Timestamp: $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
         echo "🔗 Commit: ${{ github.sha }}"
         echo "👤 Actor: ${{ github.actor }}"
         
-        # Dockerコンテナ内でマイグレーション実行（重要なマイグレーション適用ルールに準拠）
-        echo "🔄 Running database migrations in frontend container..."
-        docker compose exec frontend sh -c "NODE_ENV=production npm run db:migrate" || {
+        cd frontend
+        
+        # マイグレーション実行（Node.js環境で直接実行）
+        echo "🔄 Running database migrations..."
+        npm run db:migrate || {
           echo "❌ Migration failed"
           exit 1
         }
         
         # マイグレーション後の検証
-        echo "✅ Verifying migration results in frontend container..."
-        docker compose exec frontend sh -c "NODE_ENV=production npm run db:verify" || {
+        echo "✅ Verifying migration results..."
+        npm run db:verify || {
           echo "❌ Post-migration validation failed"
           exit 1
         }
@@ -113,7 +116,7 @@ jobs:
         ## Migration Details
         - Environment: Production
         - Database: Neon DB
-        - Method: Docker Container via GitHub Actions
+        - Method: Node.js via GitHub Actions
         - Security: GitHub Secrets + Environment Protection
         
         ## Verification
@@ -124,12 +127,6 @@ jobs:
         
         echo "📋 Migration report generated"
         cat migration-report.md
-        
-    - name: Cleanup Docker containers
-      if: always()
-      run: |
-        echo "🧹 Cleaning up Docker containers..."
-        docker compose down
         
     - name: Notify migration status
       if: always()
