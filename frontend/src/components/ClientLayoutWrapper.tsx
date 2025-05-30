@@ -10,7 +10,7 @@ import CookieConsent from './CookieConsent';
 export default function ClientLayoutWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   // ゲームページかどうかを判定
-  const isGamePage = pathname?.includes('/dashboard/games/') && !pathname?.endsWith('/dashboard/games/');
+  const isGamePage = pathname?.includes('/games/') && !pathname?.endsWith('/games/');
   
   if (isGamePage) {
     // ゲームページの場合はヘッダー・フッターなしのフルスクリーンレイアウト

@@ -33,7 +33,7 @@ function ErrorFallback({ error, resetErrorBoundary }: ErrorFallbackProps) {
           再試行する
         </Button>
         <Button 
-          onClick={() => window.location.href = '/dashboard/games'}
+          onClick={() => window.location.href = '/games'}
           className="bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded"
         >
           ゲーム選択に戻る

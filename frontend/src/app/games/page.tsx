@@ -14,8 +14,8 @@ export default function GamesHubPage() {
       <ContentLayout
         title="GAME CENTRE"
         subtitle="Super Piccellのゲームコレクション"
-        backUrl="/dashboard"
-        backText="ダッシュボードに戻る"
+        backUrl="/"
+        backText="トップページに戻る"
         contentClass="p-4"
       >
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

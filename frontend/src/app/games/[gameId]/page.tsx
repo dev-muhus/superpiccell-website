@@ -28,19 +28,19 @@ export default function GamePage({ params }: { params: { gameId: string } }) {
     );
   }
   
-  // ゲームIDに応じて異なるゲームコンポーネントをレンダリング
+  // ゲームIDに応じて異なるゲームコンポーネントを表示
   switch (params.gameId) {
     case 'nag-won':
-      if ('isComingSoon' in gameConfig) return null;
+      if ('isComingSoon' in gameConfig && gameConfig.isComingSoon) return null;
       return <NagWonGame config={gameConfig} />;
     default:
       return (
-        <div className="container mx-auto px-4 py-8 h-screen bg-black text-white flex items-center justify-center">
-          <div className="bg-gray-900 rounded-lg p-8 text-center max-w-md">
-            <h1 className="text-2xl font-bold mb-4">実装中のゲームです</h1>
-            <p>このゲームは現在開発中です。お楽しみに！</p>
+        <div className="flex justify-center items-center h-screen bg-black text-white">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold mb-4">ゲームが見つかりません</h2>
+            <p>指定されたゲームID: {params.gameId}</p>
           </div>
         </div>
       );
   }
-} 
+}

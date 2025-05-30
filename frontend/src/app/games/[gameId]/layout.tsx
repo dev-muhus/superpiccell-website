@@ -1,8 +1,12 @@
 import React from 'react';
 
-export default function GameLayout({ children }: { children: React.ReactNode }) {
+export default function GameLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <div className="game-layout w-full h-screen bg-black overflow-hidden">
+    <div className="min-h-screen bg-black">
       {/* ゲーム用レイアウト - ヘッダー・フッターなし */}
       <main className="w-full h-screen bg-black">
         {children}

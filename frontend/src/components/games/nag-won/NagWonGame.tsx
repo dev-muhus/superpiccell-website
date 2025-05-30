@@ -200,7 +200,7 @@ export default function NagWonGame({ config }: NagWonGameProps) {
 
   // ダッシュボードに戻る
   const handleBackToDashboard = useCallback(() => {
-    router.push('/dashboard/games');
+    router.push('/games');
   }, [router]);
 
   // トップページに戻る

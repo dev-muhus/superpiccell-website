@@ -168,7 +168,7 @@ export default function DashboardPage() {
                 </button>
 
                 {/* ゲームセンター */}
-                <Link href="/dashboard/games" className="bg-white border border-gray-200 rounded-lg p-6 hover:bg-gray-50 transition-colors flex items-center transform hover:-translate-y-1 hover:shadow-lg bg-gradient-to-br from-indigo-50 to-blue-50">
+                <Link href="/games" className="bg-white border border-gray-200 rounded-lg p-6 hover:bg-gray-50 transition-colors flex items-center transform hover:-translate-y-1 hover:shadow-lg bg-gradient-to-br from-indigo-50 to-blue-50">
                   <FaGamepad className="text-blue-600 mr-3 text-xl" />
                   <div>
                     <h3 className="font-semibold">GAME CENTRE</h3>

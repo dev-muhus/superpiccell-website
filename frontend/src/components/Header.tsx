@@ -9,7 +9,6 @@ import { useScrollLock } from '@/lib/hooks/useScrollLock';
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const [isLandscape, setIsLandscape] = useState(false);
   const siteName = process.env.NEXT_PUBLIC_SITE_NAME || 'Super Piccell';
   const { isSignedIn, isLoaded } = useUser();
   const { lockScroll, unlockScroll } = useScrollLock();
@@ -24,15 +23,13 @@ const Header = () => {
   
   // 画面の向きを検出
   const checkOrientation = useCallback(() => {
-    // window.innerWidth > window.innerHeightで横向きを検出
-    const landscape = window.innerWidth > window.innerHeight;
-    setIsLandscape(landscape);
+    // 注: 向きの情報は現在グローバルスタイルのメディアクエリで直接使用されている
+    // CSSの@media (orientation: landscape)と@media (orientation: portrait)で処理
   }, []);
 
   useEffect(() => {
     // 初期表示時に状態をチェック
     handleScroll();
-    checkOrientation();
     
     // イベントリスナーの設定
     window.addEventListener('scroll', handleScroll);
@@ -77,79 +74,77 @@ const Header = () => {
         boxShadow: isScrolled ? '0 2px 10px rgba(0, 0, 0, 0.1)' : 'none',
         transition: 'background-color 0.3s, box-shadow 0.3s',
       }} 
-      className="p-4 md:p-2 fixed top-0 left-0 w-full z-[10000]"
+      className="p-4 md:p-2 fixed top-0 left-0 w-full z-[10000] h-[72px] flex items-center"
     >
-      <div className="container mx-auto flex justify-between items-center">
+      <div className="container mx-auto flex justify-between items-center h-full">
         <h1 style={{ color: headerTextColor }} className="text-xl md:text-2xl font-bold truncate">
           <Link href="/" className="hover:opacity-80 transition-opacity">
             {siteName.toUpperCase()}
           </Link>
         </h1>
 
-        {/* PC表示時のナビゲーション - 横向きでない場合に表示 */}
-        {!isLandscape && (
-          <div className="hidden md:flex md:items-center md:space-x-6">
-            <Link href="/#membership" className="hover:text-gray-300 transition-colors uppercase text-center" style={{ color: headerTextColor }}>membership</Link>
-            <Link href="/#about" className="hover:text-gray-300 transition-colors uppercase text-center" style={{ color: headerTextColor }}>about</Link>
-            <Link href="/#character" className="hover:text-gray-300 transition-colors uppercase text-center" style={{ color: headerTextColor }}>character</Link>
-            <Link href="/#core" className="hover:text-gray-300 transition-colors uppercase text-center" style={{ color: headerTextColor }}>core</Link>
-            <Link href="/#embryo" className="hover:text-gray-300 transition-colors uppercase text-center" style={{ color: headerTextColor }}>embryo</Link>
-            <Link href="/#gallery" className="hover:text-gray-300 transition-colors uppercase text-center" style={{ color: headerTextColor }}>gallery</Link>
-            
-            {/* PC表示・通常向きの認証ボタン */}
-            {!isLoaded ? (
-              // ローディング表示
-              <div className="ml-4 flex items-center space-x-3">
-                <div className="w-[120px] h-10 bg-gray-200 animate-pulse rounded-md"></div>
-                <div className="w-10 h-10 bg-gray-200 animate-pulse rounded-full"></div>
+        {/* PC表示時のナビゲーション */}
+        <div className="hidden md:flex md:items-center md:h-full md:space-x-6">
+          <Link href="/#membership" className="hover:text-gray-300 transition-colors uppercase text-center flex items-center h-full" style={{ color: headerTextColor }}>membership</Link>
+          <Link href="/#about" className="hover:text-gray-300 transition-colors uppercase text-center flex items-center h-full" style={{ color: headerTextColor }}>about</Link>
+          <Link href="/#character" className="hover:text-gray-300 transition-colors uppercase text-center flex items-center h-full" style={{ color: headerTextColor }}>character</Link>
+          <Link href="/#core" className="hover:text-gray-300 transition-colors uppercase text-center flex items-center h-full" style={{ color: headerTextColor }}>core</Link>
+          <Link href="/#embryo" className="hover:text-gray-300 transition-colors uppercase text-center flex items-center h-full" style={{ color: headerTextColor }}>embryo</Link>
+          <Link href="/#gallery" className="hover:text-gray-300 transition-colors uppercase text-center flex items-center h-full" style={{ color: headerTextColor }}>gallery</Link>
+          
+          {/* PC表示・通常向きの認証ボタン */}
+          {!isLoaded ? (
+            // ローディング表示
+            <div className="ml-4 flex items-center h-full space-x-3">
+              <div className="w-[120px] h-10 bg-gray-200 animate-pulse rounded-md"></div>
+              <div className="w-10 h-10 bg-gray-200 animate-pulse rounded-full"></div>
+            </div>
+          ) : !isSignedIn ? (
+            // 未ログイン時の表示
+            <div className="ml-4 flex items-center h-full overflow-hidden rounded-md">
+              <SignInButton mode="modal">
+                <Button variant="outline" className="rounded-r-none h-10">
+                  Sign In
+                </Button>
+              </SignInButton>
+              <SignUpButton mode="modal">
+                <Button className="rounded-l-none h-10">
+                  Sign Up
+                </Button>
+              </SignUpButton>
+            </div>
+          ) : (
+            // ログイン済みの表示
+            <div className="ml-4 flex items-center h-full space-x-3">
+              <Link href="/dashboard" onClick={handleProfileClick} className="flex items-center h-full">
+                <Button 
+                  variant="default"
+                  className="bg-white text-blue-600 hover:bg-gray-100 hover:text-blue-800 h-10"
+                >
+                  DASHBOARD
+                </Button>
+              </Link>
+              <div className="h-full flex items-center">
+                <UserButton 
+                  appearance={{
+                    elements: {
+                      avatarBox: "w-10 h-10",
+                      userButtonPopoverCard: "w-[240px]",
+                      userButtonPopoverActions: "p-2",
+                      userButtonPopoverActionButton: "px-4 py-2 rounded-md hover:bg-gray-100 transition-colors",
+                      userButtonPopoverActionButtonText: "text-sm font-medium"
+                    }
+                  }}
+                />
               </div>
-            ) : !isSignedIn ? (
-              // 未ログイン時の表示
-              <div className="ml-4 flex overflow-hidden rounded-md">
-                <SignInButton mode="modal">
-                  <Button variant="outline" className="rounded-r-none h-10">
-                    Sign In
-                  </Button>
-                </SignInButton>
-                <SignUpButton mode="modal">
-                  <Button className="rounded-l-none h-10">
-                    Sign Up
-                  </Button>
-                </SignUpButton>
-              </div>
-            ) : (
-              // ログイン済みの表示
-              <div className="ml-4 flex items-center space-x-3">
-                <Link href="/dashboard" onClick={handleProfileClick}>
-                  <Button 
-                    variant="default"
-                    className="bg-white text-blue-600 hover:bg-gray-100 hover:text-blue-800 h-10"
-                  >
-                    DASHBOARD
-                  </Button>
-                </Link>
-                <div className="h-10 flex items-center">
-                  <UserButton 
-                    appearance={{
-                      elements: {
-                        avatarBox: "w-10 h-10",
-                        userButtonPopoverCard: "w-[240px]",
-                        userButtonPopoverActions: "p-2",
-                        userButtonPopoverActionButton: "px-4 py-2 rounded-md hover:bg-gray-100 transition-colors",
-                        userButtonPopoverActionButtonText: "text-sm font-medium"
-                      }
-                    }}
-                  />
-                </div>
-              </div>
-            )}
-          </div>
-        )}
+            </div>
+          )}
+        </div>
 
-        {/* モバイル・横向き用メニューボタン */}
+        {/* モバイル用メニューボタン */}
         <button
           onClick={() => setIsMenuOpen(!isMenuOpen)}
-          className={`${isLandscape ? '' : 'md:hidden'} focus:outline-none uppercase font-bold px-2 py-1`}
+          className="md:hidden focus:outline-none uppercase font-bold px-2 py-1"
           style={{ color: headerTextColor }}
           aria-label="メニューを開く"
         >

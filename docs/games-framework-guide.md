@@ -231,7 +231,7 @@ export function getAvailableGames(): GameConfig[] {
      
      // ダッシュボードに戻る
      const handleBackToDashboard = useCallback(() => {
-       router.push('/dashboard/games');
+       router.push('/games');
      }, [router]);
      
      // 読み込み中の表示
@@ -293,7 +293,7 @@ export function getAvailableGames(): GameConfig[] {
 
 5. **ゲームのルーティングに追加**:
    ```typescript
-   // frontend/src/app/dashboard/games/[gameId]/page.tsx のswitch文に追加
+   // frontend/src/app/games/[gameId]/page.tsx のswitch文に追加
    switch (params.gameId) {
      case 'nag-won':
        if ('isComingSoon' in gameConfig) return null;
@@ -354,7 +354,7 @@ export function GameCard({ game }: GameCardProps) {
         
         {isAvailable ? (
           <Link 
-            href={`/dashboard/games/${game.id}`}
+            href={`/games/${game.id}`}
             className="w-full text-center bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded transition-colors flex items-center justify-center"
           >
             <FaPlay className="mr-2" />
@@ -674,7 +674,7 @@ export default function [GameName]Game({ config }: GameProps) {
   
   // ダッシュボードに戻る
   const handleBackToDashboard = useCallback(() => {
-    router.push('/dashboard/games');
+    router.push('/games');
   }, [router]);
   
   // 読み込み中の表示
