@@ -773,3 +773,102 @@ section[id="gallery"] {
   height: 100%;
   border: none; /* iframeのボーダーを消す */
 }
+
+/* モバイルデバイスでのメニューモーダル表示調整 */
+@media (max-width: 767px) {
+  /* メニューモーダル内のコンテンツ上部の余白を確保 - 削除 */
+  /* .h-full.overflow-y-auto {
+    padding-top: 4rem !important;
+  } */
+  
+  /* メニューコンテンツの配置調整 */
+  .menu-container > div {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start !important; /* 上揃え */
+    align-items: center;
+  }
+  
+  /* iOSのSafariでの表示調整 - 削除 */
+  /* @supports (-webkit-touch-callout: none) {
+    .h-full.overflow-y-auto {
+      padding-top: 5rem !important;
+    }
+  } */
+}
+
+/* 横向きモード（ランドスケープ）の最適化 */
+@media (orientation: landscape) {
+  /* メニューモーダル内のスクロール設定 */
+  .menu-container {
+    -webkit-overflow-scrolling: touch;
+    max-height: 100vh;
+  }
+  
+  /* タップ領域の最適化 */
+  button, a {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* スクロールバーのスタイリング */
+  .menu-container::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  .menu-container::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+  }
+  
+  .menu-container::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
+  }
+  
+  .menu-container::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.5);
+  }
+}
+
+/* モバイル向け最適化 - タッチ操作の改善 */
+@media (max-width: 768px) {
+  /* タップハイライトの抑制 */
+  * {
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+  }
+  
+  /* タップフィードバックのアニメーション */
+  a:active, button:active {
+    opacity: 0.7;
+    transform: scale(0.98);
+    transition: opacity 0.1s, transform 0.1s;
+  }
+}
+
+/* スクロール関連の改善 */
+.menu-container {
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.3) rgba(255, 255, 255, 0.1);
+}
+
+/* メニューモーダル内のコンテンツ調整 */
+@media screen and (max-height: 600px) {
+  /* 高さが低い画面での調整 */
+  .menu-container > div {
+    padding-top: 2rem !important;
+    padding-bottom: 3rem !important;
+  }
+  
+  /* リンク間のスペース調整 */
+  .menu-link {
+    margin-bottom: 0.5rem !important;
+  }
+}
+
+/* 閉じるボタンのSVGアイコン中央配置 */
+.feather {
+  display: inline-block;
+  vertical-align: middle;
+}
