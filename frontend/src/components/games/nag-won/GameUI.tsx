@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import GameSettings from './GameSettings';
 import GameRankingModal from './UI/GameRankingModal';
-import { FaTimes, FaPlay, FaRedo, FaGamepad, FaHome } from 'react-icons/fa';
 
 interface GameUIProps {
   score: number;
