@@ -20,6 +20,7 @@ export default function NagWonGame({ config }: NagWonGameProps) {
   const [isMobile, setIsMobile] = useState(false);
   const [isLandscape, setIsLandscape] = useState(false);
   const [showScoreSaveModal, setShowScoreSaveModal] = useState(false);
+  const [showGameUI, setShowGameUI] = useState(false);
   const [itemsCollected, setItemsCollected] = useState(0);
   const [gameKey, setGameKey] = useState(0); // ゲーム再開時にコンポーネントを強制再マウントするためのキー
   const [gameState, setGameState] = useState({
@@ -34,8 +35,16 @@ export default function NagWonGame({ config }: NagWonGameProps) {
   // ゲーム設定ストアから現在のステージIDを取得
   const selectedStageId = useGameSettingsStore(state => state.selectedStageId);
   
+  // GameUIのモーダル表示状態を取得するコールバック
+  const handleGameUIModalChange = useCallback((isVisible: boolean) => {
+    setShowGameUI(isVisible);
+  }, []);
+  
   // 前回のステージIDを追跡するためのRef
   const prevStageIdRef = useRef(selectedStageId);
+
+  // モーダルの表示状態を管理する変数を追加
+  const isModalOpen = showScoreSaveModal || showGameUI;
 
   // 初期ロード
   useEffect(() => {
@@ -409,7 +418,9 @@ export default function NagWonGame({ config }: NagWonGameProps) {
         overscrollBehaviorY: 'none',
         // 追加のブラウザ対策
         msOverflowStyle: 'none',
-        scrollbarWidth: 'none'
+        scrollbarWidth: 'none',
+        // モーダル表示中はポインターイベントを完全に無効化
+        pointerEvents: isModalOpen ? 'none' : 'auto'
       }}
       onTouchStart={(e) => {
         // タッチイベントの伝播を制御（国際標準のアプローチ）
@@ -468,6 +479,7 @@ export default function NagWonGame({ config }: NagWonGameProps) {
           onBackToTop={handleBackToTop}
           selectedStageId={selectedStageId}
           onGameRestart={gameState.isGameActive && !gameState.isGameOver ? handleGameRestart : undefined}
+          onModalChange={handleGameUIModalChange}
         />
         
         {/* 3Dゲームキャンバス - 全画面表示 */}
@@ -484,9 +496,9 @@ export default function NagWonGame({ config }: NagWonGameProps) {
         {isMobile && gameState.isGameActive && !gameState.isPaused && (
           <>
             {/* 移動ジョイスティック（左下） */}
-            <div className="absolute bottom-8 left-8 z-30" data-ui-element="joystick">
+            <div className="absolute bottom-10 left-8 z-30" data-ui-element="joystick">
               <VirtualJoystick 
-                size={80}
+                size={100}
                 baseColor="#4a5568"
                 stickColor="#3182ce"
                 baseOpacity={0.7}
@@ -571,16 +583,18 @@ export default function NagWonGame({ config }: NagWonGameProps) {
           </div>
         )}
 
-        {/* スコア保存モーダル */}
-        <ScoreSaveModal
-          isOpen={showScoreSaveModal}
-          onClose={() => setShowScoreSaveModal(false)}
-          onSave={handleSaveScore}
-          score={gameState.score}
-          gameTime={config.settings.gameTime - gameState.timeRemaining}
-          itemsCollected={itemsCollected}
-          stageId={selectedStageId}
-        />
+        {/* スコア保存モーダル - モーダルにはポインターイベントを有効化 */}
+        <div style={{ pointerEvents: 'auto' }}>
+          <ScoreSaveModal
+            isOpen={showScoreSaveModal}
+            onClose={() => setShowScoreSaveModal(false)}
+            onSave={handleSaveScore}
+            score={gameState.score}
+            gameTime={config.settings.gameTime - gameState.timeRemaining}
+            itemsCollected={itemsCollected}
+            stageId={selectedStageId}
+          />
+        </div>
       </div>
     </div>
   );

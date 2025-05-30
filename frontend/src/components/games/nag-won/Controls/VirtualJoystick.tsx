@@ -207,7 +207,7 @@ export const VirtualJoystick: React.FC<VirtualJoystickProps> = ({
   return (
     <div 
       ref={containerRef}
-      className="absolute left-4 bottom-20 z-30 touch-manipulation"
+      className="touch-manipulation"
       style={{
         width: `${size}px`,
         height: `${size}px`,

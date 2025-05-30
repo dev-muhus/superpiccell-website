@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import GameSettings from './GameSettings';
 import GameRankingModal from './UI/GameRankingModal';
+import { FaTimes, FaPlay, FaRedo, FaGamepad, FaHome } from 'react-icons/fa';
 
 interface GameUIProps {
   score: number;
@@ -17,6 +18,7 @@ interface GameUIProps {
   onBackToTop: () => void;
   selectedStageId: string;
   onGameRestart?: () => void; // ゲーム中のリスタート用
+  onModalChange?: (isVisible: boolean) => void; // モーダル表示状態変更通知用
 }
 
 export default function GameUI({
@@ -31,7 +33,8 @@ export default function GameUI({
   onBackToDashboard,
   onBackToTop,
   selectedStageId,
-  onGameRestart
+  onGameRestart,
+  onModalChange
 }: GameUIProps) {
   // 設定モーダルの表示状態
   const [showSettings, setShowSettings] = useState(false);
@@ -69,6 +72,12 @@ export default function GameUI({
     console.log('game-escape event dispatched from GameUI');
   };
   
+  // モーダル表示状態が変更されたときに親コンポーネントに通知
+  useEffect(() => {
+    const isModalVisible = showSettings || showRanking;
+    onModalChange?.(isModalVisible);
+  }, [showSettings, showRanking, onModalChange]);
+  
   // エラー表示
   if (error) {
     return (
@@ -101,7 +110,7 @@ export default function GameUI({
       <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center z-40">
         {/* 設定モーダル（showSettingsがtrueの場合のみ表示） */}
         {showSettings && (
-          <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-75">
+          <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-75" style={{ pointerEvents: 'auto' }}>
             <div className="relative bg-black bg-opacity-80 p-4 sm:p-6 rounded-lg max-w-md mx-auto text-white">
               <button 
                 onClick={() => setShowSettings(false)}
