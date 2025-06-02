@@ -8,6 +8,13 @@ import { useUser } from '@clerk/nextjs';
 import UserAvatar from './UserAvatar';
 import PostModal from './PostModal';
 import ContentRenderer from './ContentRenderer';
+import PostMedia from './PostMedia';
+import PostMenu from './PostMenu';
+import PostActions from './PostActions';
+import PostQuotePreview from './PostQuotePreview';
+import PostReplyInfo from './PostReplyInfo';
+import { PostCardProps } from '@/types/post';
+import { formatDate } from '@/utils/dateFormatter';
 import { toast } from 'sonner';
 
 interface User {
@@ -28,81 +35,6 @@ export interface Media {
   width?: number | null;
   height?: number | null;
   duration_sec?: number | null;
-}
-
-export interface PostCardProps {
-  post: {
-    id: number;
-    content: string;
-    created_at: string;
-    post_type: 'original' | 'reply' | 'quote' | 'repost';
-    media?: Array<{
-      id?: number;
-      url: string;
-      mediaType: 'image' | 'video';
-      width?: number;
-      height?: number;
-      duration_sec?: number;
-    }>;
-    user_id: number;
-    in_reply_to_post_id?: number;
-    quote_of_post_id?: number;
-    repost_of_post_id?: number;
-    user: User | null;
-    in_reply_to_post?: {
-      id: number;
-      content: string;
-      user: User | null;
-      media?: Array<{
-        id?: number;
-        url: string;
-        mediaType: 'image' | 'video';
-        width?: number;
-        height?: number;
-        duration_sec?: number;
-      }>;
-    } | null;
-    quote_of_post?: {
-      id: number;
-      content: string;
-      created_at: string;
-      media?: Array<{
-        id?: number;
-        url: string;
-        mediaType: 'image' | 'video';
-        width?: number;
-        height?: number;
-        duration_sec?: number;
-      }>;
-      user: User | null;
-    } | null;
-    repost_of_post?: {
-      id: number;
-      content: string;
-      user: User | null;
-    } | null;
-    reply_count?: number;
-    like_count?: number;
-    is_liked?: boolean;
-    bookmark_count?: number;
-    is_bookmarked?: boolean;
-  };
-  onLikeStateChange?: (postId: number, isLiked: boolean, likeCount: number) => void;
-  onRepostStateChange?: (postId: number, isReposted: boolean) => void;
-  onBookmarkStateChange?: (postId: number, isBookmarked: boolean, bookmarkCount: number) => void;
-  onQuote?: (postId: number) => void;
-  onPostAction?: (action: string, postId: number) => void;
-  onDeletePost?: (postId: number) => void;
-  showActions?: boolean;
-  replyCount?: number;
-  repostCount?: number;
-  likeCount?: number;
-  quoteCount?: number;
-  isLiked?: boolean;
-  isBookmarked?: boolean;
-  onReplySuccess?: (postId: number) => void;
-  hideReplyInfo?: boolean;
-  compactMode?: boolean;
 }
 
 export default function PostCard({
@@ -147,7 +79,6 @@ export default function PostCard({
     }
     
     // 手動チェック（開発時のデバッグ用）
-    // 自分の投稿の場合は強制的にtrueにする例
     const forceOwnPostIds: number[] = []; // 自分の投稿のIDリスト
     if (forceOwnPostIds.includes(post.id)) {
       return true;
@@ -156,7 +87,7 @@ export default function PostCard({
     return false;
   })();
   
-  // 状態管理はpropsから初期化し、内部的な状態変更のみに使用
+  // 状態管理
   const [isLiked, setIsLiked] = useState(post.is_liked !== undefined ? post.is_liked : initialIsLiked);
   const [isBookmarked, setIsBookmarked] = useState(post.is_bookmarked !== undefined ? post.is_bookmarked : initialIsBookmarked);
   const [localLikeCount, setLocalLikeCount] = useState(post.like_count !== undefined ? post.like_count : likeCount);
@@ -167,17 +98,15 @@ export default function PostCard({
   const [bookmarkAnimating, setBookmarkAnimating] = useState(false);
   const [showAbsoluteTime, setShowAbsoluteTime] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const [actionInProgress, setActionInProgress] = useState(false);
   
-  // ポストカードの参照
+  // Refs
   const postCardRef = useRef<HTMLDivElement>(null);
   const likeButtonRef = useRef<HTMLButtonElement>(null);
   const bookmarkButtonRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   
-  // 操作進行中状態管理用
-  const [actionInProgress, setActionInProgress] = useState(false);
-  
-  // propsが変更された場合に状態を更新
+  // props変更時に状態を更新
   useEffect(() => {
     setIsLiked(post.is_liked !== undefined ? post.is_liked : initialIsLiked);
   }, [post.is_liked, initialIsLiked]);
@@ -212,43 +141,6 @@ export default function PostCard({
     };
   }, []);
 
-  const formatDate = (dateString: string, forceAbsolute = false) => {
-    try {
-      const date = new Date(dateString);
-      
-      // 絶対時間表示が強制されているか、状態で絶対時間表示が選択されている場合
-      if (forceAbsolute || showAbsoluteTime) {
-        return date.toLocaleString('ja-JP', {
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit',
-          hour: '2-digit',
-          minute: '2-digit'
-        }).replace(/\//g, '-');
-      }
-      
-      // 相対時間表示
-      const now = new Date();
-      const diff = now.getTime() - date.getTime();
-      
-      // 24時間以内
-      if (diff < 24 * 60 * 60 * 1000) {
-        const hours = Math.floor(diff / (60 * 60 * 1000));
-        if (hours < 1) {
-          const minutes = Math.floor(diff / (60 * 1000));
-          return minutes <= 0 ? 'たった今' : `${minutes}分前`;
-        }
-        return `${hours}時間前`;
-      }
-      
-      // 日付表示
-      return date.toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' });
-    } catch (e) {
-      console.error('日付のフォーマットエラー:', e);
-      return dateString;
-    }
-  };
-
   // 日時表示切り替え
   const toggleTimeFormat = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -256,12 +148,13 @@ export default function PostCard({
     setShowAbsoluteTime(!showAbsoluteTime);
   };
 
+  // いいね処理
   const handleLikeAction = async () => {
     // いいねアニメーションを追加
     setLikeAnimating(true);
-    setTimeout(() => setLikeAnimating(false), 450); // アニメーション時間と合わせる
+    setTimeout(() => setLikeAnimating(false), 450);
     
-    // オプティミスティックUI更新（即時反映）
+    // オプティミスティックUI更新
     const previousIsLiked = isLiked;
     const previousLikeCount = localLikeCount;
     setIsLiked(!isLiked);
@@ -279,7 +172,7 @@ export default function PostCard({
         setIsLiked(data.liked);
         setLocalLikeCount(data.like_count);
         
-        // 親コンポーネントに通知（必要な場合のみ）
+        // 親コンポーネントに通知
         if (onLikeStateChange) {
           onLikeStateChange(post.id, data.liked, data.like_count);
         }
@@ -302,8 +195,8 @@ export default function PostCard({
     }
   };
 
+  // リポスト処理
   const handleRepostAction = async () => {
-    // リポスト処理はまだ無効化されているので、将来的に実装する場合のテンプレート
     try {
       // 現在は親コンポーネントへの通知のみ
       if (onRepostStateChange) {
@@ -313,25 +206,18 @@ export default function PostCard({
       console.error('リポスト処理エラー:', error);
     }
     
-    // 古い通知方法 - 互換性のため残す
+    // 古い通知方法
     if (onPostAction) {
       onPostAction('repost', post.id);
     }
   };
 
+  // 返信処理
   const handleReplyAction = () => {
-    // 返信モーダルを開く
     setIsReplyModalOpen(true);
-    
-    // アナリティクスイベントの記録（実装例）
-    try {
-      // console.log('返信アクション開始:', post.id);
-      // TODO: アナリティクスコード実装
-    } catch (error) {
-      console.error('アナリティクスエラー:', error);
-    }
   };
 
+  // 返信モーダルクローズ処理
   const handleReplyModalClose = (postSubmitted = false) => {
     setIsReplyModalOpen(false);
     
@@ -349,13 +235,14 @@ export default function PostCard({
       // 返信カウントを増やす
       setLocalReplyCount(prev => prev + 1);
       
-      // 返信成功のコールバックがあれば呼び出す
+      // 返信成功のコールバック
       if (onReplySuccess) {
         onReplySuccess(post.id);
       }
     }
   };
 
+  // 引用処理
   const handleQuoteAction = () => {
     if (onQuote) {
       onQuote(post.id);
@@ -364,6 +251,7 @@ export default function PostCard({
     }
   };
 
+  // ブックマーク処理
   const handleBookmarkAction = async () => {
     try {
       // クリック時のアニメーション
@@ -412,7 +300,7 @@ export default function PostCard({
     }
   };
 
-  // 削除処理を実行
+  // 削除処理
   const handleDeletePost = async () => {
     if (!window.confirm('この投稿を削除してもよろしいですか？')) {
       return;
@@ -429,7 +317,7 @@ export default function PostCard({
           onDeletePost(post.id);
         }
         
-        // アクション通知（互換性のため）
+        // アクション通知
         if (onPostAction) {
           onPostAction('delete', post.id);
         }
@@ -462,10 +350,7 @@ export default function PostCard({
     setShowMenu(!showMenu);
   };
 
-  // 返信先の投稿データ
-  const replyToPostData = post.in_reply_to_post || null;
-
-  // 投稿詳細ページへの遷移関数
+  // 投稿詳細ページへの遷移
   const navigateToPost = (e: React.MouseEvent) => {
     // ボタンやリンク要素がクリックされた場合は、遷移しない
     const isInteractive = (target: Element) => {
@@ -483,7 +368,7 @@ export default function PostCard({
     }
   };
 
-  // 他人の投稿の場合の操作
+  // ブロック処理
   const handleBlockUser = async (userId: number, username: string) => {
     // ブロック操作を実行中に操作不可にする
     setActionInProgress(true);
@@ -497,7 +382,7 @@ export default function PostCard({
         postCardRef.current.classList.add('block-animation');
       }
       
-      // APIコールは並行して行う
+      // APIコール
       const response = await fetch(`/api/users/${userId}/block`, {
         method: 'POST',
       });
@@ -520,6 +405,9 @@ export default function PostCard({
       setActionInProgress(false);
     }
   };
+  
+  // 返信先の投稿データ
+  const replyToPostData = post.in_reply_to_post || null;
 
   return (
     <>
@@ -537,128 +425,20 @@ export default function PostCard({
           </div>
         )}
 
-        {/* 返信の場合 - hideReplyInfoがfalseの場合のみ表示 */}
-        {!hideReplyInfo && post.post_type === 'reply' && post.in_reply_to_post_id && (
-          <div className="flex items-center text-gray-500 text-sm mb-3">
-            <FaReply className="mr-2 text-blue-500" />
-            <span>
-              {replyToPostData ? (
-                <>
-                  <Link 
-                    href={`/profile/${replyToPostData.user?.username}`} 
-                    className="hover:underline text-blue-600 font-medium"
-                  >
-                    @{replyToPostData.user?.username || 'ユーザー'}
-                  </Link>
-                  <span className="mx-1">さんの</span>
-                  <Link 
-                    href={`/post/${post.in_reply_to_post_id}`}
-                    className="hover:underline text-blue-600 font-medium"
-                  >
-                    投稿
-                  </Link>
-                  <span>への返信</span>
-                </>
-              ) : (
-                <span>投稿への返信</span>
-              )}
-            </span>
-          </div>
-        )}
-
-        {/* 返信の場合、返信先のプレビューを表示 - hideReplyInfoがfalseの場合のみ表示 */}
-        {!hideReplyInfo && post.post_type === 'reply' && replyToPostData && (
-          <div className="mb-3 border-l-2 border-gray-200 pl-3 text-sm text-gray-600">
-            <div className="flex items-center">
-              <UserAvatar 
-                imageUrl={replyToPostData.user?.profile_image_url} 
-                username={replyToPostData.user?.username || 'ユーザー'} 
-                size={16} 
-              />
-              <span className="ml-1 font-medium">{replyToPostData.user?.username || 'ユーザー'}</span>
-            </div>
-            <p className="line-clamp-2 mt-1">{replyToPostData.content}</p>
-            
-            {/* 返信先投稿のメディアを表示 */}
-            {replyToPostData.media && replyToPostData.media.length > 0 && (
-              <div className="mt-2 rounded-lg overflow-hidden relative">
-                <div className="h-24 w-32 relative rounded-lg overflow-hidden">
-                  {(() => {
-                    // メディアの判定ロジックを強化
-                    const media = replyToPostData.media[0];
-                    const url = media.url;
-                    const mediaType = media.mediaType || 'image';
-                    
-                    // URLのパターンも確認して画像か動画かを判定
-                    const isImage = 
-                      mediaType === 'image' || 
-                      url.match(/\.(jpe?g|png|gif|webp)$/i) || 
-                      url.includes('/image/');
-                      
-                    if (isImage) {
-                      return (
-                        <Image
-                          src={url}
-                          alt="返信先の画像"
-                          fill
-                          className="object-cover"
-                          sizes="128px"
-                        />
-                      );
-                    } else {
-                      return (
-                        <video
-                          src={url}
-                          className="w-full h-full object-cover"
-                          controls
-                        >
-                          お使いのブラウザは動画再生をサポートしていません。
-                        </video>
-                      );
-                    }
-                  })()}
-                </div>
-                
-                {replyToPostData.media.length > 1 && (
-                  <div className="absolute bottom-1 right-1 bg-black bg-opacity-60 text-white text-xs px-1 rounded">
-                    +{replyToPostData.media.length - 1}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
+        {/* 返信情報 - hideReplyInfoがfalseの場合のみ表示 */}
+        {!hideReplyInfo && post.post_type === 'reply' && (
+          <PostReplyInfo 
+            replyToPostId={post.in_reply_to_post_id}
+            replyToPost={replyToPostData}
+          />
         )}
 
         {/* 引用投稿の場合、引用元のプレビューを追加 */}
         {post.post_type === 'quote' && post.quote_of_post && (
-          <div className="mb-3 border rounded-lg border-gray-200 p-3 bg-gray-50">
-            <div className="text-sm">
-              <Link href={`/post/${post.quote_of_post_id}`} className="hover:underline">
-                <div className="flex items-center mb-1">
-                  <UserAvatar 
-                    imageUrl={post.quote_of_post.user?.profile_image_url} 
-                    username={post.quote_of_post.user?.username || 'ユーザー'} 
-                    size={20} 
-                  />
-                  <span className="ml-1 font-medium">{post.quote_of_post.user?.username || 'ユーザー'}</span>
-                  <span className="mx-1 text-gray-500">·</span>
-                  <span className="text-gray-500 text-xs">{formatDate(post.quote_of_post.created_at)}</span>
-                </div>
-                <p className="line-clamp-3 mt-1">{post.quote_of_post.content}</p>
-                {post.quote_of_post.media && post.quote_of_post.media.length > 0 && (
-                  <div className="mt-2 rounded-lg overflow-hidden h-20 w-20 bg-gray-100">
-                    <Image
-                      src={post.quote_of_post.media[0].url}
-                      alt="引用元画像"
-                      width={80}
-                      height={80}
-                      className="object-cover w-full h-full"
-                    />
-                  </div>
-                )}
-              </Link>
-            </div>
-          </div>
+          <PostQuotePreview 
+            quotePost={post.quote_of_post}
+            quotePostId={post.quote_of_post_id!}
+          />
         )}
         
         <div className="flex">
@@ -687,69 +467,22 @@ export default function PostCard({
                   onClick={toggleTimeFormat} 
                   className="text-gray-500 text-sm hover:underline cursor-pointer bg-transparent border-0 p-0 m-0"
                 >
-                  {formatDate(post.created_at)}
+                  {formatDate(post.created_at, showAbsoluteTime)}
                 </button>
               </div>
 
-              {/* 3点リーダーメニュー - 常に表示する */}
-              <div className="relative" ref={menuRef}>
-                <button 
-                  onClick={toggleMenu}
-                  className="text-gray-400 hover:text-gray-500 p-1 rounded-full hover:bg-gray-100"
-                  aria-label="投稿メニュー"
-                >
-                  <FaEllipsisH />
-                </button>
-                
-                {showMenu && (
-                  <div className="absolute right-0 mt-1 w-56 bg-white shadow-lg rounded-md overflow-hidden z-10 border border-gray-200">
-                    {/* 自分の投稿の場合の操作 */}
-                    {isOwnPost ? (
-                      <>
-                        {/* 削除ボタン */}
-                        <button 
-                          onClick={handleDeletePost}
-                          className="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center text-red-500"
-                        >
-                          <FaTrash className="mr-2" />
-                          <span>削除</span>
-                        </button>
-                        
-                        {/* 編集ボタン - 常に非活性 */}
-                        <button 
-                          disabled
-                          className="w-full text-left px-4 py-2 flex items-center text-gray-300 cursor-not-allowed bg-gray-50"
-                        >
-                          <FaEdit className="mr-2" />
-                          <span>編集</span>
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        {/* 他人の投稿の場合の操作 */}
-                        {/* ミュート機能 - 非活性 */}
-                        <button 
-                          disabled
-                          className="w-full text-left px-4 py-2 flex items-center text-gray-300 cursor-not-allowed bg-gray-50"
-                        >
-                          <FaBellSlash className="mr-2" />
-                          <span>{post.user?.username || 'ユーザー'}さんをミュート</span>
-                        </button>
-                        
-                        {/* ブロック機能 - 有効化 */}
-                        <button 
-                          onClick={() => handleBlockUser(post.user_id, post.user?.username || 'ユーザー')}
-                          disabled={actionInProgress}
-                          className="w-full text-left px-4 py-2 hover:bg-gray-50 flex items-center text-red-500"
-                        >
-                          <FaBan className="mr-2" />
-                          <span>{post.user?.username || 'ユーザー'}さんをブロック</span>
-                        </button>
-                      </>
-                    )}
-                  </div>
-                )}
-              </div>
+              {/* メニュー */}
+              <PostMenu
+                isOwnPost={isOwnPost}
+                showMenu={showMenu}
+                username={post.user?.username || 'ユーザー'}
+                userId={post.user_id}
+                actionInProgress={actionInProgress}
+                menuRef={menuRef}
+                onToggleMenu={toggleMenu}
+                onDelete={handleDeletePost}
+                onBlockUser={handleBlockUser}
+              />
             </div>
             
             {/* 投稿内容 */}
@@ -761,136 +494,34 @@ export default function PostCard({
             </div>
             
             {/* メディア表示部分 */}
-            {post.media && post.media.length > 0 ? (
-              <div className={`rounded-lg overflow-hidden mb-3 relative ${post.media.length > 1 ? 'grid grid-cols-2 gap-1' : ''}`}>
-                {post.media.map((media, index) => (
-                  <div key={`media-${post.id}-${index}`} className={`${post.media && post.media.length > 1 ? (index === 0 && post.media.length === 3 ? 'col-span-2' : '') : ''} overflow-hidden rounded-lg`}>
-                    {media.mediaType === 'image' || media.url.match(/\.(jpe?g|png|gif|webp)$/i) ? (
-                      <div className="relative aspect-video">
-                        <Image
-                          src={media.url}
-                          alt={`投稿画像 ${index + 1}`}
-                          fill
-                          className="object-cover"
-                          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                          onError={() => console.log(`投稿画像 ${index + 1} の読み込みに失敗しました`)}
-                        />
-                      </div>
-                    ) : media.mediaType === 'video' || media.url.match(/\.(mp4|webm|mov)$/i) ? (
-                      <div className="relative aspect-video">
-                        <video
-                          src={media.url}
-                          controls
-                          className="w-full h-full"
-                          onError={() => console.log(`投稿動画 ${index + 1} の読み込みに失敗しました`)}
-                        >
-                          お使いのブラウザは動画再生をサポートしていません。
-                        </video>
-                      </div>
-                    ) : (
-                      // mediaTypeが不明な場合、ファイル拡張子から判定
-                      <div className="relative aspect-video">
-                        {media.url.includes('/image/') ? (
-                          <Image
-                            src={media.url}
-                            alt={`投稿画像 ${index + 1}`}
-                            fill
-                            className="object-cover"
-                            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                            onError={() => console.log(`投稿画像 ${index + 1} の読み込みに失敗しました`)}
-                          />
-                        ) : (
-                          <video
-                            src={media.url}
-                            controls
-                            className="w-full h-full"
-                            onError={() => console.log(`投稿動画 ${index + 1} の読み込みに失敗しました`)}
-                          >
-                            お使いのブラウザは動画再生をサポートしていません。
-                          </video>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : null}
+            {post.media && post.media.length > 0 && (
+              <PostMedia 
+                media={post.media}
+                postId={post.id}
+              />
+            )}
             
             {/* アクションボタン */}
             {showActions && (
-              <div className="flex justify-between mt-3 text-gray-500 flex-wrap xs:flex-nowrap">
-                {/* 返信 */}
-                <button 
-                  onClick={handleReplyAction} 
-                  className="flex items-center hover:text-blue-500 transition-colors group"
-                  aria-label="コメントする"
-                >
-                  <span className="flex items-center bg-transparent group-hover:bg-blue-50 rounded-full p-1 sm:p-2 transition-colors">
-                    <FaRegComment className="text-sm sm:text-base" />
-                    <span className="text-xs ml-1">{localReplyCount > 0 ? localReplyCount : ''}</span>
-                  </span>
-                </button>
-                
-                {/* リポスト */}
-                <button 
-                  onClick={handleRepostAction} 
-                  className="flex items-center text-gray-300 group cursor-not-allowed"
-                  aria-label="リポストする（現在利用できません）"
-                  disabled
-                >
-                  <span className="flex items-center bg-transparent rounded-full p-1 sm:p-2 transition-colors">
-                    <FaRetweet className="text-sm sm:text-base" />
-                    <span className="text-xs ml-1">{repostCount > 0 ? repostCount : ''}</span>
-                  </span>
-                </button>
-                
-                {/* いいね */}
-                <button 
-                  ref={likeButtonRef}
-                  onClick={handleLikeAction} 
-                  className={`flex items-center ${isLiked ? 'text-red-500' : 'hover:text-red-500'} transition-colors group`}
-                  aria-label="いいね"
-                >
-                  <span className={`flex items-center ${isLiked ? 'bg-red-50' : 'bg-transparent group-hover:bg-red-50'} rounded-full p-1 sm:p-2 transition-colors`}>
-                    {isLiked ? (
-                      <FaHeart className={`text-sm sm:text-base ${likeAnimating ? 'like-animation' : ''}`} />
-                    ) : (
-                      <FaRegHeart className="text-sm sm:text-base" />
-                    )}
-                    <span className="text-xs ml-1">{localLikeCount > 0 ? localLikeCount : ''}</span>
-                  </span>
-                </button>
-                
-                {/* 引用 */}
-                <button 
-                  onClick={handleQuoteAction} 
-                  className="flex items-center text-gray-300 group cursor-not-allowed"
-                  aria-label="引用する（現在利用できません）"
-                  disabled
-                >
-                  <span className="flex items-center bg-transparent rounded-full p-1 sm:p-2 transition-colors">
-                    <FaShareAlt className="text-sm sm:text-base" />
-                    <span className="text-xs ml-1">{quoteCount > 0 ? quoteCount : ''}</span>
-                  </span>
-                </button>
-
-                {/* ブックマーク */}
-                <button 
-                  ref={bookmarkButtonRef}
-                  onClick={handleBookmarkAction} 
-                  className={`flex items-center ${isBookmarked ? 'text-yellow-500' : 'hover:text-yellow-500'} transition-colors group`}
-                  aria-label="ブックマーク"
-                >
-                  <span className={`flex items-center ${isBookmarked ? 'bg-yellow-50' : 'bg-transparent group-hover:bg-yellow-50'} rounded-full p-1 sm:p-2 transition-colors`}>
-                    {isBookmarked ? (
-                      <FaBookmark className={`text-sm sm:text-base ${bookmarkAnimating ? 'bookmark-animation' : ''}`} />
-                    ) : (
-                      <FaRegBookmark className="text-sm sm:text-base" />
-                    )}
-                    <span className="text-xs ml-1">{localBookmarkCount > 0 ? localBookmarkCount : ''}</span>
-                  </span>
-                </button>
-              </div>
+              <PostActions
+                postId={post.id}
+                isLiked={isLiked}
+                isBookmarked={isBookmarked}
+                replyCount={localReplyCount}
+                repostCount={repostCount}
+                likeCount={localLikeCount}
+                quoteCount={quoteCount}
+                bookmarkCount={localBookmarkCount}
+                likeAnimating={likeAnimating}
+                bookmarkAnimating={bookmarkAnimating}
+                likeButtonRef={likeButtonRef}
+                bookmarkButtonRef={bookmarkButtonRef}
+                onReply={handleReplyAction}
+                onLike={handleLikeAction}
+                onRepost={handleRepostAction}
+                onQuote={handleQuoteAction}
+                onBookmark={handleBookmarkAction}
+              />
             )}
           </div>
         </div>
@@ -904,7 +535,7 @@ export default function PostCard({
         replyToPost={post.user ? { id: post.id, content: post.content, user: { username: post.user.username } } : { id: post.id, content: post.content }}
       />
       
-      {/* リプライ成功時のアニメーションのためのスタイル */}
+      {/* アニメーション用スタイル */}
       <style jsx global>{`
         .reply-success-flash {
           animation: reply-flash 1s ease;
