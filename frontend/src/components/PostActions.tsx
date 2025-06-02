@@ -27,7 +27,6 @@ interface PostActionsProps {
  * 投稿アクションボタン（いいね、リポスト、返信、ブックマーク）コンポーネント
  */
 export default function PostActions({
-  postId,
   isLiked,
   isBookmarked,
   replyCount,

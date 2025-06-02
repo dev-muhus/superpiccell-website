@@ -1,8 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import Image from 'next/image';
-import { FaRetweet, FaRegComment, FaHeart, FaRegHeart, FaShareAlt, FaBookmark, FaRegBookmark, FaReply, FaEllipsisH, FaTrash, FaEdit, FaBellSlash, FaBan } from 'react-icons/fa';
+import { FaRetweet } from 'react-icons/fa';
 import { useState, useEffect, useRef } from 'react';
 import { useUser } from '@clerk/nextjs';
 import UserAvatar from './UserAvatar';
@@ -16,15 +15,6 @@ import PostReplyInfo from './PostReplyInfo';
 import { PostCardProps } from '@/types/post';
 import { formatDate } from '@/utils/dateFormatter';
 import { toast } from 'sonner';
-
-interface User {
-  id: number;
-  username: string;
-  profile_image_url?: string;
-  first_name?: string;
-  last_name?: string;
-  clerk_id?: string;
-}
 
 // Define media type
 export interface Media {
