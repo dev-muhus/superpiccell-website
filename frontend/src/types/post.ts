@@ -44,7 +44,24 @@ export interface QuotePost {
 export interface RepostPost {
   id: number;
   content: string;
+  created_at: string;
+  post_type: 'original' | 'reply' | 'quote' | 'repost';
+  user_id: number;
   user: User | null;
+  media?: PostMedia[];
+  in_reply_to_post_id?: number;
+  quote_of_post_id?: number;
+  repost_of_post_id?: number;
+  in_reply_to_post?: ReplyToPost | null;
+  quote_of_post?: QuotePost | null;
+  repost_of_post?: RepostPost | null;
+  reply_count?: number;
+  like_count?: number;
+  is_liked?: boolean;
+  repost_count?: number;
+  is_reposted?: boolean;
+  bookmark_count?: number;
+  is_bookmarked?: boolean;
 }
 
 export interface Post {
@@ -64,6 +81,8 @@ export interface Post {
   reply_count?: number;
   like_count?: number;
   is_liked?: boolean;
+  repost_count?: number;
+  is_reposted?: boolean;
   bookmark_count?: number;
   is_bookmarked?: boolean;
 }

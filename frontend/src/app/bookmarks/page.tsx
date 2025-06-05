@@ -22,6 +22,8 @@ interface Post {
   is_bookmarked?: boolean;
   bookmark_count?: number;
   reply_count?: number;
+  repost_count?: number;
+  is_reposted?: boolean;
   in_reply_to_post_id?: number;
   quote_of_post_id?: number;
   repost_of_post_id?: number;
@@ -42,6 +44,10 @@ interface Post {
     clerk_id?: string;
     bio?: string;
   } | null;
+  // リポスト関連の情報
+  repost_of_post?: Post;
+  quote_of_post?: Post;
+  in_reply_to_post?: Post;
 }
 
 export default function BookmarksPage() {
@@ -138,6 +144,17 @@ export default function BookmarksPage() {
     }
   };
 
+  // リポスト状態が変更されたときの処理
+  const handleRepostStateChange = (postId: number, isReposted: boolean) => {
+    setPosts(prevPosts => 
+      prevPosts.map(post => 
+        post.id === postId 
+          ? { ...post, is_reposted: isReposted, repost_count: (post.repost_count || 0) + (isReposted ? 1 : -1) } 
+          : post
+      )
+    );
+  };
+
   return (
     <PageLayout>
       <ContentLayout
@@ -179,6 +196,7 @@ export default function BookmarksPage() {
                   key={post.id}
                   post={post}
                   onLikeStateChange={handleLikeStateChange}
+                  onRepostStateChange={handleRepostStateChange}
                   onBookmarkStateChange={handleBookmarkStateChange}
                   onReplySuccess={(postId) => {
                     // 返信が投稿された場合、その投稿の返信数を更新

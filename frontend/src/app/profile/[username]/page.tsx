@@ -58,8 +58,14 @@ interface Post {
   reply_count?: number;
   like_count?: number;
   is_liked?: boolean;
+  repost_count?: number;
+  is_reposted?: boolean;
   bookmark_count?: number;
   is_bookmarked?: boolean;
+  // リポスト関連の情報
+  repost_of_post?: Post;
+  quote_of_post?: Post;
+  in_reply_to_post?: Post;
 }
 
 interface Pagination {
@@ -293,7 +299,8 @@ export default function ProfilePage({ params }: { params: { username: string } }
       // APIリクエストのパラメータを構築
       const params = new URLSearchParams({
         userId: profile.id.toString(),
-        limit: ITEMS_PER_PAGE.toString()
+        limit: ITEMS_PER_PAGE.toString(),
+        include_related: 'true' // リポスト元の投稿情報を含める
       });
       
       if (cursor) {
@@ -311,8 +318,9 @@ export default function ProfilePage({ params }: { params: { username: string } }
       const data = await response.json();
       
       // APIレスポンスをPostCardコンポーネントの形式に合わせる
+      // 元のpost情報をすべて保持し、必要に応じてユーザー情報のみを補完する
       const formattedPosts = data.posts.map((post: Post) => ({
-        ...post,
+        ...post, // エンゲージメント情報を含むすべての情報を保持
         // ユーザー情報が取得できなければプロフィール情報を使用
         user: post.user || {
           id: profile.id,
@@ -442,7 +450,14 @@ export default function ProfilePage({ params }: { params: { username: string } }
 
   // リポスト状態が変更された時のコールバック
   const handleRepostStateChange = (postId: number, isReposted: boolean) => {
-    console.log(`Post ${postId} repost state changed: ${isReposted}`);
+    // 投稿一覧の該当投稿の状態を更新
+    setPosts(prev => 
+      prev.map(post => 
+        post.id === postId 
+          ? { ...post, is_reposted: isReposted, repost_count: (post.repost_count || 0) + (isReposted ? 1 : -1) } 
+          : post
+      )
+    );
   };
 
   // ブックマーク状態が変更された時のコールバック
@@ -668,18 +683,39 @@ export default function ProfilePage({ params }: { params: { username: string } }
                   onLoadMore={loadMorePosts}
                 >
                   <div className="divide-y divide-gray-100">
-                    {posts.map(post => (
-                      <PostCard
-                        key={post.id}
-                        post={post}
-                        onLikeStateChange={handleLikeStateChange}
-                        onRepostStateChange={handleRepostStateChange}
-                        onBookmarkStateChange={handleBookmarkStateChange}
-                        onQuote={handleQuote}
-                        onReplySuccess={handleReplySuccess}
-                        onDeletePost={handleDeletePost}
-                      />
-                    ))}
+                    {posts.map(post => {
+                      // デバッグ: プロフィールページで投稿データを確認
+                      if (process.env.NODE_ENV === 'development') {
+                        console.log(`📄 [Profile Page] Post ${post.id} data:`, {
+                          id: post.id,
+                          like_count: post.like_count,
+                          repost_count: post.repost_count,
+                          bookmark_count: post.bookmark_count,
+                          is_liked: post.is_liked,
+                          is_reposted: post.is_reposted,
+                          is_bookmarked: post.is_bookmarked,
+                          fullPost: post
+                        });
+                      }
+                      
+                      return (
+                        <PostCard
+                          key={post.id}
+                          post={post}
+                          onLikeStateChange={handleLikeStateChange}
+                          onRepostStateChange={handleRepostStateChange}
+                          onBookmarkStateChange={handleBookmarkStateChange}
+                          onQuote={handleQuote}
+                          onReplySuccess={handleReplySuccess}
+                          onDeletePost={handleDeletePost}
+                          // エンゲージメント情報を明示的に渡す
+                          likeCount={post.like_count || 0}
+                          isLiked={post.is_liked || false}
+                          replyCount={post.reply_count || 0}
+                          isBookmarked={post.is_bookmarked || false}
+                        />
+                      );
+                    })}
                   </div>
                   
                   {isLoadingPosts && (

@@ -89,7 +89,9 @@ export default function PostDetailPage() {
       setIsLoading(true);
       setError(null);
       
-      const response = await fetch(`/api/posts/${postId}`);
+      const url = new URL(`/api/posts/${postId}`, window.location.origin);
+      url.searchParams.append('include_related', 'true');
+      const response = await fetch(url.toString());
       
       if (!response.ok) {
         const errorData = await response.json();
@@ -97,6 +99,14 @@ export default function PostDetailPage() {
       }
       
       const data = await response.json();
+      console.log('Post Detail Debug - Fetched post data:', {
+        postId,
+        postType: data.post?.post_type,
+        hasRepostOfPost: !!data.post?.repost_of_post,
+        repostOfPostId: data.post?.repost_of_post_id,
+        includeRelatedParam: 'true',
+        fullPostData: data.post
+      });
       setPost(data.post);
     } catch (err) {
       console.error('投稿詳細取得エラー:', err);
@@ -362,20 +372,6 @@ export default function PostDetailPage() {
                 <div className="p-4">
                   <PostCard
                     post={post.quote_of_post}
-                    showActions={false}
-                    hideReplyInfo={true}
-                    compactMode={true}
-                  />
-                </div>
-              </div>
-            )}
-            
-            {/* リポスト元の投稿を表示（もしリポストの場合） */}
-            {post.post_type === 'repost' && post.repost_of_post && (
-              <div className="border-b border-gray-100">
-                <div className="p-4">
-                  <PostCard
-                    post={post.repost_of_post}
                     showActions={false}
                     hideReplyInfo={true}
                     compactMode={true}

@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker compose run:*)",
+      "mcp__ide__getDiagnostics",
+      "Bash(ls:*)",
+      "Bash(find:*)",
+      "Bash(npm install:*)",
+      "WebFetch(domain:github.com)",
+      "Bash(mkdir:*)",
+      "WebFetch(domain:mcp.deepwiki.com)",
+      "Bash(grep:*)",
+      "Bash(npm run test:api:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm run dev:*)",
+      "Bash(docker compose:*)",
+      "Bash(open:*)",
+      "Bash(rm:*)",
+      "Bash(node:*)",
+      "Bash(curl:*)",
+      "Bash(pkill:*)",
+      "Bash(true)",
+      "Bash(npm run test:*)",
+      "Bash(git add:*)"
+    ],
+    "deny": []
+  }
+}

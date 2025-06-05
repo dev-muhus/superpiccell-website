@@ -5,7 +5,7 @@ import { describe, test, expect, beforeEach, afterEach } from '@jest/globals';
 import { GET, POST } from '@/app/api/posts/route';
 import { createTestRequest } from '@/utils/test/api-test-helpers';
 import { db } from '@/db';
-import { users, posts, blocks, post_media } from '@/db/schema';
+import { users, posts, blocks, post_media, likes, bookmarks } from '@/db/schema';
 import { eq, and, desc, asc, count } from 'drizzle-orm';
 import { ITEMS_PER_PAGE } from '@/constants/pagination';
 
@@ -156,6 +156,24 @@ describe('Posts API', () => {
     });
     
     test('特定のユーザーの投稿のみを取得できる', async () => {
+      // いいねとブックマークを追加してエンゲージメント数をテスト
+      const targetPost = testPosts.find(p => p.user_id === testUser.id);
+      if (targetPost) {
+        // いいねを追加
+        await db.insert(likes).values({
+          user_id: otherUser.id,
+          post_id: targetPost.id,
+          created_at: new Date()
+        });
+        
+        // ブックマークを追加
+        await db.insert(bookmarks).values({
+          user_id: otherUser.id,
+          post_id: targetPost.id,
+          created_at: new Date()
+        });
+      }
+      
       // テスト用リクエストの作成（特定ユーザーの投稿のみ）
       const request = createTestRequest(`/api/posts?userId=${testUser.id}`, 'GET', null, {}, testUser.clerk_id);
       const response = await GET(request);
@@ -171,7 +189,82 @@ describe('Posts API', () => {
       // すべての投稿がテストユーザーのものであることを確認
       data.posts.forEach((post: any) => {
         expect(post.user_id).toBe(testUser.id);
+        
+        // エンゲージメント数が存在することを確認
+        expect(post.like_count).toBeDefined();
+        expect(post.bookmark_count).toBeDefined();
+        expect(post.repost_count).toBeDefined();
+        expect(post.reply_count).toBeDefined();
+        
+        // エンゲージメント状態が存在することを確認
+        expect(post.is_liked).toBeDefined();
+        expect(post.is_bookmarked).toBeDefined();
+        expect(post.is_reposted).toBeDefined();
       });
+      
+      // 特定の投稿のエンゲージメント数を詳細確認
+      if (targetPost) {
+        const testPost = data.posts.find((p: any) => p.id === targetPost.id);
+        if (testPost) {
+          expect(testPost.like_count).toBe(1);
+          expect(testPost.bookmark_count).toBe(1);
+          expect(testPost.is_liked).toBe(false); // テストユーザー自身はいいねしていない
+          expect(testPost.is_bookmarked).toBe(false); // テストユーザー自身はブックマークしていない
+        }
+      }
+    });
+
+    test('リポスト投稿のエンゲージメント情報が正しく取得できる', async () => {
+      // 元投稿にいいねとブックマークを追加
+      const originalPost = testPosts.find(p => p.user_id === testUser.id);
+      if (originalPost) {
+        await db.insert(likes).values({
+          user_id: otherUser.id,
+          post_id: originalPost.id,
+          created_at: new Date()
+        });
+        
+        await db.insert(bookmarks).values({
+          user_id: otherUser.id,
+          post_id: originalPost.id,
+          created_at: new Date()
+        });
+      }
+
+      // otherUserがoriginalPostをリポスト
+      let repostPost: any = null;
+      if (originalPost) {
+        repostPost = await db.insert(posts).values({
+          user_id: otherUser.id,
+          content: '',
+          post_type: 'repost',
+          repost_of_post_id: originalPost.id,
+          created_at: new Date(),
+          updated_at: new Date()
+        }).returning().then(res => res[0]);
+      }
+
+      // otherUserの投稿一覧を取得（リポスト投稿を含む）
+      const request = createTestRequest(`/api/posts?userId=${otherUser.id}&include_related=true`, 'GET', null, {}, testUser.clerk_id);
+      const response = await GET(request);
+      
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      
+      // リポスト投稿を検索
+      const foundRepostPost = data.posts.find((p: { id: number }) => p.id === repostPost?.id);
+      expect(foundRepostPost).toBeDefined();
+      expect(foundRepostPost.post_type).toBe('repost');
+      
+      // リポスト元の投稿データが含まれていることを確認
+      expect(foundRepostPost.repost_of_post).toBeDefined();
+      expect(foundRepostPost.repost_of_post.id).toBe(originalPost?.id);
+      
+      // リポスト元の投稿のエンゲージメント情報が正しく取得されていることを確認
+      expect(foundRepostPost.repost_of_post.like_count).toBe(1);
+      expect(foundRepostPost.repost_of_post.bookmark_count).toBe(1);
+      expect(foundRepostPost.repost_of_post.is_liked).toBe(false); // testUserはいいねしていない
+      expect(foundRepostPost.repost_of_post.is_bookmarked).toBe(false); // testUserはブックマークしていない
     });
     
     test('ページネーションが正しく機能する', async () => {
@@ -308,6 +401,60 @@ describe('Posts API', () => {
       if (oldestIndexDesc !== -1 && newestIndexDesc !== -1) {
         expect(newestIndexDesc).toBeLessThan(oldestIndexDesc);
       }
+    });
+    
+    test('include_relatedパラメータで関連投稿情報を取得できる', async () => {
+      // リポストを作成
+      const originalPost = testPosts[0]; // リポスト元の投稿
+      const repost = await db.insert(posts).values({
+        user_id: testUser.id,
+        content: null,
+        post_type: 'repost',
+        repost_of_post_id: originalPost.id,
+        created_at: new Date(),
+        updated_at: new Date()
+      }).returning().then(res => res[0]);
+      
+      // include_related=trueでリクエスト
+      const request = createTestRequest('/api/posts?include_related=true', 'GET', null, {}, testUser.clerk_id);
+      const response = await GET(request);
+      
+      // レスポンスの検証
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      
+      // リポスト投稿を見つける
+      const repostInResponse = data.posts.find((post: any) => post.id === repost.id);
+      expect(repostInResponse).toBeDefined();
+      expect(repostInResponse.post_type).toBe('repost');
+      
+      // リポスト元の投稿情報が含まれていることを確認
+      expect(repostInResponse.repost_of_post).toBeDefined();
+      expect(repostInResponse.repost_of_post.id).toBe(originalPost.id);
+      expect(repostInResponse.repost_of_post.content).toBe(originalPost.content);
+      expect(repostInResponse.repost_of_post.user).toBeDefined();
+    });
+    
+    test('返信、引用、リポストの関連情報を取得できる', async () => {
+      // 返信投稿の関連情報を確認
+      const replyPost = testPosts.find(p => p.post_type === 'reply');
+      
+      // include_related=trueでリクエスト
+      const request = createTestRequest('/api/posts?include_related=true', 'GET', null, {}, testUser.clerk_id);
+      const response = await GET(request);
+      
+      // レスポンスの検証
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      
+      // 返信投稿を見つける
+      const replyInResponse = data.posts.find((post: any) => post.id === replyPost.id);
+      expect(replyInResponse).toBeDefined();
+      expect(replyInResponse.post_type).toBe('reply');
+      
+      // 返信先の投稿情報が含まれていることを確認
+      expect(replyInResponse.in_reply_to_post).toBeDefined();
+      expect(replyInResponse.in_reply_to_post.id).toBe(replyPost.in_reply_to_post_id);
     });
     
     test('未認証の場合は401エラーを返す', async () => {

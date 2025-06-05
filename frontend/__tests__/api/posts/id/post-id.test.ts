@@ -168,8 +168,8 @@ describe('Post ID API', () => {
         updated_at: new Date()
       }).returning().then(res => res[0]);
       
-      // 引用投稿の詳細を取得
-      const request = createTestRequest(`/api/posts/${quotePost.id}`, 'GET', null, {}, testUser.clerk_id);
+      // 引用投稿の詳細を取得（include_related=trueを指定）
+      const request = createTestRequest(`/api/posts/${quotePost.id}?include_related=true`, 'GET', null, {}, testUser.clerk_id);
       const response = await GET(request, { params: { id: quotePost.id.toString() } });
       
       // レスポンスの検証
@@ -200,8 +200,8 @@ describe('Post ID API', () => {
         updated_at: new Date()
       }).returning().then(res => res[0]);
       
-      // 返信投稿の詳細を取得
-      const request = createTestRequest(`/api/posts/${replyPost.id}`, 'GET', null, {}, testUser.clerk_id);
+      // 返信投稿の詳細を取得（include_related=trueを指定）
+      const request = createTestRequest(`/api/posts/${replyPost.id}?include_related=true`, 'GET', null, {}, testUser.clerk_id);
       const response = await GET(request, { params: { id: replyPost.id.toString() } });
       
       // レスポンスの検証
@@ -252,8 +252,8 @@ describe('Post ID API', () => {
         updated_at: new Date()
       }).returning().then(res => res[0]);
       
-      // 返信投稿の詳細を取得
-      const request = createTestRequest(`/api/posts/${replyToMediaPost.id}`, 'GET', null, {}, testUser.clerk_id);
+      // 返信投稿の詳細を取得（include_related=trueを指定）
+      const request = createTestRequest(`/api/posts/${replyToMediaPost.id}?include_related=true`, 'GET', null, {}, testUser.clerk_id);
       const response = await GET(request, { params: { id: replyToMediaPost.id.toString() } });
       
       // レスポンスの検証
@@ -274,7 +274,7 @@ describe('Post ID API', () => {
       expect(media.height).toBe(800);
     });
     
-    test('リポスト投稿の詳細を取得できる', async () => {
+    test('元記事の詳細にリポスト情報が含まれる', async () => {
       // リポスト投稿を作成
       const repostPost = await db.insert(posts).values({
         user_id: testUser.id,
@@ -285,9 +285,9 @@ describe('Post ID API', () => {
         updated_at: new Date()
       }).returning().then(res => res[0]);
       
-      // リポスト投稿の詳細を取得
-      const request = createTestRequest(`/api/posts/${repostPost.id}`, 'GET', null, {}, testUser.clerk_id);
-      const response = await GET(request, { params: { id: repostPost.id.toString() } });
+      // 元記事の詳細を取得（include_related=trueを指定）
+      const request = createTestRequest(`/api/posts/${otherUserPost.id}?include_related=true`, 'GET', null, {}, testUser.clerk_id);
+      const response = await GET(request, { params: { id: otherUserPost.id.toString() } });
       
       // レスポンスの検証
       expect(response.status).toBe(200);
@@ -295,14 +295,37 @@ describe('Post ID API', () => {
       
       // 投稿データの検証
       expect(data.post).toBeDefined();
-      expect(data.post.id).toBe(repostPost.id);
-      expect(data.post.post_type).toBe('repost');
-      expect(data.post.repost_of_post_id).toBe(otherUserPost.id);
+      expect(data.post.id).toBe(otherUserPost.id);
+      expect(data.post.post_type).toBe('original');
       
-      // リポスト元の投稿データの検証
-      expect(data.post.repost_of_post).toBeDefined();
-      expect(data.post.repost_of_post.id).toBe(otherUserPost.id);
-      expect(data.post.repost_of_post.content).toBe(otherUserPost.content);
+      // リポスト情報の検証
+      expect(data.post.reposted_by).toBeDefined();
+      expect(data.post.reposted_by.id).toBe(repostPost.id);
+      expect(data.post.reposted_by.username).toBe(testUser.username);
+      expect(data.post.reposted_by.user_id).toBe(testUser.id);
+      
+      // リポスト数とリポスト状態の検証
+      expect(data.post.repost_count).toBe(1);
+      expect(data.post.is_reposted).toBe(true);
+    });
+    
+    test('リポストされていない記事にはリポスト情報が含まれない', async () => {
+      // リポストされていない記事の詳細を取得
+      const request = createTestRequest(`/api/posts/${testPost.id}?include_related=true`, 'GET', null, {}, testUser.clerk_id);
+      const response = await GET(request, { params: { id: testPost.id.toString() } });
+      
+      // レスポンスの検証
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      
+      // 投稿データの検証
+      expect(data.post).toBeDefined();
+      expect(data.post.id).toBe(testPost.id);
+      
+      // リポスト情報がないことを検証
+      expect(data.post.reposted_by).toBeNull();
+      expect(data.post.repost_count).toBe(0);
+      expect(data.post.is_reposted).toBe(false);
     });
     
     test('存在しない投稿IDの場合は404エラーを返す', async () => {
@@ -425,6 +448,107 @@ describe('Post ID API', () => {
       expect(mediaItem.width).toBe(1280);
       expect(mediaItem.height).toBe(720);
       expect(mediaItem.duration_sec).toBe(8);
+    });
+
+    // include_related パラメータのテスト
+    test('include_related=trueの場合、関連投稿データが含まれる', async () => {
+      // 引用投稿を作成
+      const quotePost = await db.insert(posts).values({
+        user_id: testUser.id,
+        content: 'これは引用投稿です',
+        post_type: 'quote',
+        quote_of_post_id: otherUserPost.id,
+        created_at: new Date(),
+        updated_at: new Date()
+      }).returning().then(res => res[0]);
+      
+      // include_related=trueで引用投稿の詳細を取得
+      const request = createTestRequest(`/api/posts/${quotePost.id}?include_related=true`, 'GET', null, {}, testUser.clerk_id);
+      const response = await GET(request, { params: { id: quotePost.id.toString() } });
+      
+      // レスポンスの検証
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      
+      // 関連投稿データが含まれていることを検証
+      expect(data.post.quote_of_post).toBeDefined();
+      expect(data.post.quote_of_post.id).toBe(otherUserPost.id);
+      expect(data.post.quote_of_post.content).toBe(otherUserPost.content);
+    });
+
+    test('include_related=falseの場合、関連投稿データが含まれない', async () => {
+      // 引用投稿を作成
+      const quotePost = await db.insert(posts).values({
+        user_id: testUser.id,
+        content: 'これは引用投稿です',
+        post_type: 'quote',
+        quote_of_post_id: otherUserPost.id,
+        created_at: new Date(),
+        updated_at: new Date()
+      }).returning().then(res => res[0]);
+      
+      // include_related=falseで引用投稿の詳細を取得
+      const request = createTestRequest(`/api/posts/${quotePost.id}?include_related=false`, 'GET', null, {}, testUser.clerk_id);
+      const response = await GET(request, { params: { id: quotePost.id.toString() } });
+      
+      // レスポンスの検証
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      
+      // 関連投稿データが含まれていないことを検証
+      expect(data.post.quote_of_post).toBeUndefined();
+      expect(data.post.in_reply_to_post).toBeUndefined();
+      expect(data.post.repost_of_post).toBeUndefined();
+    });
+
+    test('include_relatedパラメータが省略された場合、関連投稿データが含まれない', async () => {
+      // 返信投稿を作成
+      const replyPost = await db.insert(posts).values({
+        user_id: testUser.id,
+        content: 'これは返信投稿です',
+        post_type: 'reply',
+        in_reply_to_post_id: otherUserPost.id,
+        created_at: new Date(),
+        updated_at: new Date()
+      }).returning().then(res => res[0]);
+      
+      // include_relatedパラメータなしで返信投稿の詳細を取得
+      const request = createTestRequest(`/api/posts/${replyPost.id}`, 'GET', null, {}, testUser.clerk_id);
+      const response = await GET(request, { params: { id: replyPost.id.toString() } });
+      
+      // レスポンスの検証
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      
+      // 関連投稿データが含まれていないことを検証
+      expect(data.post.in_reply_to_post).toBeUndefined();
+      expect(data.post.quote_of_post).toBeUndefined();
+      expect(data.post.repost_of_post).toBeUndefined();
+    });
+
+    test('include_related=trueでリポスト投稿の場合、リポスト元データが含まれる', async () => {
+      // リポスト投稿を作成
+      const repostPost = await db.insert(posts).values({
+        user_id: testUser.id,
+        content: '',
+        post_type: 'repost',
+        repost_of_post_id: otherUserPost.id,
+        created_at: new Date(),
+        updated_at: new Date()
+      }).returning().then(res => res[0]);
+      
+      // include_related=trueでリポスト投稿の詳細を取得
+      const request = createTestRequest(`/api/posts/${repostPost.id}?include_related=true`, 'GET', null, {}, testUser.clerk_id);
+      const response = await GET(request, { params: { id: repostPost.id.toString() } });
+      
+      // レスポンスの検証
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      
+      // リポスト元データが含まれていることを検証
+      expect(data.post.repost_of_post).toBeDefined();
+      expect(data.post.repost_of_post.id).toBe(otherUserPost.id);
+      expect(data.post.repost_of_post.content).toBe(otherUserPost.content);
     });
   });
   

@@ -424,12 +424,26 @@ export async function GET(req: NextRequest) {
         }
       });
     }
+
+    // リポスト元、引用元の投稿IDを事前に抽出（エンゲージメント情報取得のため）
+    const repostOfPostIds = posts_list
+      .filter(post => post.post_type === 'repost' && post.repost_of_post_id !== null)
+      .map(post => post.repost_of_post_id)
+      .filter(id => id !== null) as number[];
+    
+    const quoteOfPostIds = posts_list
+      .filter(post => post.post_type === 'quote' && post.quote_of_post_id !== null)
+      .map(post => post.quote_of_post_id)
+      .filter(id => id !== null) as number[];
+
+    // エンゲージメント情報を取得する対象投稿IDリスト（元投稿 + リポスト元 + 引用元）
+    const allEngagementPostIds = [...new Set([...postIds, ...repostOfPostIds, ...quoteOfPostIds])];
     
     // メディアデータを取得
     const mediaData = await db.select()
       .from(post_media)
       .where(and(
-        inArray(post_media.post_id, postIds),
+        inArray(post_media.post_id, allEngagementPostIds),
         eq(post_media.is_deleted, false)
       ));
     
@@ -496,7 +510,7 @@ export async function GET(req: NextRequest) {
     })
     .from(posts)
     .where(and(
-      inArray(posts.in_reply_to_post_id, postIds),
+      inArray(posts.in_reply_to_post_id, allEngagementPostIds),
       eq(posts.is_deleted, false),
       eq(posts.post_type, 'reply')
     ))
@@ -517,7 +531,7 @@ export async function GET(req: NextRequest) {
     })
     .from(likes)
     .where(and(
-      inArray(likes.post_id, postIds),
+      inArray(likes.post_id, allEngagementPostIds),
       eq(likes.is_deleted, false)
     ))
     .groupBy(likes.post_id);
@@ -535,7 +549,7 @@ export async function GET(req: NextRequest) {
     .from(likes)
     .where(and(
       eq(likes.user_id, dbUser.id),
-      inArray(likes.post_id, postIds),
+      inArray(likes.post_id, allEngagementPostIds),
       eq(likes.is_deleted, false)
     ));
     
@@ -549,7 +563,7 @@ export async function GET(req: NextRequest) {
     })
     .from(bookmarks)
     .where(and(
-      inArray(bookmarks.post_id, postIds),
+      inArray(bookmarks.post_id, allEngagementPostIds),
       eq(bookmarks.is_deleted, false)
     ))
     .groupBy(bookmarks.post_id);
@@ -567,45 +581,130 @@ export async function GET(req: NextRequest) {
     .from(bookmarks)
     .where(and(
       eq(bookmarks.user_id, dbUser.id),
-      inArray(bookmarks.post_id, postIds),
+      inArray(bookmarks.post_id, allEngagementPostIds),
       eq(bookmarks.is_deleted, false)
     ));
     
     // ユーザーのブックマークをセットに変換
     const userBookmarkedPostIds = new Set(userBookmarks.map(bookmark => bookmark.post_id));
     
-    // 返信先の投稿IDを抽出
+    // 各投稿に対するリポスト数を取得
+    const repostCounts = await db.select({
+      post_id: posts.repost_of_post_id,
+      count: count()
+    })
+    .from(posts)
+    .where(and(
+      inArray(posts.repost_of_post_id, allEngagementPostIds),
+      eq(posts.is_deleted, false),
+      eq(posts.post_type, 'repost')
+    ))
+    .groupBy(posts.repost_of_post_id);
+    
+    // リポスト数をマップに変換
+    const repostCountMap = new Map();
+    repostCounts.forEach(item => {
+      if (item.post_id !== null) {
+        repostCountMap.set(item.post_id, item.count);
+      }
+    });
+    
+    // ユーザーのリポスト状態を取得
+    const userReposts = await db.select({
+      post_id: posts.repost_of_post_id
+    })
+    .from(posts)
+    .where(and(
+      eq(posts.user_id, dbUser.id),
+      inArray(posts.repost_of_post_id, allEngagementPostIds),
+      eq(posts.is_deleted, false),
+      eq(posts.post_type, 'repost')
+    ));
+    
+    // ユーザーのリポストをセットに変換
+    const userRepostedPostIds = new Set(userReposts.map(repost => repost.post_id).filter(id => id !== null));
+    
+    // 返信先の投稿IDを抽出（include_related処理で使用）
     const replyToPostIds = posts_list
       .filter(post => post.post_type === 'reply' && post.in_reply_to_post_id !== null)
       .map(post => post.in_reply_to_post_id)
       .filter(id => id !== null) as number[];
     
-    // 返信先の投稿データと関連ユーザー情報を取得
+    // 関連投稿データと関連ユーザー情報を取得
     const replyToPostsMap = new Map();
-    const replyToUserIds = new Set<number>();
+    const repostOfPostsMap = new Map();
+    const quoteOfPostsMap = new Map();
+    const relatedUserIds = new Set<number>();
     
-    if (includeRelated && replyToPostIds.length > 0) {
-      const replyToPosts = await db.select({
-        id: posts.id,
-        content: posts.content,
-        user_id: posts.user_id
-      })
-      .from(posts)
-      .where(and(
-        inArray(posts.id, replyToPostIds),
-        eq(posts.is_deleted, false)
-      ));
+    if (includeRelated) {
+      // 返信先の投稿データを取得
+      if (replyToPostIds.length > 0) {
+        const replyToPosts = await db.select({
+          id: posts.id,
+          content: posts.content,
+          user_id: posts.user_id,
+          media_count: posts.media_count
+        })
+        .from(posts)
+        .where(and(
+          inArray(posts.id, replyToPostIds),
+          eq(posts.is_deleted, false)
+        ));
+        
+        replyToPosts.forEach(post => {
+          relatedUserIds.add(post.user_id);
+          replyToPostsMap.set(post.id, post);
+        });
+      }
       
-      // 返信先投稿のユーザーIDを集める
-      replyToPosts.forEach(post => {
-        replyToUserIds.add(post.user_id);
-        replyToPostsMap.set(post.id, post);
-      });
+      // リポスト元の投稿データを取得
+      if (repostOfPostIds.length > 0) {
+        const repostOfPosts = await db.select({
+          id: posts.id,
+          content: posts.content,
+          user_id: posts.user_id,
+          created_at: posts.created_at,
+          post_type: posts.post_type,
+          media_count: posts.media_count
+        })
+        .from(posts)
+        .where(and(
+          inArray(posts.id, repostOfPostIds),
+          eq(posts.is_deleted, false)
+        ));
+        
+        repostOfPosts.forEach(post => {
+          relatedUserIds.add(post.user_id);
+          repostOfPostsMap.set(post.id, post);
+        });
+      }
       
-      // 返信先投稿のユーザー情報を取得
-      if (replyToUserIds.size > 0) {
-        const replyToUsers = await db.query.users.findMany({
-          where: inArray(users.id, Array.from(replyToUserIds)),
+      // 引用元の投稿データを取得
+      if (quoteOfPostIds.length > 0) {
+        const quoteOfPosts = await db.select({
+          id: posts.id,
+          content: posts.content,
+          user_id: posts.user_id,
+          created_at: posts.created_at,
+          post_type: posts.post_type,
+          media_count: posts.media_count
+        })
+        .from(posts)
+        .where(and(
+          inArray(posts.id, quoteOfPostIds),
+          eq(posts.is_deleted, false)
+        ));
+        
+        quoteOfPosts.forEach(post => {
+          relatedUserIds.add(post.user_id);
+          quoteOfPostsMap.set(post.id, post);
+        });
+      }
+      
+      // 関連投稿のユーザー情報を取得
+      if (relatedUserIds.size > 0) {
+        const relatedUsers = await db.query.users.findMany({
+          where: inArray(users.id, Array.from(relatedUserIds)),
           columns: {
             id: true,
             username: true,
@@ -616,8 +715,78 @@ export async function GET(req: NextRequest) {
         });
         
         // ユーザー情報をマップに追加
-        replyToUsers.forEach(user => {
+        relatedUsers.forEach(user => {
           userMap.set(user.id, user);
+        });
+      }
+      
+      // リポスト元の投稿のエンゲージメント情報を取得（リポスト元の投稿IDが存在する場合のみ）
+      if (repostOfPostIds.length > 0) {
+        // リポスト元の投稿のリポスト数を取得
+        const repostOfPostRepostCounts = await db.select({
+          post_id: posts.repost_of_post_id,
+          count: count()
+        })
+        .from(posts)
+        .where(and(
+          inArray(posts.repost_of_post_id, repostOfPostIds),
+          eq(posts.is_deleted, false),
+          eq(posts.post_type, 'repost')
+        ))
+        .groupBy(posts.repost_of_post_id);
+        
+        // リポスト元の投稿のリポスト数をマップに追加
+        repostOfPostRepostCounts.forEach(item => {
+          if (item.post_id !== null) {
+            repostCountMap.set(item.post_id, item.count);
+          }
+        });
+        
+        // リポスト元の投稿のユーザーリポスト状態を取得
+        const repostOfPostUserReposts = await db.select({
+          post_id: posts.repost_of_post_id
+        })
+        .from(posts)
+        .where(and(
+          eq(posts.user_id, dbUser.id),
+          inArray(posts.repost_of_post_id, repostOfPostIds),
+          eq(posts.is_deleted, false),
+          eq(posts.post_type, 'repost')
+        ));
+        
+        // リポスト元の投稿のユーザーリポスト状態をセットに追加
+        repostOfPostUserReposts.forEach(repost => {
+          if (repost.post_id !== null) {
+            userRepostedPostIds.add(repost.post_id);
+          }
+        });
+      }
+      
+      // 関連投稿のメディアデータも取得（まだ取得していない投稿のみ）
+      const relatedPostIds = [...replyToPostIds, ...repostOfPostIds, ...quoteOfPostIds];
+      // 既にメディアデータを取得済みの投稿IDを除外
+      const unprocessedRelatedPostIds = relatedPostIds.filter(id => !mediaMap.has(id));
+      
+      if (unprocessedRelatedPostIds.length > 0) {
+        const relatedMediaData = await db.select()
+          .from(post_media)
+          .where(and(
+            inArray(post_media.post_id, unprocessedRelatedPostIds),
+            eq(post_media.is_deleted, false)
+          ));
+        
+        // メディアデータをマップに追加
+        relatedMediaData.forEach(media => {
+          if (!mediaMap.has(media.post_id)) {
+            mediaMap.set(media.post_id, []);
+          }
+          
+          const normalizedMedia = {
+            ...media,
+            mediaType: determineMediaTypeFromUrl(media.url, media.media_type)
+          };
+          
+          mediaMap.get(media.post_id).push(normalizedMedia);
         });
       }
     }
@@ -640,8 +809,49 @@ export async function GET(req: NextRequest) {
           id: replyToPost.id,
           content: replyToPost.content,
           user: userMap.get(replyToPost.user_id) || null,
-          // 返信先投稿のメディア情報を追加
           media: mediaMap.get(replyToPost.id) || []
+        };
+      }
+      
+      // リポスト元の投稿データを追加
+      let repost_of_post = null;
+      if (includeRelated && post.post_type === 'repost' && post.repost_of_post_id && repostOfPostsMap.has(post.repost_of_post_id)) {
+        const repostOfPost = repostOfPostsMap.get(post.repost_of_post_id);
+        repost_of_post = {
+          id: repostOfPost.id,
+          content: repostOfPost.content,
+          user_id: repostOfPost.user_id,
+          user: userMap.get(repostOfPost.user_id) || null,
+          created_at: repostOfPost.created_at,
+          post_type: repostOfPost.post_type,
+          media: mediaMap.get(repostOfPost.id) || [],
+          in_reply_to_post_id: repostOfPost.in_reply_to_post_id,
+          quote_of_post_id: repostOfPost.quote_of_post_id,
+          repost_of_post_id: repostOfPost.repost_of_post_id,
+          in_reply_to_post: null, // ネストを避けるため簡略化
+          quote_of_post: null,    // ネストを避けるため簡略化
+          repost_of_post: null,   // ネストを避けるため簡略化
+          reply_count: replyCountMap.get(repostOfPost.id) || 0,
+          like_count: likeCountMap.get(repostOfPost.id) || 0,
+          is_liked: userLikedPostIds.has(repostOfPost.id),
+          repost_count: repostCountMap.get(repostOfPost.id) || 0,
+          is_reposted: userRepostedPostIds.has(repostOfPost.id),
+          bookmark_count: bookmarkCountMap.get(repostOfPost.id) || 0,
+          is_bookmarked: userBookmarkedPostIds.has(repostOfPost.id)
+        };
+      }
+      
+      // 引用元の投稿データを追加
+      let quote_of_post = null;
+      if (includeRelated && post.post_type === 'quote' && post.quote_of_post_id && quoteOfPostsMap.has(post.quote_of_post_id)) {
+        const quoteOfPost = quoteOfPostsMap.get(post.quote_of_post_id);
+        quote_of_post = {
+          id: quoteOfPost.id,
+          content: quoteOfPost.content,
+          user: userMap.get(quoteOfPost.user_id) || null,
+          created_at: quoteOfPost.created_at,
+          post_type: quoteOfPost.post_type,
+          media: mediaMap.get(quoteOfPost.id) || []
         };
       }
       
@@ -652,10 +862,14 @@ export async function GET(req: NextRequest) {
         ...post,
         user,
         in_reply_to_post,
+        repost_of_post,
+        quote_of_post,
         media,
         reply_count: replyCountMap.get(post.id) || 0,
         like_count: likeCountMap.get(post.id) || 0,
         is_liked: userLikedPostIds.has(post.id),
+        repost_count: repostCountMap.get(post.id) || 0,
+        is_reposted: userRepostedPostIds.has(post.id),
         bookmark_count: bookmarkCountMap.get(post.id) || 0,
         is_bookmarked: userBookmarkedPostIds.has(post.id)
       };

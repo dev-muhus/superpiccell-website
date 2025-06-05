@@ -39,9 +39,16 @@ interface Post {
     first_name?: string;
     last_name?: string;
   } | null;
+  in_reply_to_post?: Post;
+  repost_of_post?: Post;
+  quote_of_post?: Post;
   reply_count?: number;
   like_count?: number;
   is_liked?: boolean;
+  repost_count?: number;
+  is_reposted?: boolean;
+  bookmark_count?: number;
+  is_bookmarked?: boolean;
 }
 
 interface PaginationInfo {

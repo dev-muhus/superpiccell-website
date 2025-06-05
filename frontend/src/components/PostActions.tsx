@@ -7,6 +7,7 @@ interface PostActionsProps {
   postId: number;
   isLiked: boolean;
   isBookmarked: boolean;
+  isReposted?: boolean;
   replyCount: number;
   repostCount: number;
   likeCount: number;
@@ -14,6 +15,7 @@ interface PostActionsProps {
   bookmarkCount: number;
   likeAnimating: boolean;
   bookmarkAnimating: boolean;
+  repostAnimating?: boolean;
   likeButtonRef: RefObject<HTMLButtonElement>;
   bookmarkButtonRef: RefObject<HTMLButtonElement>;
   onReply: () => void;
@@ -29,6 +31,7 @@ interface PostActionsProps {
 export default function PostActions({
   isLiked,
   isBookmarked,
+  isReposted = false,
   replyCount,
   repostCount,
   likeCount,
@@ -36,6 +39,7 @@ export default function PostActions({
   bookmarkCount,
   likeAnimating,
   bookmarkAnimating,
+  repostAnimating = false,
   likeButtonRef,
   bookmarkButtonRef,
   onReply,
@@ -61,12 +65,11 @@ export default function PostActions({
       {/* リポスト */}
       <button 
         onClick={onRepost} 
-        className="flex items-center text-gray-300 group cursor-not-allowed"
-        aria-label="リポストする（現在利用できません）"
-        disabled
+        className={`flex items-center ${isReposted ? 'text-green-500' : 'hover:text-green-500'} transition-colors group`}
+        aria-label="リポストする"
       >
-        <span className="flex items-center bg-transparent rounded-full p-1 sm:p-2 transition-colors">
-          <FaRetweet className="text-sm sm:text-base" />
+        <span className={`flex items-center ${isReposted ? 'bg-green-50' : 'bg-transparent group-hover:bg-green-50'} rounded-full p-1 sm:p-2 transition-colors`}>
+          <FaRetweet className={`text-sm sm:text-base ${repostAnimating ? 'repost-animation' : ''}`} />
           <span className="text-xs ml-1">{repostCount > 0 ? repostCount : ''}</span>
         </span>
       </button>
