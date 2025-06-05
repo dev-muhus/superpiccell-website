@@ -99,14 +99,6 @@ export default function PostDetailPage() {
       }
       
       const data = await response.json();
-      console.log('Post Detail Debug - Fetched post data:', {
-        postId,
-        postType: data.post?.post_type,
-        hasRepostOfPost: !!data.post?.repost_of_post,
-        repostOfPostId: data.post?.repost_of_post_id,
-        includeRelatedParam: 'true',
-        fullPostData: data.post
-      });
       setPost(data.post);
     } catch (err) {
       console.error('投稿詳細取得エラー:', err);
