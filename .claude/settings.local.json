@@ -21,7 +21,9 @@
       "Bash(pkill:*)",
       "Bash(true)",
       "Bash(npm run test:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git checkout:*)",
+      "Bash(git branch:*)"
     ],
     "deny": []
   }

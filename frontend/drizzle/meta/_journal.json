@@ -64,6 +64,13 @@
       "when": 1748409630565,
       "tag": "0008_damp_paper_doll",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1749188336000,
+      "tag": "0009_remove_cover_image_url",
+      "breakpoints": true
     }
   ]
 }
