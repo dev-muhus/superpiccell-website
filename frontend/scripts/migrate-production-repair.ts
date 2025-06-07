@@ -61,7 +61,7 @@ async function checkMigrationApplied(sql: any, migrationTag: string): Promise<bo
   try {
     const result = await sql`
       SELECT hash 
-      FROM _drizzle_migrations 
+      FROM drizzle.__drizzle_migrations 
       WHERE hash LIKE ${`%${migrationTag}%`}
     `;
     return result.length > 0;
@@ -90,7 +90,7 @@ async function getCurrentMigrationState(sql: any): Promise<void> {
   try {
     const migrations = await sql`
       SELECT id, hash, created_at 
-      FROM _drizzle_migrations 
+      FROM drizzle.__drizzle_migrations 
       ORDER BY created_at DESC 
       LIMIT 5
     `;

@@ -95,7 +95,7 @@ async function verifyMigrationResult(sql: any, db: any): Promise<void> {
     // 最新のマイグレーション履歴を取得
     const migrationHistory = await sql`
       SELECT id, hash, created_at 
-      FROM _drizzle_migrations 
+      FROM drizzle.__drizzle_migrations 
       ORDER BY created_at DESC 
       LIMIT 3
     `;
