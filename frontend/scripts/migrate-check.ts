@@ -1,10 +1,8 @@
 #!/usr/bin/env tsx
 
-import { drizzle } from 'drizzle-orm/neon-http';
 import { neon } from '@neondatabase/serverless';
 import * as dotenv from 'dotenv';
-import { readFileSync, existsSync } from 'fs';
-import { join } from 'path';
+import { existsSync } from 'fs';
 
 // 環境変数を読み込み
 dotenv.config();

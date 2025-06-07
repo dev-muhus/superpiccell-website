@@ -4,8 +4,6 @@ import { drizzle } from 'drizzle-orm/neon-http';
 import { migrate } from 'drizzle-orm/neon-http/migrator';
 import { neon } from '@neondatabase/serverless';
 import * as dotenv from 'dotenv';
-import { readFileSync } from 'fs';
-import { join } from 'path';
 import * as readline from 'readline';
 
 // 環境変数を読み込み
