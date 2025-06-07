@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useUser } from '@clerk/nextjs';
 import Image from 'next/image';
-import { FaUser, FaEdit, FaUserPlus, FaUserCheck, FaBan, FaUnlock, FaTimes, FaSave } from 'react-icons/fa';
+import { FaUser, FaEdit, FaUserPlus, FaUserCheck, FaBan, FaUnlock, FaTimes, FaSave, FaCloudUploadAlt, FaImage, FaTrash, FaCheck } from 'react-icons/fa';
 import Loading from '@/components/Loading';
 import PageLayout from '@/components/PageLayout';
 import ContentLayout from '@/components/ContentLayout';
@@ -21,6 +21,7 @@ interface User {
   first_name: string | null;
   last_name: string | null;
   profile_image_url: string | null;
+  cover_image_url?: string | null;
   bio: string | null;
   created_at: string;
   updated_at: string;
@@ -81,20 +82,171 @@ interface ProfileEditModalProps {
 }
 
 const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onClose, user }) => {
-  const [firstName, setFirstName] = useState(user.first_name || '');
-  const [lastName, setLastName] = useState(user.last_name || '');
   const [bio, setBio] = useState(user.bio || '');
+  const [coverImageUrl, setCoverImageUrl] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {
-      setFirstName(user.first_name || '');
-      setLastName(user.last_name || '');
       setBio(user.bio || '');
+      setCoverImageUrl(user.cover_image_url || null);
+      setSelectedFile(null);
       setError(null);
+      setIsDragOver(false);
+      
+      // 既存のカバー画像がある場合は、それをプレビューとして表示
+      if (user.cover_image_url) {
+        setPreviewUrl(user.cover_image_url);
+      } else {
+        setPreviewUrl(null);
+      }
     }
   }, [isOpen, user]);
+
+  // プレビュー画像のクリーンアップ（新しくアップロードされたファイルのプレビューのみ）
+  useEffect(() => {
+    return () => {
+      if (previewUrl && selectedFile) {
+        // selectedFileがある場合のみクリーンアップ（新しいアップロードファイルの場合）
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl, selectedFile]);
+
+  // ファイル検証とプレビュー生成
+  const validateAndSetFile = (file: File) => {
+    // ファイルサイズチェック（10MB以下）
+    if (file.size > 10 * 1024 * 1024) {
+      setError('ファイルサイズは10MB以下にしてください');
+      return false;
+    }
+    
+    // ファイル形式チェック
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      setError('JPG、PNG、WEBP形式の画像ファイルを選択してください');
+      return false;
+    }
+    
+    // 既存のプレビューURLをクリーンアップ（新しいアップロードファイルの場合のみ）
+    if (previewUrl && selectedFile) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    
+    // 新しいプレビューURLを生成
+    const newPreviewUrl = URL.createObjectURL(file);
+    setPreviewUrl(newPreviewUrl);
+    setSelectedFile(file);
+    setError(null);
+    return true;
+  };
+
+  // カバー画像ファイル選択処理
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      validateAndSetFile(file);
+    }
+  };
+
+  // ドラッグ&ドロップ処理
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+      const file = files[0];
+      validateAndSetFile(file);
+    }
+  };
+
+  // ファイル削除処理
+  const handleRemoveFile = () => {
+    // 新しくアップロードされたファイルの場合のみクリーンアップ
+    if (previewUrl && selectedFile) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    
+    setPreviewUrl(null);
+    setSelectedFile(null);
+    setCoverImageUrl(null); // 既存のカバー画像も削除することを示す
+    setError(null);
+  };
+
+  // カバー画像アップロード処理
+  const uploadCoverImage = async (): Promise<string | null> => {
+    if (!selectedFile) return null;
+    
+    setIsUploading(true);
+    try {
+      // 署名付きURL取得
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+      
+      const signResponse = await fetch('/api/upload/cover-images', {
+        method: 'POST',
+        body: formData
+      });
+      
+      if (!signResponse.ok) {
+        const errorData = await signResponse.json();
+        throw new Error(errorData.error || 'アップロード準備に失敗しました');
+      }
+      
+      const signData = await signResponse.json();
+      
+      // Cloudinaryにアップロード
+      const uploadFormData = new FormData();
+      uploadFormData.append('file', selectedFile);
+      uploadFormData.append('api_key', signData.apiKey);
+      uploadFormData.append('timestamp', signData.timestamp.toString());
+      uploadFormData.append('signature', signData.signature);
+      uploadFormData.append('public_id', signData.publicId);
+      uploadFormData.append('upload_preset', signData.uploadPreset);
+      
+      // フォルダパラメータが提供されている場合は追加
+      if (signData.folder) {
+        uploadFormData.append('folder', signData.folder);
+      }
+      
+      const uploadResponse = await fetch(signData.uploadUrl, {
+        method: 'POST',
+        body: uploadFormData
+      });
+      
+      if (!uploadResponse.ok) {
+        throw new Error('画像のアップロードに失敗しました');
+      }
+      
+      await uploadResponse.json(); // Cloudinaryからのレスポンス（現在は使用しないが、将来的な拡張のため保持）
+      return signData.publicUrl; // 変換済みのURL
+      
+    } catch (error) {
+      console.error('カバー画像アップロードエラー:', error);
+      throw error;
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -102,16 +254,31 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onClose, us
     setError(null);
 
     try {
+      let finalCoverImageUrl = coverImageUrl;
+      
+      // 新しいカバー画像が選択されている場合はアップロード
+      if (selectedFile) {
+        finalCoverImageUrl = await uploadCoverImage();
+      }
+      
+      const requestBody: { bio: string; cover_image_url?: string | null } = { bio };
+      
+      // カバー画像の処理
+      if (finalCoverImageUrl !== null) {
+        // 新しい画像がアップロードされた場合
+        requestBody.cover_image_url = finalCoverImageUrl;
+      } else if (coverImageUrl === null && user.cover_image_url) {
+        // 既存の画像を削除する場合（coverImageUrlがnullに設定されている場合）
+        requestBody.cover_image_url = null;
+      }
+      // それ以外の場合（変更なし）はcover_image_urlを含めない
+      
       const response = await fetch('/api/profile/edit', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          first_name: firstName,
-          last_name: lastName,
-          bio
-        })
+        body: JSON.stringify(requestBody)
       });
 
       if (!response.ok) {
@@ -137,87 +304,240 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onClose, us
       isOpen={isOpen} 
       onClose={() => onClose(false)} 
       title="Profile Edit" 
-      className="w-full max-w-2xl"
+      className="w-full max-w-2xl profile-edit-modal"
     >
-      <div style={{ width: '100%', maxWidth: '100%' }}>
-        <form onSubmit={handleSubmit} className="space-y-6 px-2">
+      <div className="w-full max-w-full overflow-hidden">
+        <form onSubmit={handleSubmit} className="space-y-6">
           {error && (
             <div className="bg-red-50 p-4 rounded-md text-red-600 mb-4">
               {error}
             </div>
           )}
           
+          {/* 高級ドラッグ&ドロップカバー画像アップロード */}
           <div>
-            <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
-              名前
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              カバー画像
             </label>
-            <input
-              id="firstName"
-              type="text"
-              value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="名"
-              maxLength={50}
-            />
+            
+            {/* メインドロップゾーン */}
+            <div
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              className={`relative overflow-hidden rounded-xl border-2 border-dashed transition-all duration-300 ease-in-out hover-elevate w-full drag-drop-area ${
+                isDragOver 
+                  ? 'border-blue-400 bg-blue-50 sm:scale-[1.02] shadow-lg drag-glow pulse-on-drag' 
+                  : selectedFile 
+                    ? 'border-green-300 bg-green-50' 
+                    : 'border-gray-300 bg-gray-50 hover:border-gray-400 hover:bg-gray-100'
+              } ${isUploading ? 'pointer-events-none opacity-75' : 'cursor-pointer'}`}
+              style={{ aspectRatio: '3/1', minHeight: '120px', maxWidth: '100%' }}
+            >
+              {/* プレビュー画像表示 */}
+              {previewUrl && (
+                <div className="absolute inset-0 fade-in">
+                  <Image
+                    src={previewUrl}
+                    alt="カバー画像プレビュー"
+                    fill
+                    className="object-cover"
+                  />
+                  <div className="absolute inset-0 bg-black bg-opacity-40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity duration-300">
+                    <div className="flex items-center justify-center space-x-8 cover-buttons-container">
+                      <button
+                        type="button"
+                        onClick={handleRemoveFile}
+                        className="w-10 h-10 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors shadow-lg cover-edit-button"
+                        disabled={isUploading}
+                        title="画像を削除"
+                        style={{ minWidth: '2.5rem', minHeight: '2.5rem' }}
+                      >
+                        <FaTrash className="text-sm fa-trash" />
+                      </button>
+                      <label 
+                        className="w-10 h-10 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition-colors shadow-lg cursor-pointer cover-edit-button" 
+                        title="画像を変更"
+                        style={{ minWidth: '2.5rem', minHeight: '2.5rem' }}
+                      >
+                        <FaEdit className="text-sm fa-edit" />
+                        <input
+                          type="file"
+                          accept="image/jpeg,image/jpg,image/png,image/webp"
+                          onChange={handleFileSelect}
+                          className="hidden"
+                          disabled={isUploading}
+                        />
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ドロップゾーンコンテンツ */}
+              {!previewUrl && (
+                <div className="flex flex-col items-center justify-center h-full p-3 sm:p-6 text-center">
+                  <div className={`
+                    transition-all duration-300 ease-in-out
+                    ${isDragOver ? 'scale-110 text-blue-500' : 'text-gray-400'}
+                  `}>
+                    <FaCloudUploadAlt className="text-3xl sm:text-5xl mb-2 sm:mb-4 mx-auto" />
+                    <div className={`
+                      transition-colors duration-300
+                      ${isDragOver ? 'text-blue-600' : 'text-gray-600'}
+                    `}>
+                      <p className="text-sm sm:text-lg font-medium mb-1 sm:mb-2">
+                        {isDragOver ? '画像をここにドロップ' : 'カバー画像をドラッグ&ドロップ'}
+                      </p>
+                      <p className="text-xs sm:text-sm text-gray-500">
+                        または <span className="text-blue-500 font-medium">クリックして選択</span>
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {/* 隠しファイル入力 */}
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/jpg,image/png,image/webp"
+                    onChange={handleFileSelect}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    disabled={isUploading}
+                  />
+                </div>
+              )}
+
+              {/* アップロード中のオーバーレイ */}
+              {isUploading && (
+                <div className="absolute inset-0 bg-white bg-opacity-90 flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
+                    <p className="text-sm font-medium text-blue-600">アップロード中...</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* ファイル情報とガイドライン */}
+            <div className="mt-3 space-y-2 w-full file-info-area">
+              {selectedFile && (
+                <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg w-full">
+                  <div className="flex items-center space-x-3 min-w-0 flex-1">
+                    <div className="flex-shrink-0">
+                      <FaCheck className="text-green-500" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-green-700 truncate">
+                        {selectedFile.name}
+                      </p>
+                      <p className="text-xs text-green-600">
+                        {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleRemoveFile}
+                    className="w-6 h-6 text-green-400 hover:text-green-600 transition-colors flex items-center justify-center flex-shrink-0 ml-2"
+                    disabled={isUploading}
+                    title="ファイルを削除"
+                  >
+                    <FaTimes className="text-sm" />
+                  </button>
+                </div>
+              )}
+              
+              <div className="flex items-start space-x-2 text-xs text-gray-500 w-full">
+                <FaImage className="text-gray-400 mt-0.5 flex-shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <p><span className="font-medium">推奨:</span> 1200×400px (3:1比率)</p>
+                  <p><span className="font-medium">形式:</span> JPG, PNG, WEBP</p>
+                  <p><span className="font-medium">最大:</span> 10MB</p>
+                </div>
+              </div>
+            </div>
           </div>
           
+          {/* 洗練された自己紹介セクション */}
           <div>
-            <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
-              苗字
-            </label>
-            <input
-              id="lastName"
-              type="text"
-              value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="苗字"
-              maxLength={50}
-            />
-          </div>
-          
-          <div>
-            <label htmlFor="bio" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="bio" className="block text-sm font-medium text-gray-700 mb-3">
               自己紹介
             </label>
-            <textarea
-              id="bio"
-              value={bio}
-              onChange={(e) => setBio(e.target.value)}
-              rows={4}
-              className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="自己紹介を入力してください"
-              maxLength={200}
-            />
-            <p className="text-right text-xs text-gray-500 mt-1">{bio.length}/200</p>
+            <div className="relative">
+              <textarea
+                id="bio"
+                value={bio}
+                onChange={(e) => setBio(e.target.value)}
+                rows={4}
+                className="w-full p-4 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 resize-none bg-gray-50 hover:bg-white focus:bg-white"
+                placeholder="あなたについて教えてください..."
+                maxLength={200}
+              />
+              <div className="absolute bottom-3 right-3 flex items-center space-x-2">
+                <div className={`text-xs font-medium px-2 py-1 rounded-full ${
+                  bio.length > 180 
+                    ? 'bg-red-100 text-red-600' 
+                    : bio.length > 150 
+                      ? 'bg-yellow-100 text-yellow-600' 
+                      : 'bg-gray-100 text-gray-600'
+                }`}>
+                  {bio.length}/200
+                </div>
+              </div>
+            </div>
           </div>
           
-          <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 w-full">
+          {/* 洗練されたアクションボタン */}
+          <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4 w-full pt-4 profile-edit-buttons">
             <button
               type="button"
               onClick={() => onClose(false)}
-              className={`px-4 py-2 rounded-full text-gray-700 flex items-center justify-center ${
-                isSubmitting
-                  ? 'bg-gray-200 cursor-not-allowed'
-                  : 'bg-white border border-gray-300 hover:bg-gray-50'
-              } sm:flex-1`}
-              disabled={isSubmitting}
+              className={`
+                group relative px-6 py-3 rounded-xl text-gray-700 flex items-center justify-center font-medium transition-all duration-200 transform mobile-button
+                ${isSubmitting || isUploading
+                  ? 'bg-gray-200 cursor-not-allowed opacity-60'
+                  : 'bg-white border-2 border-gray-300 hover:border-gray-400 hover:bg-gray-50 hover:scale-[1.02] active:scale-[0.98] shadow-sm hover:shadow-md'
+                } sm:flex-1
+              `}
+              disabled={isSubmitting || isUploading}
             >
-              <FaTimes className="mr-1" />
+              <FaTimes className="mr-2 transition-transform group-hover:rotate-90" />
               <span>キャンセル</span>
             </button>
             <button
               type="submit"
-              className={`px-4 py-2 rounded-full text-white flex items-center justify-center ${
-                isSubmitting
-                  ? 'bg-blue-300 cursor-not-allowed'
-                  : 'bg-blue-500 hover:bg-blue-600'
-              } sm:flex-1`}
-              disabled={isSubmitting}
+              className={`
+                group relative px-6 py-3 rounded-xl text-white flex items-center justify-center font-medium transition-all duration-200 transform overflow-hidden mobile-button
+                ${isSubmitting || isUploading
+                  ? 'bg-blue-400 cursor-not-allowed opacity-60'
+                  : 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 hover:scale-[1.02] active:scale-[0.98] shadow-lg hover:shadow-xl'
+                } sm:flex-1
+              `}
+              disabled={isSubmitting || isUploading}
             >
-              <FaSave className="mr-1" />
-              <span>{isSubmitting ? '更新中...' : '保存する'}</span>
+              {/* アニメーション背景 */}
+              {!isSubmitting && !isUploading && (
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-0 group-hover:opacity-20 transform -skew-x-12 group-hover:animate-pulse"></div>
+              )}
+              
+              {/* ローディングアニメーション */}
+              {(isSubmitting || isUploading) && (
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-400 via-blue-500 to-blue-400 animate-gradient-x"></div>
+              )}
+              
+              <div className="relative flex items-center">
+                {isUploading ? (
+                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                ) : isSubmitting ? (
+                  <div className="animate-pulse mr-2">
+                    <FaSave />
+                  </div>
+                ) : (
+                  <FaSave className="mr-2 transition-transform group-hover:scale-110" />
+                )}
+                <span>
+                  {isUploading ? 'アップロード中...' : isSubmitting ? '更新中...' : '保存する'}
+                </span>
+              </div>
             </button>
           </div>
         </form>
@@ -562,13 +882,25 @@ export default function ProfilePage({ params }: { params: { username: string } }
           <div className="space-y-6">
             {/* プロフィールヘッダー */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-              {/* ヘッダー背景 */}
-              <div 
-                className="h-32 relative profile-header"
-                style={profile ? generateProfileBackgroundStyle(profile.username) : {}}
-              >
+              {/* ヘッダー背景またはカバー画像 */}
+              <div className="h-32 relative profile-header">
+                {profile.cover_image_url ? (
+                  <Image
+                    src={profile.cover_image_url}
+                    alt="カバー画像"
+                    fill
+                    className="object-cover"
+                  />
+                ) : (
+                  <div 
+                    className="w-full h-full"
+                    style={profile ? generateProfileBackgroundStyle(profile.username) : {}}
+                  />
+                )}
+                {/* オーバーレイ */}
+                <div className="absolute inset-0 bg-black bg-opacity-20" />
                 {/* プロフィール画像 */}
-                <div className="absolute -bottom-16 left-8">
+                <div className="absolute -bottom-16 left-8 z-10">
                   <div className="relative w-32 h-32 rounded-full border-4 border-white bg-white overflow-hidden">
                     {profile.profile_image_url ? (
                       <Image
@@ -586,13 +918,13 @@ export default function ProfilePage({ params }: { params: { username: string } }
                 </div>
                 
                 {/* アクションボタン */}
-                <div className="absolute bottom-4 right-6 flex space-x-2">
+                <div className="absolute bottom-4 right-6 flex space-x-2 z-10">
                   {isOwnProfile ? (
                     <button
                       onClick={handleOpenProfileEditModal}
-                      className="px-4 py-1.5 bg-white text-gray-800 rounded-full border border-gray-300 hover:bg-gray-100 transition-colors text-sm font-medium flex items-center shadow-sm md:ml-auto sm:static edit-button"
+                      className="px-4 py-1.5 bg-white text-gray-800 rounded-full border border-gray-300 hover:bg-gray-100 transition-colors text-sm font-medium shadow-sm md:ml-auto sm:static edit-button"
                     >
-                      <FaEdit className="sm:mr-1.5" /> <span className="hidden sm:inline">プロフィール編集</span>
+                      <FaEdit /> <span className="hidden sm:inline">プロフィール編集</span>
                     </button>
                   ) : isLoaded && isSignedIn ? (
                     <>
@@ -620,7 +952,7 @@ export default function ProfilePage({ params }: { params: { username: string } }
                       <button
                         onClick={handleBlockToggle}
                         disabled={blockActionLoading}
-                        className="p-2 bg-white text-gray-600 rounded-full border border-gray-300 hover:bg-gray-100 transition-colors text-sm font-medium flex items-center shadow-sm"
+                        className="bg-white text-gray-600 rounded-full border border-gray-300 hover:bg-gray-100 transition-colors text-sm font-medium shadow-sm block-button"
                         title={isBlocked ? 'ブロック解除' : 'ブロックする'}
                       >
                         {blockActionLoading ? (
@@ -740,6 +1072,64 @@ export default function ProfilePage({ params }: { params: { username: string } }
       )}
 
       <style jsx global>{`
+        /* 高級アニメーション */
+        @keyframes gradient-x {
+          0%, 100% {
+            background-position: 0% 50%;
+          }
+          50% {
+            background-position: 100% 50%;
+          }
+        }
+        
+        .animate-gradient-x {
+          background-size: 200% 200%;
+          animation: gradient-x 2s ease infinite;
+        }
+        
+        /* ドラッグ&ドロップのグロー効果 */
+        .drag-glow {
+          box-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+        }
+        
+        /* ホバー時のエレベーション */
+        .hover-elevate:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+        
+        /* プレビュー画像のフェードイン */
+        .fade-in {
+          animation: fadeIn 0.3s ease-in-out;
+        }
+        
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: scale(0.95);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+        
+        /* ドロップゾーンのパルス効果 */
+        .pulse-on-drag {
+          animation: pulse 1.5s ease-in-out infinite;
+        }
+        
+        @keyframes pulse {
+          0%, 100% {
+            transform: scale(1);
+            opacity: 1;
+          }
+          50% {
+            transform: scale(1.05);
+            opacity: 0.9;
+          }
+        }
+
         /* スマホ対応のためのスタイル */
         @media (max-width: 640px) {
           .profile-header {

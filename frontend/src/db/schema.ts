@@ -9,6 +9,7 @@ export const users = pgTable('users', {
   first_name: text('first_name'),
   last_name: text('last_name'),
   profile_image_url: text('profile_image_url'),
+  cover_image_url: text('cover_image_url'),
   bio: text('bio'),
   created_at: timestamp('created_at').notNull().defaultNow(),
   updated_at: timestamp('updated_at').notNull().defaultNow(),

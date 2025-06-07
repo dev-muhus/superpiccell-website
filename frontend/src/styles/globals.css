@@ -872,3 +872,155 @@ section[id="gallery"] {
   display: inline-block;
   vertical-align: middle;
 }
+
+/* プロフィール編集モーダルの統一 */
+.profile-edit-modal {
+  max-width: 42rem !important; /* max-w-2xl = 42rem = 672px */
+  width: calc(100vw - 2rem) !important; /* 両側1remずつマージン */
+  margin: 0 auto !important;
+  overflow-x: hidden !important;
+}
+
+.profile-edit-modal * {
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* デスクトップでは投稿モーダルと同じサイズ */
+@media (min-width: 768px) {
+  .profile-edit-modal {
+    width: 100% !important;
+    max-width: 42rem !important; /* 投稿モーダルと同じmax-w-2xl */
+  }
+}
+
+/* ドラッグ&ドロップエリアの最適化 */
+.drag-drop-area {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* ファイル情報エリアの最適化 */
+.file-info-area {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  overflow-wrap: break-word !important;
+  word-break: break-word !important;
+}
+
+/* カバー画像編集ボタンの完全中央配置 */
+.cover-edit-button {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+}
+
+/* ボタンコンテナの間隔調整 */
+.cover-buttons-container {
+  gap: 2rem !important; /* 32px間隔を確保 */
+}
+
+.cover-buttons-container > * + * {
+  margin-left: 2rem !important; /* space-x-8のフォールバック */
+}
+
+.cover-edit-button svg {
+  display: block !important;
+  line-height: 1 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  vertical-align: middle !important;
+  text-align: center !important;
+}
+
+/* アイコンの視覚的中央配置 */
+.cover-edit-button .fa-trash,
+.cover-edit-button .fa-edit {
+  transform: translateY(0) !important;
+  position: relative !important;
+}
+
+/* モバイル向けボタンの最適化 */
+@media (max-width: 640px) {
+  .mobile-button {
+    min-height: 44px !important;
+    font-size: 14px !important;
+    padding: 12px 16px !important;
+  }
+  
+  .profile-edit-buttons {
+    padding: 0 4px !important;
+  }
+  
+  /* モバイルでのカバー画像編集ボタン間隔 */
+  .cover-buttons-container {
+    gap: 2.5rem !important; /* モバイルでは40px間隔 */
+  }
+  
+  .cover-buttons-container > * + * {
+    margin-left: 2.5rem !important;
+  }
+}
+
+/* デスクトップでのボタン間隔 */
+@media (min-width: 641px) {
+  .cover-buttons-container {
+    gap: 3rem !important; /* デスクトップでは48px間隔 */
+  }
+  
+  .cover-buttons-container > * + * {
+    margin-left: 3rem !important;
+  }
+}
+
+/* プロフィールページのボタンアイコン調整 */
+.profile-action-button {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.profile-action-button svg {
+  margin: 0 !important;
+  vertical-align: middle !important;
+  line-height: 1 !important;
+}
+
+/* 編集ボタンの特別なスタイル */
+.edit-button {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.edit-button svg {
+  margin-right: 0.375rem !important; /* 6px spacing for desktop */
+  vertical-align: middle !important;
+  line-height: 1 !important;
+}
+
+/* ブロックボタンの円形ボタン用 */
+.block-button {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0.5rem !important;
+}
+
+.block-button svg {
+  margin: 0 !important;
+  vertical-align: middle !important;
+  line-height: 1 !important;
+}
+
+/* モバイル対応：編集ボタンの調整 */
+@media (max-width: 640px) {
+  .edit-button svg {
+    margin-right: 0 !important;
+  }
+}

@@ -68,8 +68,8 @@
     {
       "idx": 9,
       "version": "7",
-      "when": 1749188336000,
-      "tag": "0009_remove_cover_image_url",
+      "when": 1749188337000,
+      "tag": "0009_add_cover_image_url",
       "breakpoints": true
     }
   ]

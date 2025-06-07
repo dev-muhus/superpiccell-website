@@ -20,6 +20,58 @@ This project uses a **fully containerized Docker environment** with hot reload c
 - Server restarts are typically unnecessary due to hot reload
 - If server restart is needed, use: `docker compose restart frontend`
 
+## CRITICAL: Verification Requirements
+
+**MANDATORY VERIFICATION BEFORE ANY COMPLETION CLAIMS**:
+All implementation work MUST be verified with actual evidence before making completion claims. The following verification steps are REQUIRED:
+
+### Database Changes Verification
+1. **Schema Changes**: MUST verify database schema with actual queries
+   ```bash
+   # REQUIRED: Check actual database schema
+   docker compose run --rm frontend npx tsx -e "
+   import { db } from './src/db/index.js';
+   import { sql } from 'drizzle-orm';
+   
+   async function verifySchema() {
+     const result = await db.execute(sql\`
+       SELECT column_name, data_type, is_nullable 
+       FROM information_schema.columns 
+       WHERE table_name = 'TABLE_NAME' 
+       ORDER BY ordinal_position;
+     \`);
+     console.log('Schema verification:', result.rows);
+   }
+   verifySchema();
+   "
+   ```
+
+2. **Migration Verification**: MUST confirm migrations were actually applied
+3. **Data Verification**: MUST verify actual data operations work
+
+### API Implementation Verification
+1. **Test Execution**: MUST run and pass all relevant tests
+   ```bash
+   # REQUIRED: Run specific API tests
+   docker compose run --rm frontend npm run test:api -- __tests__/api/path/to/test
+   ```
+
+2. **Manual API Testing**: MUST verify API endpoints actually respond correctly
+3. **Integration Testing**: MUST confirm end-to-end functionality works
+
+### UI Implementation Verification
+1. **Component Testing**: MUST verify UI components render and function correctly
+2. **Integration Testing**: MUST verify UI integrates with backend APIs
+3. **User Flow Testing**: MUST verify complete user workflows work
+
+### **VIOLATION CONSEQUENCES**:
+- Any completion claim without verification is considered **fraud and deception**
+- No implementation is considered complete without actual evidence
+- All claims must be backed by concrete verification results
+
+**COMPLIANCE REQUIREMENT**:
+Every task completion MUST include verification evidence. No exceptions.
+
 ## Essential Commands
 
 **EXCEPTIONS ALLOWED**:
@@ -229,3 +281,60 @@ Critical variables that must be set:
 - `NEXT_PUBLIC_CONTENTFUL_*` - CMS configuration
 
 See `example.env` and `frontend/example.env.local` for full list.
+
+## 絶対遵守ルール（信頼性保証）
+
+### **CRITICAL: 虚偽報告防止システム**
+
+#### 必須検証手順
+**すべての作業完了報告前に以下を必須実行:**
+
+1. **データベーススキーマ変更時の検証**
+   ```bash
+   # 本番データベースの実際の状態確認（develop環境）
+   docker compose run --rm frontend npm run db:migrate
+   # スキーマが実際に適用されているか確認
+   ```
+
+2. **機能完了前の実証テスト**
+   ```bash
+   # すべてのAPIテストを実行
+   docker compose run --rm frontend npm run test:api
+   # テスト結果をすべて確認し、失敗があれば修正
+   ```
+
+3. **実際のデータベース状態確認**
+   - Neonダッシュボードで実際のテーブル構造確認
+   - 追加されたカラムが存在することを目視確認
+   - テストデータでの実際の動作確認
+
+#### 禁止事項（絶対厳守）
+- **テスト結果を確認せずに「完了」と報告すること**
+- **データベースマイグレーションを実行せずに「適用済み」と報告すること**
+- **実際の動作確認をせずに「動作する」と報告すること**
+- **スキップしたテストがあるのに「全テスト成功」と報告すること**
+
+#### 報告形式の強制
+**完了報告時は必ず以下の証拠を提示:**
+1. 実行したテストコマンドとその結果
+2. データベースの実際の状態確認結果
+3. 各フェーズでの動作確認結果
+
+### **環境別実行コマンド明確化**
+
+#### Development環境（通常の開発作業）
+```bash
+# 開発環境でのマイグレーション
+docker compose run --rm frontend npm run db:migrate
+
+# 開発環境でのテスト
+docker compose run --rm frontend npm run test:api
+```
+
+#### Production環境（本番適用時のみ）
+```bash
+# 本番環境でのマイグレーション（要確認プロンプト）
+docker compose run --rm frontend npm run db:migrate:production
+```
+
+**CRITICAL**: `db:migrate:production`は本番環境のみ使用。開発作業では`db:migrate`を使用すること。

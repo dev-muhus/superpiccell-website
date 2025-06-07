@@ -8,11 +8,10 @@ import { z } from 'zod';
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
 
-// プロフィール編集のバリデーションスキーマ
+// プロフィール編集のバリデーションスキーマ（要件v3に従い簡素化）
 const editProfileSchema = z.object({
-  first_name: z.string().max(50).nullable(),
-  last_name: z.string().max(50).nullable(),
   bio: z.string().max(200).nullable(),
+  cover_image_url: z.string().url().nullable().optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -39,7 +38,7 @@ export async function POST(req: NextRequest) {
       );
     }
     
-    const { first_name, last_name, bio } = validationResult.data;
+    const { bio, cover_image_url } = validationResult.data;
     
     // データベースからユーザー情報を取得
     const [dbUser] = await db.select()
@@ -54,25 +53,31 @@ export async function POST(req: NextRequest) {
       );
     }
     
-    // プロフィール情報を更新
+    // プロフィール情報を更新（要件v3に従いカバー画像とbioのみ）
+    const updateData: { bio: string | null; updated_at: Date; cover_image_url?: string | null } = {
+      bio,
+      updated_at: new Date()
+    };
+    
+    // cover_image_urlが提供された場合のみ更新
+    if (cover_image_url !== undefined) {
+      updateData.cover_image_url = cover_image_url;
+    }
+    
     const updatedUser = await db
       .update(users)
-      .set({
-        first_name,
-        last_name,
-        bio,
-        updated_at: new Date()
-      })
+      .set(updateData)
       .where(eq(users.id, dbUser.id))
       .returning();
     
-    // 更新されたユーザー情報を加工して返す
+    // 更新されたユーザー情報を加工して返す（要件v3に従い簡素化）
     const userData = updatedUser[0] ? {
       id: updatedUser[0].id,
       username: updatedUser[0].username,
       first_name: updatedUser[0].first_name,
       last_name: updatedUser[0].last_name,
       profile_image_url: updatedUser[0].profile_image_url,
+      cover_image_url: updatedUser[0].cover_image_url,
       bio: updatedUser[0].bio,
       updated_at: updatedUser[0].updated_at
     } : null;

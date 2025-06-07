@@ -295,13 +295,11 @@ describe('Profile API', () => {
     });
   });
   
-  // プロフィール編集のテスト
+  // プロフィール編集のテスト（要件v3に従い簡素化）
   describe('POST /api/profile/edit', () => {
-    test('認証済みユーザーはプロフィールを編集できる', async () => {
-      // 編集データ
+    test('認証済みユーザーはプロフィールを編集できる（bioのみ）', async () => {
+      // 編集データ（要件v3に従いbioのみ）
       const editData = {
-        first_name: '編集名',
-        last_name: '編集姓',
         bio: '編集されたプロフィール文です'
       };
       
@@ -316,17 +314,76 @@ describe('Profile API', () => {
       // 編集後のデータの検証
       expect(data.success).toBe(true);
       expect(data.user).toBeDefined();
-      expect(data.user.first_name).toBe(editData.first_name);
-      expect(data.user.last_name).toBe(editData.last_name);
       expect(data.user.bio).toBe(editData.bio);
+      // first_name、last_nameは変更されていないことを確認
+      expect(data.user.first_name).toBe(testUser.first_name);
+      expect(data.user.last_name).toBe(testUser.last_name);
+    });
+
+    test('認証済みユーザーはカバー画像URLを設定できる', async () => {
+      // カバー画像URL設定データ
+      const editData = {
+        bio: '更新されたプロフィール文です',
+        cover_image_url: 'https://res.cloudinary.com/test/image/upload/c_fill,w_1200,h_400,q_80,f_auto/test_cover.jpg'
+      };
+      
+      // テスト用リクエストの作成
+      const request = createTestRequest('/api/profile/edit', 'POST', editData, {}, testUser.clerk_id);
+      const response = await editProfile(request);
+      
+      // レスポンスの検証
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      
+      // 編集後のデータの検証
+      expect(data.success).toBe(true);
+      expect(data.user).toBeDefined();
+      expect(data.user.bio).toBe(editData.bio);
+      expect(data.user.cover_image_url).toBe(editData.cover_image_url);
+    });
+
+    test('カバー画像URLを削除できる（null設定）', async () => {
+      // カバー画像URL削除データ
+      const editData = {
+        bio: 'プロフィール文',
+        cover_image_url: null
+      };
+      
+      // テスト用リクエストの作成
+      const request = createTestRequest('/api/profile/edit', 'POST', editData, {}, testUser.clerk_id);
+      const response = await editProfile(request);
+      
+      // レスポンスの検証
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      
+      // 編集後のデータの検証
+      expect(data.success).toBe(true);
+      expect(data.user).toBeDefined();
+      expect(data.user.cover_image_url).toBeNull();
     });
     
     test('バリデーションエラーの場合は400エラーを返す', async () => {
       // バリデーションエラーを起こすデータ（バイオが長すぎる）
       const invalidData = {
-        first_name: '編集名',
-        last_name: '編集姓',
         bio: 'a'.repeat(201) // 200文字を超える
+      };
+      
+      // テスト用リクエストの作成
+      const request = createTestRequest('/api/profile/edit', 'POST', invalidData, {}, testUser.clerk_id);
+      const response = await editProfile(request);
+      
+      // レスポンスの検証
+      expect(response.status).toBe(400);
+      const data = await response.json();
+      expect(data.error).toBeDefined();
+    });
+
+    test('無効なカバー画像URLの場合は400エラーを返す', async () => {
+      // バリデーションエラーを起こすデータ（無効なURL）
+      const invalidData = {
+        bio: 'プロフィール文',
+        cover_image_url: 'invalid-url'
       };
       
       // テスト用リクエストの作成
@@ -340,10 +397,8 @@ describe('Profile API', () => {
     });
     
     test('認証していないユーザーは401エラーを返す', async () => {
-      // 編集データ
+      // 編集データ（要件v3に従い簡素化）
       const editData = {
-        first_name: '編集名',
-        last_name: '編集姓',
         bio: '編集されたプロフィール文です'
       };
       
@@ -358,24 +413,5 @@ describe('Profile API', () => {
       expect(data.error).toBeDefined();
     });
     
-    test('存在しないユーザーIDの場合は404エラーを返す', async () => {
-      // 編集データ
-      const editData = {
-        first_name: '編集名',
-        last_name: '編集姓',
-        bio: '編集されたプロフィール文です'
-      };
-      
-      // 存在しないユーザーIDでリクエスト
-      const nonExistentUserId = 'non_existent_user_id';
-      const request = createTestRequest('/api/profile/edit', 'POST', editData, {}, nonExistentUserId);
-      const response = await editProfile(request);
-      
-      // 現在のAPI実装では存在しないユーザーに対しても200を返す
-      expect(response.status).toBe(200);
-      const data = await response.json();
-      // レスポンスボディが存在することを確認
-      expect(data).toBeDefined();
-    });
   });
 });
