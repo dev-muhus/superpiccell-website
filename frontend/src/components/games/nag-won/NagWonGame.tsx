@@ -6,8 +6,10 @@ import GameCanvas from './GameCanvas';
 import GameUI from './GameUI';
 import { VirtualJoystick } from './Controls/VirtualJoystick';
 import ScoreSaveModal from './UI/ScoreSaveModal';
+import { SimpleAnimationModal } from './UI/SimpleAnimationModal';
 import { AvailableGameConfig } from '@/lib/games/config';
 import { useGameSettingsStore } from './Utils/stores';
+import { logger } from '@/utils/logger';
 
 interface NagWonGameProps {
   config: AvailableGameConfig;
@@ -21,6 +23,9 @@ export default function NagWonGame({ config }: NagWonGameProps) {
   const [isLandscape, setIsLandscape] = useState(false);
   const [showScoreSaveModal, setShowScoreSaveModal] = useState(false);
   const [showGameUI, setShowGameUI] = useState(false);
+  const [showAnimationModal, setShowAnimationModal] = useState(false);
+  const [availableAnimations, setAvailableAnimations] = useState<string[]>([]);
+  const [currentAnimation, setCurrentAnimation] = useState('idle');
   const [itemsCollected, setItemsCollected] = useState(0);
   const [gameKey, setGameKey] = useState(0); // ゲーム再開時にコンポーネントを強制再マウントするためのキー
   const [gameState, setGameState] = useState({
@@ -43,7 +48,7 @@ export default function NagWonGame({ config }: NagWonGameProps) {
   // 前回のステージIDを追跡するためのRef
   const prevStageIdRef = useRef(selectedStageId);
 
-  // モーダルの表示状態を管理する変数を追加
+  // モーダルの表示状態を管理する変数を追加（重要なモーダルのみ）
   const isModalOpen = showScoreSaveModal || showGameUI;
 
   // 初期ロード
@@ -99,47 +104,64 @@ export default function NagWonGame({ config }: NagWonGameProps) {
   // ESCキーでメニュー表示
   useEffect(() => {
     const handleGameEscape = () => {
-      console.log('game-escape event received in NagWonGame');
+      logger.debug('game-escape event received in NagWonGame');
       setGameState(prev => {
-        console.log('Current game state:', prev);
+        logger.debug('Current game state:', prev);
         if (prev.isGameActive && !prev.isGameOver) {
           const newState = { ...prev, isPaused: !prev.isPaused };
-          console.log('New game state:', newState);
+          logger.debug('New game state:', newState);
           return newState;
         }
-        console.log('Game state not changed - not active or game over');
+        logger.debug('Game state not changed - not active or game over');
         return prev;
       });
     };
 
     // InputManagerからのgame-escapeイベントのみを処理
     window.addEventListener('game-escape', handleGameEscape);
-    console.log('game-escape event listener added in NagWonGame');
+    logger.debug('game-escape event listener added in NagWonGame');
     
     return () => {
       window.removeEventListener('game-escape', handleGameEscape);
-      console.log('game-escape event listener removed in NagWonGame');
+      logger.debug('game-escape event listener removed in NagWonGame');
     };
   }, []); // 依存関係を空にして、イベントリスナーの再登録を防ぐ
 
-  // デバッグモード切替（F3キー）
+  // デバッグモード切替（F3キー）とアニメーション選択（Tキー）
   useEffect(() => {
-    const handleDebugToggle = (e: KeyboardEvent) => {
+    const handleKeyPress = (e: KeyboardEvent) => {
       if (e.key === 'F3') {
         // 開発環境でのみデバッグモードを有効化
         if (process.env.NODE_ENV === 'development') {
           e.preventDefault();
           setShowDebug(prev => !prev);
-          console.log('デバッグモード:', !showDebug);
+          logger.debug('デバッグモード:', !showDebug);
+        }
+      } else if (e.key === 't' || e.key === 'T') {
+        // アニメーション選択モーダルの表示切り替え
+        if (gameState.isGameActive && !gameState.isGameOver && !gameState.isPaused) {
+          e.preventDefault();
+          setShowAnimationModal(prev => !prev);
+          logger.debug('🎭 Animation selection modal toggled');
         }
       }
     };
 
-    window.addEventListener('keydown', handleDebugToggle);
+    window.addEventListener('keydown', handleKeyPress);
     return () => {
-      window.removeEventListener('keydown', handleDebugToggle);
+      window.removeEventListener('keydown', handleKeyPress);
     };
-  }, [showDebug]);
+  }, [showDebug, gameState.isGameActive, gameState.isGameOver, gameState.isPaused]);
+
+  // ゲーム状態変更時にアニメーションモーダルを閉じる
+  useEffect(() => {
+    if (gameState.isGameOver || gameState.isPaused || !gameState.isGameActive) {
+      if (showAnimationModal) {
+        setShowAnimationModal(false);
+        logger.debug('🎭 Animation modal closed due to game state change');
+      }
+    }
+  }, [gameState.isGameOver, gameState.isPaused, gameState.isGameActive, showAnimationModal]);
 
   // ゲーム開始処理
   const handleStartGame = useCallback(() => {
@@ -195,7 +217,7 @@ export default function NagWonGame({ config }: NagWonGameProps) {
     const resetEvent = new CustomEvent('player-reset');
     window.dispatchEvent(resetEvent);
     
-    console.log('Game completely restarted - score, time, and items reset');
+    logger.info('Game completely restarted - score, time, and items reset');
   }, [config.settings.gameTime]);
 
   // ダッシュボードに戻る
@@ -232,12 +254,31 @@ export default function NagWonGame({ config }: NagWonGameProps) {
       }
 
       // 保存成功
-      console.log('スコアが正常に保存されました');
+      logger.info('スコアが正常に保存されました');
     } catch (error) {
-      console.error('スコア保存エラー:', error);
+      logger.error('スコア保存エラー:', error);
       throw error;
     }
   }, [gameState.score, gameState.timeRemaining, config.settings.gameTime, itemsCollected, selectedStageId]);
+
+  // アニメーション情報受信コールバック
+  const handleAnimationInfoUpdate = useCallback((animations: string[], current: string) => {
+    setAvailableAnimations(animations);
+    setCurrentAnimation(current);
+  }, []);
+
+  // アニメーション選択ハンドラー
+  const handleAnimationSelect = useCallback((animationName: string) => {
+    logger.debug(`🎭 Animation selected: ${animationName}`);
+    setCurrentAnimation(animationName);
+    setShowAnimationModal(false);
+    
+    // カスタムイベントを送信してPlayer.tsxに通知
+    const event = new CustomEvent('game:manualAnimationSelect', {
+      detail: animationName
+    });
+    window.dispatchEvent(event);
+  }, []);
 
   // ズーム変更処理
   const handleZoomChange = useCallback((delta: number) => {
@@ -319,6 +360,9 @@ export default function NagWonGame({ config }: NagWonGameProps) {
             if (prev.score > 0) {
               setTimeout(() => setShowScoreSaveModal(true), 1000);
             }
+            // ゲーム終了時はアニメーションモーダルを閉じる
+            setShowAnimationModal(false);
+            
             return {
               ...prev,
               timeRemaining: 0,
@@ -343,7 +387,7 @@ export default function NagWonGame({ config }: NagWonGameProps) {
   // ステージ変更を検出してゲームをリセット
   useEffect(() => {
     if (prevStageIdRef.current !== selectedStageId) {
-      console.log(`ステージ変更検出: ${prevStageIdRef.current} → ${selectedStageId}`);
+      logger.debug(`ステージ変更検出: ${prevStageIdRef.current} → ${selectedStageId}`);
       
       // ゲームが進行中の場合はリセット
       if (gameState.isGameActive || gameState.isGameOver) {
@@ -357,7 +401,7 @@ export default function NagWonGame({ config }: NagWonGameProps) {
         });
         setItemsCollected(0);
         setGameKey(prevKey => prevKey + 1);
-        console.log('ステージ変更によりゲーム状態をリセット');
+        logger.info('ステージ変更によりゲーム状態をリセット');
       }
       
       // 前回のステージIDを更新
@@ -489,6 +533,7 @@ export default function NagWonGame({ config }: NagWonGameProps) {
             onScoreUpdate={handleScoreUpdate} 
             showDebug={showDebug}
             gameKey={gameKey}
+            onAnimationInfoUpdate={handleAnimationInfoUpdate}
           />
         </div>
         
@@ -533,6 +578,19 @@ export default function NagWonGame({ config }: NagWonGameProps) {
                 <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-8.293l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L9 9.414V13a1 1 0 102 0V9.414l1.293 1.293a1 1 0 001.414-1.414z" clipRule="evenodd" />
                 </svg>
+              </button>
+              
+              {/* アニメーション選択ボタン */}
+              <button
+                className="w-16 h-16 bg-purple-600 bg-opacity-80 rounded-full flex items-center justify-center touch-manipulation active:bg-purple-700 border-2 border-white border-opacity-40 shadow-lg"
+                onTouchStart={() => {
+                  setShowAnimationModal(prev => !prev);
+                  logger.debug('🎭 Mobile animation modal toggled');
+                }}
+                aria-label="アニメーション選択"
+                data-ui-element="animation-button"
+              >
+                <span className="text-lg">🎭</span>
               </button>
             </div>
 
@@ -582,6 +640,17 @@ export default function NagWonGame({ config }: NagWonGameProps) {
             </div>
           </div>
         )}
+
+        {/* アニメーション選択モーダル - 2D UI層 */}
+        <div style={{ pointerEvents: 'auto' }}>
+          <SimpleAnimationModal
+            isVisible={showAnimationModal}
+            availableAnimations={availableAnimations}
+            currentAnimation={currentAnimation}
+            onAnimationSelect={handleAnimationSelect}
+            onClose={() => setShowAnimationModal(false)}
+          />
+        </div>
 
         {/* スコア保存モーダル - モーダルにはポインターイベントを有効化 */}
         <div style={{ pointerEvents: 'auto' }}>

@@ -1563,4 +1563,144 @@ Nag-Wonゲームでは、高品質な3Dアセットと拡張された衝突判�
 - **衝突判定システム**: 精密なゲームインタラクション
 - **パフォーマンス最適化**: 60fps維持とメモリ効率化
 - **国際標準準拠**: モバイルUI/UXベストプラクティス実装
-- **拡張可能アーキテクチャ**: 将来的な機能追加に対応 
+- **拡張可能アーキテクチャ**: 将来的な機能追加に対応
+
+## 14. リアルタイムアニメーションプレビューシステム
+
+### 14.1 機能概要
+
+Nag-Wonゲームに実装されたリアルタイムアニメーションプレビューシステムは、プレイヤーがゲーム中にアバターのアニメーションを自由に選択・プレビューできる機能です。
+
+### 14.2 主要コンポーネント
+
+#### SimpleAnimationModal
+ゲーム内でTキーを押すことで表示される、アニメーション選択専用のモーダルUI：
+
+```typescript
+interface SimpleAnimationModalProps {
+  isVisible: boolean;
+  availableAnimations: string[];
+  currentAnimation: string;
+  onAnimationSelect: (animationName: string) => void;
+  onClose: () => void;
+}
+```
+
+**特徴:**
+- デスクトップ: Tキー起動 + 十字キー操作 + Enter選択
+- モバイル: 🎭ボタン + タッチ選択
+- 日本語アニメーション名表示（🧘 待機、🚶 歩行、🏃 走行、🦘 ジャンプ）
+- 自動スクロール機能付きリスト表示
+
+#### AnimationManager拡張
+Three.jsアニメーション制御システムの強化：
+
+```typescript
+export interface AnimationManagerRef {
+  playAnimation: (animationName: string) => boolean;
+  getCurrentAnimation: () => string | null;
+  getAvailableAnimations: () => string[];
+}
+```
+
+**主要改善:**
+- `useImperativeHandle`による直接制御API
+- 手動選択アニメーションの連続ループ再生
+- `manualAnimationMode`による自動/手動モード切り替え
+- Three.js最適化（ループ設定のタイミング改善）
+
+### 14.3 技術的特徴
+
+#### ハイブリッド操作システム
+```typescript
+// デバイス自動判定
+const checkIfMobile = () => {
+  const userAgent = window.navigator.userAgent.toLowerCase();
+  const mobileDevices = /android|webos|iphone|ipad|ipod|blackberry|windows phone/i;
+  return mobileDevices.test(userAgent) || window.innerWidth < 768;
+};
+```
+
+#### インテリジェントアニメーションループ
+```typescript
+// 手動選択時：継続ループ
+targetAction.loop = THREE.LoopRepeat;
+targetAction.clampWhenFinished = false;
+
+// 移動入力検出時：自動モード復帰
+if (inputs.forward || inputs.backward || inputs.left || inputs.right || inputs.jump) {
+  setManualAnimationMode(false);
+}
+```
+
+#### パフォーマンス最適化
+- 環境別ログ制御（開発環境のみ詳細ログ）
+- React Hook依存配列最適化
+- イベントリスナーの適切なクリーンアップ
+- requestAnimationFrame活用によるスムーズなUI更新
+
+### 14.4 ユーザーエクスペリエンス
+
+#### 操作フロー
+1. **起動**: ゲーム中に`T`キーまたは🎭ボタン
+2. **選択**: 十字キー/タッチでナビゲーション
+3. **プレビュー**: Enter/タップで即座にループ再生開始
+4. **復帰**: WASD移動で通常アニメーションに自動復帰
+
+#### UI/UX設計
+- Material Design準拠のモーダルデザイン
+- 選択アイテムのハイライト表示
+- デバイス別操作ガイド表示
+- レスポンシブなタッチターゲット（44px以上）
+
+### 14.5 実装のベストプラクティス
+
+#### 他ゲームへの適用方法
+```typescript
+// 1. AnimationManagerRefの設定
+const animationManagerRef = useRef<AnimationManagerRef>(null);
+
+// 2. 手動アニメーション選択イベント
+const handleManualAnimationSelect = useCallback((event: CustomEvent<string>) => {
+  const animationName = event.detail;
+  if (animationManagerRef.current) {
+    const success = animationManagerRef.current.playAnimation(animationName);
+    if (success) {
+      setManualAnimationMode(true);
+    }
+  }
+}, []);
+
+// 3. アニメーション情報の取得
+const handleAnimationInfoUpdate = useCallback((animations: string[], current: string) => {
+  setAvailableAnimations(animations);
+  setCurrentAnimation(current);
+}, []);
+```
+
+### 14.6 技術的制約と解決方法
+
+#### 解決済み問題
+1. **キーボード選択時の実行失敗**: refと現在状態の不整合 → 直接状態参照への変更
+2. **ループ再生の不具合**: `play()`後のループ設定 → 設定タイミングの最適化
+3. **自動/手動モード競合**: MovementSystemとの競合 → `manualAnimationMode`フラグ制御
+
+#### 今後の拡張予定
+- アニメーション速度調整機能
+- アニメーションブレンディング
+- カスタムアニメーションシーケンス
+- アニメーション記録・再生機能
+
+### 14.7 ローカルアバターインポート機能との統合
+
+リアルタイムアニメーションプレビューシステムは、将来実装予定のローカルカスタムアバターインポート機能と統合設計されています：
+
+- **アニメーション検証**: ローカルアバターの必須アニメーション確認
+- **統一インターフェース**: デフォルト・ローカルアバター共通のプレビューシステム
+- **拡張性**: カスタムアニメーション名への対応
+
+詳細な技術仕様と実装ガイドは `ローカルアバター機能要件定義書.md` を参照してください。
+
+この機能により、プレイヤーはより自由で表現豊かなゲーム体験を楽しむことができ、アバターシステムの基盤として今後の機能拡張にも対応可能な設計となっています。
+
+---

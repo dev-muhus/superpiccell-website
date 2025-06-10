@@ -25,7 +25,9 @@
       "Bash(git checkout:*)",
       "Bash(git branch:*)",
       "Bash(mv:*)",
-      "Bash(docker system prune:*)"
+      "Bash(docker system prune:*)",
+      "Bash(rg:*)",
+      "Bash(git rm:*)"
     ],
     "deny": []
   }

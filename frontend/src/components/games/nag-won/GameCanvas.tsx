@@ -114,9 +114,10 @@ interface GameCanvasProps {
   onScoreUpdate: (points: number) => void;
   showDebug?: boolean;
   gameKey?: number; // ゲーム再開時のキー
+  onAnimationInfoUpdate?: (animations: string[], current: string) => void;
 }
 
-export default function GameCanvas({ onScoreUpdate, showDebug = false, gameKey }: GameCanvasProps) {
+export default function GameCanvas({ onScoreUpdate, showDebug = false, gameKey, onAnimationInfoUpdate }: GameCanvasProps) {
   const [playerPosition, setPlayerPosition] = useState<THREE.Vector3>(new THREE.Vector3(0, 1, 0));
   
   // ゲーム設定ストアの状態を直接購読
@@ -240,7 +241,8 @@ export default function GameCanvas({ onScoreUpdate, showDebug = false, gameKey }
               <Player 
                 key={`player-${selectedStageId}-${selectedAvatarId}`} 
                 onMove={handlePlayerMove} 
-                modelId={selectedAvatarId} 
+                modelId={selectedAvatarId}
+                onAnimationInfoUpdate={onAnimationInfoUpdate}
               />
               
               {/* 選択されたステージに対応するワールドコンポーネントを表示 */}

@@ -161,6 +161,7 @@ export default function GameUI({
                   <li>アイテム収集: 接近で自動収集</li>
                   <li>カメラ回転: マウス移動</li>
                   <li>メニュー表示: ESCキー</li>
+                  <li>🎭 アニメーション選択: Tキー</li>
                 </ul>
               )}
             </div>

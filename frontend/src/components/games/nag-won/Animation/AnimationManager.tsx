@@ -1,22 +1,32 @@
 'use client';
 
-import React, { useRef, useEffect, useCallback } from 'react';
+import { useRef, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react';
 import { useAnimations } from '@react-three/drei';
 import { usePlayerStore } from '../Utils/stores';
 import * as THREE from 'three';
 import { AnimationConfig } from '../Utils/types';
+import { ANIMATION_CONFIG } from '../Utils/gltfValidator';
+import { logger } from '@/utils/logger';
 
 interface AnimationManagerProps {
   scene: THREE.Group;
   animations: THREE.AnimationClip[];
   config?: Partial<AnimationConfig>;
+  manualAnimationMode?: boolean;
 }
 
-export const AnimationManager: React.FC<AnimationManagerProps> = ({
+export interface AnimationManagerRef {
+  playAnimation: (animationName: string) => boolean;
+  getCurrentAnimation: () => string | null;
+  getAvailableAnimations: () => string[];
+}
+
+export const AnimationManager = forwardRef<AnimationManagerRef, AnimationManagerProps>(({
   scene,
   animations,
-  config = {}
-}) => {
+  config = {},
+  manualAnimationMode = false
+}, ref) => {
   // アニメーション状態を取得
   const { animationState } = usePlayerStore();
   
@@ -26,19 +36,17 @@ export const AnimationManager: React.FC<AnimationManagerProps> = ({
   // 現在再生中のアニメーション
   const currentAnimation = useRef<string | null>(null);
   
-  // アニメーションの設定（デフォルト値とユーザー設定のマージ）
+  // アニメーションの設定（gltfValidatorから取得し、ユーザー設定でオーバーライド）
   const animConfig: AnimationConfig = {
-    // アニメーション名のマッピング（異なるモデル間での名前の違いを吸収）
     mappings: {
-      'idle': ['Idle', 'idle', 'IDLE', 'idle_clip', 'idle01', 'Idle01'],
-      'walking': ['Walk', 'walk', 'WALK', 'Walking', 'WalkForward', 'walk_clip'],
-      'running': ['Run', 'run', 'RUN', 'Running', 'Sprint', 'sprint', 'run_clip'],
-      'jumping': ['Jump', 'jump', 'JUMP', 'Jumping', 'jump_clip'],
+      idle: [...ANIMATION_CONFIG.mappings.idle],
+      walking: [...ANIMATION_CONFIG.mappings.walking],
+      running: [...ANIMATION_CONFIG.mappings.running],
+      jumping: [...ANIMATION_CONFIG.mappings.jumping]
     },
-    // クラウチ状態を回避するアニメーション名のパターン
-    avoidPatterns: ['crouch', 'crch', 'Crouch'],
-    fadeDuration: 0.3,
-    crossFade: true,
+    avoidPatterns: [...ANIMATION_CONFIG.avoidPatterns],
+    fadeDuration: ANIMATION_CONFIG.fadeDuration,
+    crossFade: ANIMATION_CONFIG.crossFade,
     ...config
   };
   
@@ -47,9 +55,16 @@ export const AnimationManager: React.FC<AnimationManagerProps> = ({
   
   // 最適なアニメーションクリップを検索する関数
   const findBestMatchingAnimation = useCallback((type: string): string | null => {
-    const candidates = animConfig.mappings[type] || [];
     const actionNames = getActionNames();
     const avoidPatterns = animConfig.avoidPatterns || [];
+    
+    // 0. まず直接のアニメーション名として存在するかチェック
+    if (actionNames.includes(type)) {
+      logger.animation(`🎯 Direct animation name match found: "${type}"`);
+      return type;
+    }
+    
+    const candidates = animConfig.mappings[type] || [];
     
     // 1. 優先的に使用するアニメーション（完全一致）
     for (const candidate of candidates) {
@@ -99,17 +114,22 @@ export const AnimationManager: React.FC<AnimationManagerProps> = ({
   
   // アニメーション切り替え関数
   const changeAnimation = useCallback((newState: string) => {
+    logger.animation(`🎬 AnimationManager: Attempting to change to "${newState}"`);
+    
     if (!actions || Object.keys(actions).length === 0) {
-      console.warn('アニメーション変更ができません: アクションが利用できません');
+      logger.warn('アニメーション変更ができません: アクションが利用できません');
       return;
     }
     
     const animationName = findBestMatchingAnimation(newState);
     const actionNames = getActionNames();
     
+    logger.animation(`🔍 Found animation mapping: "${newState}" -> "${animationName}"`);
+    logger.animation(`📋 Available actions:`, actionNames);
+    
     // アニメーションが見つからない場合
     if (!animationName) {
-      console.warn(`アニメーション ${newState} に対応するものが見つかりません。利用可能なアニメーション:`, actionNames);
+      logger.warn(`アニメーション ${newState} に対応するものが見つかりません。利用可能なアニメーション:`, actionNames);
       
       // どんなアニメーションでも良いので最初のものを使用
       if (actionNames.length > 0 && !currentAnimation.current) {
@@ -142,16 +162,17 @@ export const AnimationManager: React.FC<AnimationManagerProps> = ({
         mixer.update(0); // ミキサーを強制更新
       }
       
-      // アニメーションを開始
-      newAnim.reset().fadeIn(animConfig.fadeDuration).play();
-      
-      // ジャンプアニメーションの場合はループしない、それ以外はループする
+      // ループ設定を先に行う（play()前に設定）
       if (newState === 'jumping') {
         newAnim.loop = THREE.LoopOnce;
         newAnim.clampWhenFinished = true; // 最後のフレームで停止
       } else {
         newAnim.loop = THREE.LoopRepeat;
+        newAnim.clampWhenFinished = false;
       }
+      
+      // アニメーションを開始
+      newAnim.reset().fadeIn(animConfig.fadeDuration).play();
       
       currentAnimation.current = animationName;
     }
@@ -179,12 +200,12 @@ export const AnimationManager: React.FC<AnimationManagerProps> = ({
     };
   }, [actions, animations.length, getActionNames]);
   
-  // アニメーション状態の変更を監視して更新
+  // アニメーション状態の変更を監視して更新（手動モード中はスキップ）
   useEffect(() => {
-    if (actions && getActionNames().length > 0) {
+    if (actions && getActionNames().length > 0 && !manualAnimationMode) {
       changeAnimation(animationState);
     }
-  }, [actions, animationState, changeAnimation, getActionNames]);
+  }, [actions, animationState, changeAnimation, getActionNames, manualAnimationMode]);
   
   // モデルが変更された場合に実行される処理（animationsの参照が変わったとき）
   useEffect(() => {
@@ -193,15 +214,17 @@ export const AnimationManager: React.FC<AnimationManagerProps> = ({
       // アニメーションが利用可能になったら処理を行う
       if (actions && Object.keys(actions).length > 0) {
         
-        // 少し遅延させてアニメーション初期化を確実に行う
+        // 少し遅延させてアニメーション初期化を確実に行う（手動モード中はスキップ）
         const timer = setTimeout(() => {
-          changeAnimation(animationState);
+          if (!manualAnimationMode) {
+            changeAnimation(animationState);
+          }
         }, 300);
         
         return () => clearTimeout(timer);
       }
     }
-  }, [animations, actions, changeAnimation, animationState]);
+  }, [animations, actions, changeAnimation, animationState, manualAnimationMode]);
   
   // デバッグ：利用可能なアニメーション一覧をコンソールに表示
   useEffect(() => {
@@ -224,6 +247,11 @@ export const AnimationManager: React.FC<AnimationManagerProps> = ({
             idleAction.reset();
             idleAction.setEffectiveTimeScale(1);
             idleAction.setEffectiveWeight(1);
+            
+            // ループ設定（play()前に設定）
+            idleAction.loop = THREE.LoopRepeat;
+            idleAction.clampWhenFinished = false;
+            
             idleAction.fadeIn(0.5).play();
             
             // ミキサーを強制更新
@@ -233,18 +261,84 @@ export const AnimationManager: React.FC<AnimationManagerProps> = ({
             
             currentAnimation.current = idleAnimation;
           } else {
-            console.warn('初期アニメーションが見つかりませんでした');
+            logger.warn('初期アニメーションが見つかりませんでした');
           }
         } catch (err) {
-          console.error('アニメーション適用中にエラー:', err);
+          logger.error('アニメーション適用中にエラー:', err);
         }
       }, 500);
       
       return () => clearTimeout(initTimer);
     } else {
-      console.warn('アニメーションが見つかりません！モデルにアニメーションが含まれているか確認してください。');
+      logger.warn('アニメーションが見つかりません！モデルにアニメーションが含まれているか確認してください。');
     }
   }, [actions, mixer, animations, findBestMatchingAnimation, getActionNames]);
+
+  // 外部からアクセス可能なメソッドを定義
+  useImperativeHandle(ref, () => ({
+    playAnimation: (animationName: string): boolean => {
+      logger.animation(`🎭 Direct playAnimation called with: "${animationName}"`);
+      
+      if (!actions || Object.keys(actions).length === 0) {
+        logger.warn('❌ Actions not available for direct animation');
+        return false;
+      }
+      
+      const actionNames = getActionNames();
+      logger.animation(`📋 Available actions for direct play:`, actionNames);
+      
+      // 直接のアニメーション名として存在するかチェック
+      if (actionNames.includes(animationName)) {
+        try {
+          // すべてのアニメーションを停止
+          Object.values(actions).forEach(action => {
+            if (action) action.stop();
+          });
+          
+          // 指定されたアニメーションを再生
+          const targetAction = actions[animationName];
+          if (targetAction) {
+            targetAction.reset();
+            targetAction.setEffectiveTimeScale(1);
+            targetAction.setEffectiveWeight(1);
+            
+            // 手動選択されたアニメーションは常にループさせる（play()前に設定）
+            targetAction.loop = THREE.LoopRepeat;
+            targetAction.clampWhenFinished = false;
+            
+            targetAction.fadeIn(0.2).play();
+            
+            // ミキサーを更新
+            if (mixer) {
+              mixer.update(0);
+            }
+            
+            currentAnimation.current = animationName;
+            logger.animation(`✅ Direct animation "${animationName}" started successfully with looping`);
+            return true;
+          }
+        } catch (error) {
+          logger.error(`❌ Error playing animation "${animationName}":`, error);
+          return false;
+        }
+      } else {
+        logger.warn(`❌ Animation "${animationName}" not found in available actions`);
+        return false;
+      }
+      
+      return false;
+    },
+    
+    getCurrentAnimation: (): string | null => {
+      return currentAnimation.current;
+    },
+    
+    getAvailableAnimations: (): string[] => {
+      return getActionNames();
+    }
+  }), [actions, mixer, getActionNames]);
   
   return null; // このコンポーネントは視覚的要素を持たない
-}; 
+});
+
+AnimationManager.displayName = 'AnimationManager'; 

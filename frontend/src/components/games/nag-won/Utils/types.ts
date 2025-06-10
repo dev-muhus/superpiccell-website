@@ -1,4 +1,5 @@
 import { Vector3 } from 'three';
+import { LocalAvatarConfig } from './avatarTypes';
 
 // カメラ状態の型定義
 export interface CameraState {
@@ -19,7 +20,7 @@ export interface PlayerState {
   position: Vector3;
   velocity: Vector3;
   onGround: boolean;
-  animationState: 'idle' | 'walking' | 'running' | 'jumping';
+  animationState: string;
   inputs: {
     forward: boolean;
     backward: boolean;
@@ -33,7 +34,7 @@ export interface PlayerState {
   setPosition: (position: Vector3) => void;
   setVelocity: (velocity: Vector3) => void;
   setOnGround: (onGround: boolean) => void;
-  setAnimationState: (state: 'idle' | 'walking' | 'running' | 'jumping') => void;
+  setAnimationState: (state: string) => void;
   setInput: (input: keyof PlayerState['inputs'], value: boolean) => void;
 }
 
@@ -41,10 +42,14 @@ export interface PlayerState {
 export interface GameSettingsState {
   selectedAvatarId: string;
   selectedStageId: string;
+  localAvatars: LocalAvatarConfig[]; // ローカルアバターリスト
   
   // アクション
   setSelectedAvatar: (avatarId: string) => void;
   setSelectedStage: (stageId: string) => void;
+  addLocalAvatar: (avatar: LocalAvatarConfig) => void; // ローカルアバター追加
+  removeLocalAvatar: (avatarId: string) => void; // ローカルアバター削除
+  loadLocalAvatars: () => Promise<void>; // ローカルアバター読み込み
 }
 
 // アニメーション関連の型定義

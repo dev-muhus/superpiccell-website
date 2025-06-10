@@ -14,11 +14,13 @@ const VOLCANO_MIN_SAFE_DISTANCE = 40; // 少し緩和
 interface MovementSystemProps {
   playerRef: React.RefObject<THREE.Group>;
   config?: Partial<PhysicsParams>;
+  manualAnimationMode?: boolean;
 }
 
 export const MovementSystem: React.FC<MovementSystemProps> = ({ 
   playerRef,
-  config = {}
+  config = {},
+  manualAnimationMode = false
 }) => {
   // 物理パラメータのデフォルト値とマージ
   const physicsParams: PhysicsParams = {
@@ -390,8 +392,10 @@ export const MovementSystem: React.FC<MovementSystemProps> = ({
       debugInfo.current.airTime = 0;
     }
     
-    // アニメーション状態の更新
-    updateAnimationState();
+    // アニメーション状態の更新（手動モード中はスキップ）
+    if (!manualAnimationMode) {
+      updateAnimationState();
+    }
     
     // プレイヤーの位置と回転の更新
     setPosition(newPosition);

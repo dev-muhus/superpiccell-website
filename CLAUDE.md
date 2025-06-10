@@ -218,6 +218,7 @@ export async function GET(req: NextRequest) {
 - **No Direct External APIs**: Server Components or API routes handle all external calls
 - **Drizzle ORM Patterns**: Avoid `findFirst()` method, use `select().from().where().limit(1)` instead
 - **Game State Management**: Zustand for game-specific state, React hooks for component state
+- **Type Safety**: Never use `any` type or ESLint disable comments except for legitimate library bugs. Always create proper TypeScript interfaces
 
 ### Testing Guidelines
 
@@ -313,6 +314,8 @@ See `example.env` and `frontend/example.env.local` for full list.
 - **データベースマイグレーションを実行せずに「適用済み」と報告すること**
 - **実際の動作確認をせずに「動作する」と報告すること**
 - **スキップしたテストがあるのに「全テスト成功」と報告すること**
+- **`any`型や`// eslint-disable`コメントの使用（ライブラリバグを除く）**
+- **型安全性を犠牲にした安易な解決策の採用**
 
 #### 報告形式の強制
 **完了報告時は必ず以下の証拠を提示:**

@@ -2,6 +2,9 @@
 .next
 out
 
+# TypeScript build cache
+*.tsbuildinfo
+
 # Node.js specific
 node_modules
 npm-debug.log*
