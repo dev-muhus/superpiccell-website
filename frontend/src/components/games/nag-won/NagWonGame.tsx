@@ -269,15 +269,19 @@ export default function NagWonGame({ config }: NagWonGameProps) {
 
   // アニメーション選択ハンドラー
   const handleAnimationSelect = useCallback((animationName: string) => {
-    logger.debug(`🎭 Animation selected: ${animationName}`);
+    logger.debug(`🎭 Animation selected: ${animationName} - Scheduling for 1 second delay`);
     setCurrentAnimation(animationName);
     setShowAnimationModal(false);
     
-    // カスタムイベントを送信してPlayer.tsxに通知
-    const event = new CustomEvent('game:manualAnimationSelect', {
-      detail: animationName
-    });
-    window.dispatchEvent(event);
+    // 0.5秒後にアニメーションを実行
+    setTimeout(() => {
+      logger.debug(`🎭 Executing animation: ${animationName} after 0.5 second delay`);
+      // カスタムイベントを送信してPlayer.tsxに通知
+      const event = new CustomEvent('game:manualAnimationSelect', {
+        detail: animationName
+      });
+      window.dispatchEvent(event);
+    }, 500);
   }, []);
 
   // ズーム変更処理
