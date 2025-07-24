@@ -1,18 +1,22 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Image from 'next/image';
 import Gallery from '../components/Gallery';
 import Character from '../components/Character';
 import WalletConnector from "../components/WalletConnector";
 import MultilineText from '../components/MultilineText';
+import HeroSection from '../components/HeroSection';
 import { getYouTubeEmbedUrl } from '../lib/utils';
 import textContent from '../../content/textContent';
-import { FaHome, FaStar, FaHeart, FaUser, FaImages, FaSmile, FaDiscord, FaBook, FaChevronDown } from 'react-icons/fa';
+import { FaHome, FaStar, FaHeart, FaUser, FaImages, FaSmile, FaDiscord, FaBook } from 'react-icons/fa';
 
 const overlayImageUrl = process.env.NEXT_PUBLIC_HEADER_IMAGE_URL?.startsWith('/') 
   ? process.env.NEXT_PUBLIC_HEADER_IMAGE_URL 
   : process.env.NEXT_PUBLIC_HEADER_IMAGE_URL ? `/${process.env.NEXT_PUBLIC_HEADER_IMAGE_URL}` : null;
+
+const videoUrl = process.env.NEXT_PUBLIC_HEADER_VIDEO_URL?.startsWith('/') 
+  ? process.env.NEXT_PUBLIC_HEADER_VIDEO_URL 
+  : process.env.NEXT_PUBLIC_HEADER_VIDEO_URL ? `/${process.env.NEXT_PUBLIC_HEADER_VIDEO_URL}` : null;
 
 const centeredImageUrl = process.env.NEXT_PUBLIC_OVERLAY_IMAGE_URL?.startsWith('/') 
   ? process.env.NEXT_PUBLIC_OVERLAY_IMAGE_URL 
@@ -61,55 +65,12 @@ export default function Home() {
   return (
     <div className={`w-full transition-opacity duration-1000 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}>
       {/* ヒーローセクション */}
-      {overlayImageUrl && (
-        <div
-          className="header-background relative min-h-screen flex flex-col justify-center items-center pb-16"
-          style={{ 
-            backgroundImage: `url(${overlayImageUrl})`,
-            backgroundAttachment: 'scroll',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center'
-          }}
-        >
-          <div className="absolute inset-0 bg-black/30" aria-hidden="true"></div>
-          
-          <div className="container relative z-10 mx-auto px-4 sm:px-6 flex flex-col items-center">
-            {centeredImageUrl && (
-              <div className="mt-16 sm:mt-8 mb-8 w-full max-w-[180px] sm:max-w-xs md:max-w-sm">
-                <Image
-                  src={centeredImageUrl}
-                  alt="Overlay Image"
-                  width={300}
-                  height={300}
-                  className="w-full h-auto animate-float"
-                  priority
-                  sizes="(max-width: 480px) 150px, (max-width: 768px) 200px, 300px"
-                  quality={90}
-                />
-              </div>
-            )}
-            
-            <h1 className="text-white text-3xl sm:text-4xl md:text-5xl font-bold text-center mb-6 animate-fadeIn">
-              {overlayText}
-            </h1>
-            
-            <div className="mt-8">
-              <a 
-                href="#membership" 
-                className="bg-white/90 hover:bg-white text-blue-600 font-semibold py-3 px-8 rounded-full transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
-              >
-                Start Exploring
-              </a>
-            </div>
-          </div>
-          
-          <div className="absolute bottom-8 left-0 right-0 flex justify-center animate-bounce">
-            <a href="#membership" aria-label="Scroll to content">
-              <FaChevronDown className="text-white text-3xl" />
-            </a>
-          </div>
-        </div>
-      )}
+      <HeroSection 
+        overlayImageUrl={overlayImageUrl}
+        centeredImageUrl={centeredImageUrl}
+        overlayText={overlayText}
+        videoUrl={videoUrl}
+      />
 
       <main className="bg-white">
         {/* メンバーシップセクション */}
