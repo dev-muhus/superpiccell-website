@@ -34,35 +34,30 @@ const ConditionalTrackingScripts = () => {
   // まだCookieが読み込まれていない場合はなにも表示しない
   if (!isLoaded) return null;
 
-  // 分析系Cookieが許可されていない場合はなにも表示しない
-  if (!consents?.analytics) return null;
+  // 分析系もマーケティング系も拒否されている場合はなにも表示しない
+  if (!consents?.analytics && !consents?.marketing) return null;
+
+  const googleAnalyticsId = process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID;
 
   return (
     <>
-      {/* Google Tag Manager (noscript) - 分析系Cookieが許可されている場合のみ */}
-      <noscript>
-        <iframe
-          src={`https://www.googletagmanager.com/ns.html?id=${process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID}`}
-          height="0"
-          width="0"
-          style={{ display: 'none', visibility: 'hidden' }}
-        />
-      </noscript>
-
-      {/* Google Tag Manager - 分析系Cookieが許可されている場合のみ */}
-      <Script
-        id="gtm-script"
-        strategy="afterInteractive"
-        dangerouslySetInnerHTML={{
-          __html: `
-          (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start': new Date().getTime(),event:'gtm.js'});
-          var f=d.getElementsByTagName(s)[0],
-          j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-          'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-          })(window,document,'script','dataLayer','${process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID}');
-          `,
-        }}
-      />
+      {/* Google Analytics 4 (gtag.js) - 分析系Cookieが許可されている場合のみ */}
+      {consents?.analytics && (
+        <>
+          <Script
+            src={`https://www.googletagmanager.com/gtag/js?id=${googleAnalyticsId}`}
+            strategy="afterInteractive"
+          />
+          <Script id="ga4-script" strategy="afterInteractive">
+            {`
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', '${googleAnalyticsId}');
+            `}
+          </Script>
+        </>
+      )}
 
       {/* マーケティング系のCookieが許可されている場合、追加のマーケティングスクリプトをここに追加 */}
       {consents?.marketing && (
