@@ -5,7 +5,7 @@ import { useUser } from '@clerk/nextjs';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { FaHome, FaClock, FaHeart, FaUsers, FaBookmark, FaComments, FaBan, FaUser, FaSave, FaGamepad } from 'react-icons/fa';
+import { FaHome, FaClock, FaHeart, FaUsers, FaBookmark, FaComments, FaBan, FaUser, FaSave } from 'react-icons/fa';
 import PostModal from '@/components/PostModal';
 import Loading from '@/components/Loading';
 import PageLayout from '@/components/PageLayout';

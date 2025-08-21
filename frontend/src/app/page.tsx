@@ -8,7 +8,7 @@ import MultilineText from '../components/MultilineText';
 import HeroSection from '../components/HeroSection';
 import { getYouTubeEmbedUrl } from '../lib/utils';
 import textContent from '../../content/textContent';
-import { FaHome, FaStar, FaHeart, FaUser, FaImages, FaSmile, FaDiscord, FaBook } from 'react-icons/fa';
+import { FaHome, FaStar, FaHeart, FaUser, FaImages, FaSmile, FaDiscord, FaBook, FaGlobe } from 'react-icons/fa';
 
 const overlayImageUrl = process.env.NEXT_PUBLIC_HEADER_IMAGE_URL?.startsWith('/') 
   ? process.env.NEXT_PUBLIC_HEADER_IMAGE_URL 
@@ -224,6 +224,15 @@ export default function Home() {
                 </p>
                 
                 <div className="flex items-center justify-center mt-8 space-x-6 scale-in delay-300">
+                  <a 
+                    href="https://embryo.superpiccell.com/" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex flex-col items-center transition-transform hover:scale-110"
+                  >
+                    <FaGlobe size={40} className="text-blue-600 mb-2" />
+                    <span className="text-sm font-medium">Visit Website</span>
+                  </a>
                   <a 
                     href="https://super-piccell.gitbook.io/embryo/" 
                     target="_blank" 

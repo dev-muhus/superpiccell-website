@@ -265,7 +265,9 @@ The platform provides comprehensive social networking features:
 - **User Safety**: `is_banned`, `is_deleted` flags for user management
 - **Media Management**: Separate media tables with cascade deletes
 
-### Game System
+### Game System (Deprecated - May be removed)
+**IMPORTANT**: Game functionality may be removed in future releases as games are now provided through **Embryo (https://embryo.superpiccell.com/)**. Dashboard access to games is currently disabled.
+
 - **Nag-Won**: 3D item collection game with multiple stages
 - **Scoring**: Track scores, game time, items collected per stage
 - **Leaderboards**: Rankings with privacy filtering (blocks, bans)
