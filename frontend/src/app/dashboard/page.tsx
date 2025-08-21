@@ -167,14 +167,14 @@ export default function DashboardPage() {
                   </div>
                 </button>
 
-                {/* ゲームセンター */}
-                <Link href="/games" className="bg-white border border-gray-200 rounded-lg p-6 hover:bg-gray-50 transition-colors flex items-center transform hover:-translate-y-1 hover:shadow-lg bg-gradient-to-br from-indigo-50 to-blue-50">
+                {/* ゲームセンター - 一時的に非表示 */}
+                {/* <Link href="/games" className="bg-white border border-gray-200 rounded-lg p-6 hover:bg-gray-50 transition-colors flex items-center transform hover:-translate-y-1 hover:shadow-lg bg-gradient-to-br from-indigo-50 to-blue-50">
                   <FaGamepad className="text-blue-600 mr-3 text-xl" />
                   <div>
                     <h3 className="font-semibold">GAME CENTRE</h3>
                     <p className="text-sm text-gray-600">ゲームで遊ぶ</p>
                   </div>
-                </Link>
+                </Link> */}
 
                 {/* タイムライン */}
                 <Link href="/timeline" className="bg-white border border-gray-200 rounded-lg p-6 hover:bg-gray-50 transition-colors flex items-center transform hover:-translate-y-1 hover:shadow-lg">
