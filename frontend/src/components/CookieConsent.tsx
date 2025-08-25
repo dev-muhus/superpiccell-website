@@ -114,29 +114,39 @@ const CookieConsent: React.FC<CookieConsentProps> = ({
           aria-describedby="cookie-consent-description"
         >
           <div className="container mx-auto max-w-6xl">
-            <div className="flex flex-col md:flex-row md:items-start gap-4">
-              <div className="flex-1">
-                <h2 id="cookie-consent-title" className="text-lg font-semibold mb-2">
-                  Cookieの使用について
-                </h2>
-                <p id="cookie-consent-description" className="text-sm text-gray-600 mb-2">
-                  当サイトではお客様の体験を向上させ、コンテンツやサービスをカスタマイズするためにCookieを使用しています。
-                  ブラウジングを続けることで、Cookieの使用に同意いただいたものとみなされます。
-                </p>
-                <div className="text-xs text-gray-500 flex items-center">
-                  <Info size={14} className="mr-1" />
-                  <a 
-                    href={privacyPolicyUrl} 
-                    className="underline hover:text-gray-700"
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                  >
-                    プライバシーポリシーを読む
-                  </a>
+            <div className="flex flex-col gap-4">
+              <div className="flex justify-between items-start">
+                <div className="flex-1 pr-4">
+                  <h2 id="cookie-consent-title" className="text-lg font-semibold mb-2">
+                    Cookieの使用について
+                  </h2>
+                  <p id="cookie-consent-description" className="text-sm text-gray-600 mb-2">
+                    当サイトではお客様の体験を向上させ、コンテンツやサービスをカスタマイズするためにCookieを使用しています。
+                    ブラウジングを続けることで、Cookieの使用に同意いただいたものとみなされます。
+                  </p>
+                  <div className="text-xs text-gray-500 flex items-baseline gap-1">
+                    <Info size={12} className="flex-shrink-0" style={{ transform: 'translateY(1px)' }} />
+                    <a 
+                      href={privacyPolicyUrl} 
+                      className="underline hover:text-gray-700 leading-none"
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                    >
+                      プライバシーポリシーを読む
+                    </a>
+                  </div>
                 </div>
+                
+                <button 
+                  onClick={closeBanner}
+                  className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-gray-100 transition-colors flex-shrink-0"
+                  aria-label="閉じる"
+                >
+                  <X size={18} className="flex-shrink-0" />
+                </button>
               </div>
               
-              <div className="flex flex-wrap gap-2 mt-3 md:mt-0 md:flex-col md:justify-center">
+              <div className="flex flex-wrap gap-2">
                 <Button 
                   onClick={acceptAll}
                   className="flex-1 bg-primary text-white hover:bg-primary/90"
@@ -162,14 +172,6 @@ const CookieConsent: React.FC<CookieConsentProps> = ({
                   <span>詳細設定</span>
                 </Button>
               </div>
-              
-              <button 
-                onClick={closeBanner}
-                className="absolute top-2 right-2 p-1 rounded-full hover:bg-gray-100 transition-colors"
-                aria-label="閉じる"
-              >
-                <X size={20} />
-              </button>
             </div>
           </div>
         </div>
