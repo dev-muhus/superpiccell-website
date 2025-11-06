@@ -95,7 +95,7 @@ export default function HeroSection({
       {/* Content */}
       <div className="container relative z-10 mx-auto px-4 sm:px-6 flex flex-col items-center">
         {centeredImageUrl && (
-          <div className="mt-16 sm:mt-8 mb-8 w-full max-w-[180px] sm:max-w-xs md:max-w-sm">
+          <div className="mt-16 sm:mt-8 mb-8 w-full max-w-[160px] sm:max-w-[200px] md:max-w-[220px] lg:max-w-[256px]">
             <Image
               src={centeredImageUrl}
               alt="Overlay Image"

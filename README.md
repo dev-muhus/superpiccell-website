@@ -538,7 +538,7 @@ docker compose exec frontend npm run db:migrate:production
 
    - プロジェクトのルートに、以下の内容で`.env`ファイルを作成：
      ```
-     PORT=3000
+     PORT=3131
      NGROK_UI_PORT=4040  # ポート番号を変更可能
      NGROK_AUTHTOKEN=your_ngrok_auth_token  # オプション、カスタムドメイン用
      ```
@@ -632,7 +632,7 @@ docker compose exec frontend npm run db:migrate:production
    npm run dev
    ```
 
-   アプリケーションに[http://localhost:3000](http://localhost:3000)でアクセスできます。
+   アプリケーションに[http://localhost:3131](http://localhost:3131)でアクセスできます。
 
 5. **ngrokパブリックURLにアクセス**:
 

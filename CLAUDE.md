@@ -93,7 +93,7 @@ Every task completion MUST include verification evidence. No exceptions.
 ### Development
 ```bash
 # Start development environment (all services including hot reload)
-docker compose up -d           # Start all services with Docker (http://localhost:3000)
+docker compose up -d           # Start all services with Docker (http://localhost:3131)
                               # Hot reload is automatically enabled - code changes are reflected instantly
 
 # DO NOT run these on host system:

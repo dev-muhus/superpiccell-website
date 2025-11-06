@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 
-export const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+export const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3131';
 
 /**
  * テスト用のNextRequestオブジェクトを作成するヘルパー関数
