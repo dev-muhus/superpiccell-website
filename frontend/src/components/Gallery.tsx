@@ -54,7 +54,11 @@ const Gallery = () => {
         }))
         .filter((image) => image.url);
 
-      setImages((prevImages) => [...prevImages, ...newImages]);
+      if (newSkip === 0) {
+        setImages(newImages);
+      } else {
+        setImages((prevImages) => [...prevImages, ...newImages]);
+      }
       setSkip(newSkip + limit);
       setTotal(response.total);
     } catch (error) {
