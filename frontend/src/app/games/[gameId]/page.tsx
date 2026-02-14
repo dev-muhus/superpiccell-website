@@ -1,19 +1,20 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, use } from 'react';
 import { notFound } from 'next/navigation';
 import { getGameConfig } from '@/lib/games/config';
 import NagWonGame from '@/components/games/nag-won/NagWonGame';
 import Loading from '@/components/Loading';
 
-export default function GamePage({ params }: { params: { gameId: string } }) {
+export default function GamePage({ params }: { params: Promise<{ gameId: string }> }) {
+  const { gameId } = use(params);
   const [loading, setLoading] = useState(true);
-  const gameConfig = getGameConfig(params.gameId);
+  const gameConfig = getGameConfig(gameId);
   
   useEffect(() => {
     // ゲーム固有の初期化
     setLoading(false);
-  }, [params.gameId]);
+  }, [gameConfig]);
   
   if (!gameConfig) {
     // ゲームが見つからない場合は404
@@ -29,7 +30,7 @@ export default function GamePage({ params }: { params: { gameId: string } }) {
   }
   
   // ゲームIDに応じて異なるゲームコンポーネントを表示
-  switch (params.gameId) {
+  switch (gameId) {
     case 'nag-won':
       if ('isComingSoon' in gameConfig && gameConfig.isComingSoon) return null;
       return <NagWonGame config={gameConfig} />;
@@ -38,7 +39,7 @@ export default function GamePage({ params }: { params: { gameId: string } }) {
         <div className="flex justify-center items-center h-screen bg-black text-white">
           <div className="text-center">
             <h2 className="text-2xl font-bold mb-4">ゲームが見つかりません</h2>
-            <p>指定されたゲームID: {params.gameId}</p>
+            <p>指定されたゲームID: {gameId}</p>
           </div>
         </div>
       );

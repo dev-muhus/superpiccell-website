@@ -243,6 +243,7 @@ describe('Posts API', () => {
           updated_at: new Date()
         }).returning().then(res => res[0]);
       }
+      
 
       // otherUserの投稿一覧を取得（リポスト投稿を含む）
       const request = createTestRequest(`/api/posts?userId=${otherUser.id}&include_related=true`, 'GET', null, {}, testUser.clerk_id);
@@ -515,7 +516,7 @@ describe('Posts API', () => {
       for (const postType of POST_TYPES) {
         if (postType === 'original') continue; // originalは上のテストでカバー
         
-        let body: any = { 
+        const body: any = { 
           content: `これは${postType}タイプの投稿です`, 
           post_type: postType 
         };

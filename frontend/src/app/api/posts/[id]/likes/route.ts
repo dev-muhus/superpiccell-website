@@ -7,7 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 // いいねを追加・削除するAPI
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Clerk認証からユーザー情報を取得
@@ -20,7 +20,8 @@ export async function POST(
       );
     }
 
-    const postId = parseInt(params.id);
+    const { id } = await params;
+    const postId = parseInt(id);
     if (isNaN(postId)) {
       return NextResponse.json(
         { error: "無効な投稿IDです" },
@@ -129,15 +130,123 @@ export async function POST(
 }
 
 // 投稿のいいね状態を取得するAPI
-export async function GET(
+export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Clerk認証からユーザー情報を取得
     const { userId } = getAuth(req);
     
-    const postId = parseInt(params.id);
+    if (!userId) {
+      return NextResponse.json(
+        { error: "認証が必要です" },
+        { status: 401 }
+      );
+    }
+
+    const { id } = await params;
+    const postId = parseInt(id);
+    if (isNaN(postId)) {
+      return NextResponse.json(
+        { error: "無効な投稿IDです" },
+        { status: 400 }
+      );
+    }
+
+    // データベースからユーザー情報を取得
+    const [dbUser] = await db.select()
+      .from(users)
+      .where(eq(users.clerk_id, userId))
+      .limit(1);
+    
+    if (!dbUser) {
+      return NextResponse.json(
+        { error: "ユーザーが見つかりません" },
+        { status: 404 }
+      );
+    }
+
+    // 投稿が存在するか確認
+    const [post] = await db.select()
+      .from(posts)
+      .where(and(
+        eq(posts.id, postId),
+        eq(posts.is_deleted, false)
+      ))
+      .limit(1);
+
+    if (!post) {
+      return NextResponse.json(
+        { error: "投稿が見つかりません" },
+        { status: 404 }
+      );
+    }
+
+    // 既にいいねしているか確認
+    const [existingLike] = await db.select()
+      .from(likes)
+      .where(and(
+        eq(likes.user_id, dbUser.id),
+        eq(likes.post_id, postId),
+        eq(likes.is_deleted, false)
+      ))
+      .limit(1);
+
+    // いいねが存在しない場合はエラー
+    if (!existingLike) {
+      return NextResponse.json({
+        success: false,
+        message: "いいねが見つかりません"
+      }, { status: 404 });
+    }
+
+    // いいねを削除（is_deletedをtrueに設定）
+    await db
+      .update(likes)
+      .set({
+        is_deleted: true,
+        deleted_at: new Date()
+      })
+      .where(eq(likes.id, existingLike.id));
+
+    // いいね数を取得
+    const likeCount = await db
+      .select({ count: count() })
+      .from(likes)
+      .where(
+        and(
+          eq(likes.post_id, postId),
+          eq(likes.is_deleted, false)
+        )
+      );
+
+    return NextResponse.json({
+      success: true,
+      liked: false,
+      like_count: likeCount[0].count
+    });
+
+  } catch (error) {
+    console.error('いいね削除中にエラーが発生しました:', error);
+    return NextResponse.json(
+      { error: "サーバーエラーが発生しました" },
+      { status: 500 }
+    );
+  }
+}
+
+// 投稿のいいね状態を取得するAPI
+export async function GET(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    // Clerk認証からユーザー情報を取得
+    const { userId } = getAuth(req);
+    
+    const { id } = await params;
+    const postId = parseInt(id);
     if (isNaN(postId)) {
       return NextResponse.json(
         { error: "無効な投稿IDです" },

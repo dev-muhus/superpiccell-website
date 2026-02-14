@@ -292,6 +292,30 @@ export const MovementSystem: React.FC<MovementSystemProps> = ({
     return newPos;
   };
   
+  // アニメーション状態の決定
+  const updateAnimationState = () => {
+    // 地上にいない場合はジャンプアニメーション
+    if (!onGround) {
+      setAnimationState('jumping');
+      return;
+    }
+    
+    // 入力状態に基づいてアニメーションを決定
+    // 速度ではなく入力を優先することで、衝突時もアニメーションが継続する
+    const hasMovementInput = inputs.forward || inputs.backward || inputs.left || inputs.right;
+    
+    if (!hasMovementInput) {
+      // 移動入力がなければアイドル
+      setAnimationState('idle');
+    } else if (inputs.sprint) {
+      // 走りの入力があれば走る
+      setAnimationState('running');
+    } else {
+      // それ以外は歩く
+      setAnimationState('walking');
+    }
+  };
+
   // 移動とアニメーションの更新
   useFrame((state) => {
     if (!playerRef.current) return;
@@ -415,30 +439,6 @@ export const MovementSystem: React.FC<MovementSystemProps> = ({
       }
     }
   });
-  
-  // アニメーション状態の決定
-  const updateAnimationState = () => {
-    // 地上にいない場合はジャンプアニメーション
-    if (!onGround) {
-      setAnimationState('jumping');
-      return;
-    }
-    
-    // 入力状態に基づいてアニメーションを決定
-    // 速度ではなく入力を優先することで、衝突時もアニメーションが継続する
-    const hasMovementInput = inputs.forward || inputs.backward || inputs.left || inputs.right;
-    
-    if (!hasMovementInput) {
-      // 移動入力がなければアイドル
-      setAnimationState('idle');
-    } else if (inputs.sprint) {
-      // 走りの入力があれば走る
-      setAnimationState('running');
-    } else {
-      // それ以外は歩く
-      setAnimationState('walking');
-    }
-  };
   
   return null; // このコンポーネントは視覚的要素を持たない
 }; 

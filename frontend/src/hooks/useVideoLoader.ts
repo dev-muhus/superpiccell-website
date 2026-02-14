@@ -20,6 +20,7 @@ export function useVideoLoader(videoSrc: string): UseVideoLoaderReturn {
     if (!video || !videoSrc) return;
 
     // Reset states when video source changes
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsVideoReady(false);
     setHasError(false);
 

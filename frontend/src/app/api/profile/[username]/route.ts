@@ -9,11 +9,11 @@ export const fetchCache = 'force-no-store';
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { username: string } }
+  { params }: { params: Promise<{ username: string }> }
 ) {
   try {
     const { userId } = getAuth(req);
-    const { username } = params;
+    const { username } = await params;
     
     if (!username) {
       return NextResponse.json(

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@clerk/nextjs';
 import MainLayout from '@/components/MainLayout';
@@ -36,7 +36,8 @@ interface Post {
   } | null;
 }
 
-export default function QuotePage({ params }: { params: { id: string } }) {
+export default function QuotePage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
   const router = useRouter();
   const { isSignedIn, isLoaded } = useUser();
   const [error, setError] = useState<string | null>(null);
@@ -44,7 +45,7 @@ export default function QuotePage({ params }: { params: { id: string } }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(true);
 
-  const postId = parseInt(params.id);
+  const postId = parseInt(id);
 
   // 引用元の投稿を取得
   useEffect(() => {

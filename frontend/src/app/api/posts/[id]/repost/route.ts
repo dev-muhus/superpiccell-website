@@ -10,7 +10,7 @@ export const fetchCache = 'force-no-store';
 // リポスト作成
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Clerk認証からユーザー情報を取得
@@ -23,7 +23,8 @@ export async function POST(
       );
     }
 
-    const postId = parseInt(params.id);
+    const { id } = await params;
+    const postId = parseInt(id);
     if (isNaN(postId)) {
       return NextResponse.json(
         { error: "無効な投稿IDです" },
@@ -132,7 +133,7 @@ export async function POST(
 // リポスト削除（アンリポスト）
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Clerk認証からユーザー情報を取得
@@ -145,7 +146,8 @@ export async function DELETE(
       );
     }
 
-    const postId = parseInt(params.id);
+    const { id } = await params;
+    const postId = parseInt(id);
     if (isNaN(postId)) {
       return NextResponse.json(
         { error: "無効な投稿IDです" },

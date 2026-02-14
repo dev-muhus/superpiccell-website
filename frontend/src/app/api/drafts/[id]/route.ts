@@ -9,7 +9,7 @@ import { MediaItem, mediaSchema } from '@/schemas/media';
 // 下書きを更新するAPI
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // ユーザー認証
@@ -18,7 +18,8 @@ export async function PUT(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const draftId = parseInt(params.id);
+    const { id } = await params;
+    const draftId = parseInt(id);
     
     if (isNaN(draftId)) {
       return NextResponse.json({ error: "無効な下書きIDです" }, { status: 400 });
@@ -217,7 +218,7 @@ export async function PUT(
 // 個別の下書きを取得するAPI
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // ユーザー認証
@@ -226,7 +227,8 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const draftId = parseInt(params.id);
+    const { id } = await params;
+    const draftId = parseInt(id);
     
     if (isNaN(draftId)) {
       return NextResponse.json({ error: "無効な下書きIDです" }, { status: 400 });
@@ -283,7 +285,7 @@ export async function GET(
 // 下書き削除API
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // ユーザー認証
@@ -292,7 +294,8 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const draftId = parseInt(params.id);
+    const { id } = await params;
+    const draftId = parseInt(id);
     
     if (isNaN(draftId)) {
       return NextResponse.json({ error: "無効な下書きIDです" }, { status: 400 });

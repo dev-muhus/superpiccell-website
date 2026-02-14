@@ -8,7 +8,7 @@ import { ITEMS_PER_PAGE } from '@/constants/pagination';
 // 特定の投稿への返信一覧を取得するAPI
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Clerk認証からユーザーIDを取得
@@ -21,7 +21,8 @@ export async function GET(
       );
     }
     
-    const postId = parseInt(params.id);
+    const { id } = await params;
+    const postId = parseInt(id);
     
     if (isNaN(postId)) {
       return NextResponse.json(

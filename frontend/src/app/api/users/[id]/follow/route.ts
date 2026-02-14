@@ -10,7 +10,7 @@ export const fetchCache = 'force-no-store';
 // ユーザーをフォロー/アンフォローするAPI
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Clerk認証からユーザー情報を取得
@@ -23,7 +23,8 @@ export async function POST(
       );
     }
 
-    const targetUserId = parseInt(params.id);
+    const { id } = await params;
+    const targetUserId = parseInt(id);
     if (isNaN(targetUserId)) {
       return NextResponse.json(
         { error: "無効なユーザーIDです" },
@@ -107,7 +108,7 @@ export async function POST(
 // フォロー解除のAPI
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Clerk認証からユーザー情報を取得
@@ -120,7 +121,8 @@ export async function DELETE(
       );
     }
 
-    const targetUserId = parseInt(params.id);
+    const { id } = await params;
+    const targetUserId = parseInt(id);
     if (isNaN(targetUserId)) {
       return NextResponse.json(
         { error: "無効なユーザーIDです" },
@@ -185,7 +187,7 @@ export async function DELETE(
 // フォロー状態を確認するAPI
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Clerk認証からユーザー情報を取得
@@ -198,7 +200,8 @@ export async function GET(
       );
     }
 
-    const targetUserId = parseInt(params.id);
+    const { id } = await params;
+    const targetUserId = parseInt(id);
     if (isNaN(targetUserId)) {
       return NextResponse.json(
         { error: "無効なユーザーIDです" },

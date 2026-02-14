@@ -67,6 +67,7 @@ export function useScrollLock() {
   return { 
     lockScroll, 
     unlockScroll,
+    // eslint-disable-next-line react-hooks/refs
     isLocked: isLockedRef.current 
   };
 } 

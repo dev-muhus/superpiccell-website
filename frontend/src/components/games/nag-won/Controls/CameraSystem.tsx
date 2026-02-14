@@ -50,27 +50,6 @@ export const CameraSystem: React.FC<CameraSystemProps> = ({
     setZoom(0.3); // 初期値を0.3に設定（より遠くからの視点に）
   }, [setZoom]);
 
-  // カメラ操作の実装
-  useFrame((_, delta) => {
-    if (!target.current) return;
-
-    // ターゲットの位置を取得
-    const targetPosition = target.current.position.clone();
-    
-    // 現在のモードでカメラを更新
-    switch (cameraMode) {
-      case 'thirdPerson':
-        updateThirdPersonCamera(targetPosition, delta);
-        break;
-      case 'firstPerson':
-        updateFirstPersonCamera(targetPosition);
-        break;
-      case 'drone':
-        updateDroneCamera(targetPosition, delta);
-        break;
-    }
-  });
-
   // サードパーソンカメラ更新
   const updateThirdPersonCamera = (targetPosition: Vector3, delta: number) => {
     const settings = config.thirdPerson;
@@ -106,9 +85,6 @@ export const CameraSystem: React.FC<CameraSystemProps> = ({
     
     // カメラをターゲットに向ける
     camera.lookAt(headPosition);
-
-    // コンソールにカメラ情報を出力（デバッグ用）
-    // console.log(`Camera: zoom=${zoom.toFixed(2)}, distance=${actualDistance.toFixed(2)}`);
   };
 
   // ファーストパーソンカメラ更新
@@ -145,6 +121,27 @@ export const CameraSystem: React.FC<CameraSystemProps> = ({
     // 真下を向く
     camera.lookAt(targetPosition);
   };
+
+  // カメラ操作の実装
+  useFrame((_, delta) => {
+    if (!target.current) return;
+
+    // ターゲットの位置を取得
+    const targetPosition = target.current.position.clone();
+    
+    // 現在のモードでカメラを更新
+    switch (cameraMode) {
+      case 'thirdPerson':
+        updateThirdPersonCamera(targetPosition, delta);
+        break;
+      case 'firstPerson':
+        updateFirstPersonCamera(targetPosition);
+        break;
+      case 'drone':
+        updateDroneCamera(targetPosition, delta);
+        break;
+    }
+  });
 
   // モード切替の処理
   useEffect(() => {

@@ -1,5 +1,8 @@
 'use client';
 
+/* eslint-disable react-hooks/purity */
+
+
 import React, { useRef, useMemo, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Box, Cylinder, Billboard, Text } from '@react-three/drei';

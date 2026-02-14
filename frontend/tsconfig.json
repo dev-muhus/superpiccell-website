@@ -1,6 +1,10 @@
 {
   "compilerOptions": {
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -10,7 +14,7 @@
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "jsx": "preserve",
+    "jsx": "react-jsx",
     "incremental": true,
     "target": "es2015",
     "downlevelIteration": true,
@@ -20,9 +24,15 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": [
+        "./src/*"
+      ]
     },
-    "types": ["jest", "node", "@jest/globals"]
+    "types": [
+      "jest",
+      "node",
+      "@jest/globals"
+    ]
   },
   "include": [
     "next-env.d.ts",
@@ -31,7 +41,10 @@
     ".next/types/**/*.ts",
     "global.d.ts",
     "jest.setup.js",
-    "jest.setupAfterEnv.js"
+    "jest.setupAfterEnv.js",
+    ".next/dev/types/**/*.ts"
   ],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules"
+  ]
 }

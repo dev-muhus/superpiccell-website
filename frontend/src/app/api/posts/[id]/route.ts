@@ -29,7 +29,7 @@ function determineMediaTypeFromUrl(url: string, defaultType: string): 'image' | 
 // 特定の投稿を取得するAPI
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Clerk認証からユーザーIDを取得
@@ -42,7 +42,8 @@ export async function GET(
       );
     }
     
-    const postId = parseInt(params.id);
+    const { id } = await params;
+    const postId = parseInt(id);
     
     if (isNaN(postId)) {
       return NextResponse.json(
@@ -479,7 +480,7 @@ export async function GET(
 // 投稿を削除するAPI（is_deletedフラグを使用した論理削除）
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Clerk認証からユーザー情報を取得
@@ -492,7 +493,8 @@ export async function DELETE(
       );
     }
     
-    const postId = parseInt(params.id);
+    const { id } = await params;
+    const postId = parseInt(id);
     
     if (isNaN(postId)) {
       return NextResponse.json(

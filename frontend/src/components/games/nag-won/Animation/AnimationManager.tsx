@@ -54,58 +54,66 @@ export const AnimationManager = forwardRef<AnimationManagerRef, AnimationManager
   const getActionNames = useCallback(() => Object.keys(actions || {}), [actions]);
   
   // 最適なアニメーションクリップを検索する関数
-  const findBestMatchingAnimation = useCallback((type: string): string | null => {
+  const findBestMatchingAnimation = useCallback((startType: string): string | null => {
     const actionNames = getActionNames();
     const avoidPatterns = animConfig.avoidPatterns || [];
     
-    // 0. まず直接のアニメーション名として存在するかチェック
-    if (actionNames.includes(type)) {
-      logger.animation(`🎯 Direct animation name match found: "${type}"`);
-      return type;
-    }
-    
-    const candidates = animConfig.mappings[type] || [];
-    
-    // 1. 優先的に使用するアニメーション（完全一致）
-    for (const candidate of candidates) {
-      const exactMatch = actionNames.find(name => name === candidate);
-      if (exactMatch) return exactMatch;
-    }
-    
-    // 2. クラウチ等の避けるべきアニメーションを除外したリストを作成
-    const filteredNames = actionNames.filter(name => 
-      !avoidPatterns.some(pattern => 
-        name.toLowerCase().includes(pattern.toLowerCase())
-      )
-    );
-    
-    // 3. 部分一致で検索（除外パターンを避ける）
-    for (const candidate of candidates) {
-      const partialMatch = filteredNames.find(name => 
-        name.toLowerCase().includes(candidate.toLowerCase())
-      );
-      if (partialMatch) return partialMatch;
-    }
-    
-    // 4. 単語の最初の部分だけ一致で検索（除外パターンを避ける）
-    for (const candidate of candidates) {
-      const wordStartMatch = filteredNames.find(name => 
-        name.toLowerCase().startsWith(candidate.toLowerCase())
-      );
-      if (wordStartMatch) return wordStartMatch;
-    }
-    
-    // 5. 最後の手段として、通常のリストから選択
-    for (const candidate of candidates) {
-      const lastResortMatch = actionNames.find(name => 
-        name.toLowerCase().includes(candidate.toLowerCase())
-      );
-      if (lastResortMatch) return lastResortMatch;
-    }
-    
-    // デフォルトに戻る（idleでなければidle状態を探す）
-    if (type !== 'idle') {
-      return findBestMatchingAnimation('idle');
+    // 検索ロジックをループで実行して再帰を回避
+    let type = startType;
+    // 最大2回試行（指定タイプ -> idle）
+    for (let i = 0; i < 2; i++) {
+        // 0. まず直接のアニメーション名として存在するかチェック
+        if (actionNames.includes(type)) {
+          logger.animation(`🎯 Direct animation name match found: "${type}"`);
+          return type;
+        }
+        
+        const candidates = animConfig.mappings[type] || [];
+        
+        // 1. 優先的に使用するアニメーション（完全一致）
+        for (const candidate of candidates) {
+          const exactMatch = actionNames.find(name => name === candidate);
+          if (exactMatch) return exactMatch;
+        }
+        
+        // 2. クラウチ等の避けるべきアニメーションを除外したリストを作成
+        const filteredNames = actionNames.filter(name => 
+          !avoidPatterns.some(pattern => 
+            name.toLowerCase().includes(pattern.toLowerCase())
+          )
+        );
+        
+        // 3. 部分一致で検索（除外パターンを避ける）
+        for (const candidate of candidates) {
+          const partialMatch = filteredNames.find(name => 
+            name.toLowerCase().includes(candidate.toLowerCase())
+          );
+          if (partialMatch) return partialMatch;
+        }
+        
+        // 4. 単語の最初の部分だけ一致で検索（除外パターンを避ける）
+        for (const candidate of candidates) {
+          const wordStartMatch = filteredNames.find(name => 
+            name.toLowerCase().startsWith(candidate.toLowerCase())
+          );
+          if (wordStartMatch) return wordStartMatch;
+        }
+        
+        // 5. 最後の手段として、通常のリストから選択
+        for (const candidate of candidates) {
+          const lastResortMatch = actionNames.find(name => 
+            name.toLowerCase().includes(candidate.toLowerCase())
+          );
+          if (lastResortMatch) return lastResortMatch;
+        }
+
+        // ここまで見つからず、かつ現在の検索タイプがidleでない場合、次はidleで検索
+        if (type !== 'idle') {
+            type = 'idle';
+            continue; // 次の反復へ
+        } else {
+            break; // idleでも見つからなければ終了
+        }
     }
     
     // Idleが見つからない場合は最初のアニメーションを返す
@@ -164,11 +172,15 @@ export const AnimationManager = forwardRef<AnimationManagerRef, AnimationManager
       
       // ループ設定を先に行う（play()前に設定）
       if (newState === 'jumping') {
-        newAnim.loop = THREE.LoopOnce;
-        newAnim.clampWhenFinished = true; // 最後のフレームで停止
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any, react-hooks/rules-of-hooks, react-hooks/immutability
+        (newAnim as any).loop = THREE.LoopOnce;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any, react-hooks/immutability
+        (newAnim as any).clampWhenFinished = true; // 最後のフレームで停止
       } else {
-        newAnim.loop = THREE.LoopRepeat;
-        newAnim.clampWhenFinished = false;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (newAnim as any).loop = THREE.LoopRepeat;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (newAnim as any).clampWhenFinished = false;
       }
       
       // アニメーションを開始

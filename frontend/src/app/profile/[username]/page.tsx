@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, use } from 'react';
 import { useUser } from '@clerk/nextjs';
 import Image from 'next/image';
 import { FaUser, FaEdit, FaUserPlus, FaUserCheck, FaBan, FaUnlock, FaTimes, FaSave, FaCloudUploadAlt, FaImage, FaTrash, FaCheck } from 'react-icons/fa';
@@ -546,7 +546,8 @@ const ProfileEditModal: React.FC<ProfileEditModalProps> = ({ isOpen, onClose, us
   );
 };
 
-export default function ProfilePage({ params }: { params: { username: string } }) {
+export default function ProfilePage({ params }: { params: Promise<{ username: string }> }) {
+  const { username } = use(params);
   const { user: currentUser, isLoaded, isSignedIn } = useUser();
   
   // 状態管理
@@ -575,7 +576,7 @@ export default function ProfilePage({ params }: { params: { username: string } }
       setError(null);
       
       // ユーザー名でプロフィールを取得
-      const response = await fetch(`/api/profile/${params.username}`);
+      const response = await fetch(`/api/profile/${username}`);
       
       if (!response.ok) {
         // エラーレスポンスを取得
@@ -597,7 +598,7 @@ export default function ProfilePage({ params }: { params: { username: string } }
       setFollowingCount(data.profile.following_count || 0);
       
       // 自分のプロフィールかどうかを判断
-      if (currentUser?.username === params.username) {
+      if (currentUser?.username === username) {
         setIsOwnProfile(true);
       }
       
@@ -607,7 +608,7 @@ export default function ProfilePage({ params }: { params: { username: string } }
     } finally {
       setIsLoading(false);
     }
-  }, [currentUser?.username, params.username]);
+  }, [currentUser?.username, username]);
   
   // ユーザーの投稿を取得する関数
   const fetchUserPosts = useCallback(async (cursor?: string | null, append: boolean = false) => {
@@ -677,7 +678,7 @@ export default function ProfilePage({ params }: { params: { username: string } }
     if (isLoaded) {
       fetchProfile();
     }
-  }, [isLoaded, params.username, fetchProfile]);
+  }, [isLoaded, username, fetchProfile]);
   
   // プロフィール情報が取得できたら投稿を取得
   useEffect(() => {
@@ -866,7 +867,7 @@ export default function ProfilePage({ params }: { params: { username: string } }
     <PageLayout>
       <ContentLayout
         title="PROFILE"
-        subtitle={`@${params.username}`}
+        subtitle={`@${username}`}
         backUrl="/dashboard"
         backText="ダッシュボードに戻る"
       >
