@@ -24,7 +24,7 @@ export const mediaSchema = z.array(
       duration_sec: z.number().positive().optional().nullable()
     })
   ])
-).max(MAX_MEDIA_ATTACHMENTS).optional(); // 最大X個のメディア
+).max(MAX_MEDIA_ATTACHMENTS, { message: `メディアは最大${MAX_MEDIA_ATTACHMENTS}つまでしか添付できません` }).optional(); // 最大X個のメディア
 
 /**
  * 基本的なコンテンツスキーマ - 拡張可能な形
