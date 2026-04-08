@@ -6,7 +6,7 @@ Super Piccellウェブサイトは、Next.jsのAppルーターを使用した最
 
 ## 使用技術
 
-- **フロントエンド**: Next.js 14 (Appルーター)
+- **フロントエンド**: Next.js 16 (Appルーター)
 - **認証**: Clerk Authentication
 - **データベース**: Neon Database (PostgreSQL)
 - **ORM**: Drizzle ORM
@@ -371,4 +371,4 @@ const postsWithUsers = finalPosts
 - [Next.js ドキュメント](https://nextjs.org/docs)
 - [Clerk ドキュメント](https://clerk.com/docs)
 - [Drizzle ORM ドキュメント](https://orm.drizzle.team/docs/overview)
-- [Tailwind CSS ドキュメント](https://tailwindcss.com/docs) 
+- [Tailwind CSS ドキュメント](https://tailwindcss.com/docs)

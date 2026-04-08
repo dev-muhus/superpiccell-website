@@ -149,7 +149,7 @@ docker compose run --rm frontend npm uninstall <package-name>   # Uninstall pack
 ## Architecture Overview
 
 ### Technology Stack
-- **Framework**: Next.js 14 with App Router (no Pages Router)
+- **Framework**: Next.js 16 with App Router (no Pages Router)
 - **Language**: TypeScript with strict mode
 - **Database**: Drizzle ORM with Neon PostgreSQL
 - **Authentication**: Clerk with webhook sync
