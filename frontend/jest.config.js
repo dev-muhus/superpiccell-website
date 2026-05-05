@@ -7,12 +7,19 @@ const config = {
     '^.+\\.tsx?$': ['ts-jest', {
       tsconfig: './tsconfig.json',
     }],
+    'node_modules/uuid/.+\\.js$': ['ts-jest', {
+      tsconfig: './tsconfig.json',
+      useESM: false,
+    }],
   },
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
   globalSetup: '<rootDir>/jest.setup.js',
   setupFilesAfterEnv: ['<rootDir>/jest.setupAfterEnv.js'],
+  transformIgnorePatterns: [
+    '/node_modules/(?!uuid)',
+  ],
   testTimeout: 30000,
   rootDir: '.',
 };
