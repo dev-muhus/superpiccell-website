@@ -78,7 +78,7 @@
     "dotenv": "^16.5.0",
     "eslint": "^9.39.2",
     "eslint-config-next": "^16.2.6",
-    "form-data": "^4.0.2",
+    "form-data": "^4.0.6",
     "formdata-node": "^6.0.3",
     "jest": "^29.7.0",
     "jest-environment-node": "^29.7.0",
@@ -91,10 +91,12 @@
     "typescript": "^5"
   },
   "overrides": {
-    "esbuild": ">=0.25.0",
+    "esbuild": ">=0.28.1",
+    "form-data": "$form-data",
     "fast-xml-parser": ">=5.7.0",
     "effect": ">=3.20.0",
     "elliptic": ">=6.6.1",
+    "uuid": "$uuid",
     "glob": ">=10.4.6",
     "qs": ">=6.15.2",
     "minimatch": ">=3.1.3",
