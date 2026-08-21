@@ -1,5 +1,5 @@
-# Node.js 20 LTSバージョンのAlpineイメージを使用
-FROM node:20-alpine
+# Node.js 24 LTSバージョンのAlpineイメージを使用
+FROM node:24-alpine
 
 # 必要なツールのインストール
 RUN apk add --no-cache bash python3 make g++ curl
