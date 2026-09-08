@@ -44,6 +44,7 @@ const isPublicRoute = createRouteMatcher([
   '/gallery',
   '/privacy-policy',
   '/api/webhooks(.*)',
+  '/api/nfts/owned',
 ]);
 
 /* -------- Clerk ミドルウェア -------- */

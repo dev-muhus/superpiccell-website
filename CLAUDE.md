@@ -156,7 +156,7 @@ docker compose run --rm frontend npm uninstall <package-name>   # Uninstall pack
 - **Media Storage**: Cloudinary (images), Cloudflare R2 (videos)
 - **UI**: Tailwind CSS + shadcn/ui components
 - **3D Games**: React Three Fiber with Zustand state management
-- **Web3**: Alchemy SDK + Web3.js for blockchain integration
+- **Web3**: Alchemy NFT API v3 (via Next.js API route) + Web3.js for blockchain integration
 - **CMS**: Contentful for content management
 
 ### Project Structure

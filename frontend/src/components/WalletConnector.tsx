@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Alchemy, Network, OwnedNft } from 'alchemy-sdk';
+import type { OwnedNftsResponse } from '@/types/nft';
 import Loading from './Loading';
 import Image from 'next/image';
 
@@ -14,13 +14,6 @@ const currencyName = process.env.NEXT_PUBLIC_CURRENCY_NAME!;
 const currencySymbol = process.env.NEXT_PUBLIC_CURRENCY_SYMBOL!;
 const currencyDecimals = parseInt(process.env.NEXT_PUBLIC_CURRENCY_DECIMALS!);
 const membershipCollectionName = process.env.NEXT_PUBLIC_MEMBERSHIP_COLLECTION_NAME!;
-
-const alchemyNetwork = process.env.NEXT_PUBLIC_ALCHEMY_NETWORK as keyof typeof Network;
-const settings = {
-  apiKey: process.env.NEXT_PUBLIC_ALCHEMY_API_KEY!,
-  network: Network[alchemyNetwork],
-};
-const alchemy = new Alchemy(settings);
 
 const WalletConnector = () => {
   const [account, setAccount] = useState<string | null>(null);
@@ -82,12 +75,12 @@ const WalletConnector = () => {
 
   const fetchNftOwnership = async (userAddress: string) => {
     try {
-      const nfts = await alchemy.nft.getNftsForOwner(userAddress, {
-        contractAddresses: [contractAddress],
-      });
+      const response = await fetch(`/api/nfts/owned?owner=${encodeURIComponent(userAddress)}`);
+      if (!response.ok) throw new Error('NFT取得に失敗しました');
+      const nfts: OwnedNftsResponse = await response.json();
 
-      if (nfts.ownedNfts && nfts.ownedNfts.length > 0) {
-        const ids = nfts.ownedNfts.map((nft: OwnedNft) => nft.tokenId);
+      if (nfts.tokenIds.length > 0) {
+        const ids = nfts.tokenIds;
         setTokenIds(ids);
         setDisplayedTokenIds(ids.slice(0, itemsPerLoad));
       } else {
@@ -197,4 +190,4 @@ const WalletConnector = () => {
   );
 };
 
-export default WalletConnector; 
+export default WalletConnector;
