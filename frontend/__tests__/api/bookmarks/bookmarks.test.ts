@@ -281,7 +281,7 @@ describe('Bookmarks API', () => {
       const testUserId = currentUser.clerk_id;
       
       const request = createTestRequest(`/api/posts/${bookmarkedPost.id}/bookmark`, 'GET', null, {}, testUserId);
-      const response = await GET_POST_BOOKMARK(request, { params: { id: bookmarkedPost.id.toString() } });
+      const response = await GET_POST_BOOKMARK(request, { params: Promise.resolve({ id: bookmarkedPost.id.toString() }) });
       
       // レスポンスの検証
       expect(response.status).toBe(200);
@@ -297,7 +297,7 @@ describe('Bookmarks API', () => {
       const testUserId = currentUser.clerk_id;
       
       const request = createTestRequest(`/api/posts/${unbookmarkedPost.id}/bookmark`, 'GET', null, {}, testUserId);
-      const response = await GET_POST_BOOKMARK(request, { params: { id: unbookmarkedPost.id.toString() } });
+      const response = await GET_POST_BOOKMARK(request, { params: Promise.resolve({ id: unbookmarkedPost.id.toString() }) });
       
       // レスポンスの検証
       expect(response.status).toBe(200);
@@ -311,7 +311,7 @@ describe('Bookmarks API', () => {
       const invalidPostId = 'invalid';
       
       const request = createTestRequest(`/api/posts/${invalidPostId}/bookmark`, 'GET', null, {}, testUserId);
-      const response = await GET_POST_BOOKMARK(request, { params: { id: invalidPostId } });
+      const response = await GET_POST_BOOKMARK(request, { params: Promise.resolve({ id: invalidPostId }) });
       
       // レスポンスの検証
       expect(response.status).toBe(400);
@@ -327,7 +327,7 @@ describe('Bookmarks API', () => {
       const testUserId = currentUser.clerk_id;
       
       const request = createTestRequest(`/api/posts/${unbookmarkedPost.id}/bookmark`, 'POST', {}, {}, testUserId);
-      const response = await POST_POST_BOOKMARK(request, { params: { id: unbookmarkedPost.id.toString() } });
+      const response = await POST_POST_BOOKMARK(request, { params: Promise.resolve({ id: unbookmarkedPost.id.toString() }) });
       
       // レスポンスの検証
       expect(response.status).toBe(200);
@@ -355,7 +355,7 @@ describe('Bookmarks API', () => {
       const testUserId = currentUser.clerk_id;
       
       const request = createTestRequest(`/api/posts/${bookmarkedPost.id}/bookmark`, 'POST', {}, {}, testUserId);
-      const response = await POST_POST_BOOKMARK(request, { params: { id: bookmarkedPost.id.toString() } });
+      const response = await POST_POST_BOOKMARK(request, { params: Promise.resolve({ id: bookmarkedPost.id.toString() }) });
       
       // レスポンスの検証
       expect(response.status).toBe(200);
@@ -383,7 +383,7 @@ describe('Bookmarks API', () => {
       
       const post = testPosts[0];
       const request = createTestRequest(`/api/posts/${post.id}/bookmark`, 'POST');
-      const response = await POST_POST_BOOKMARK(request, { params: { id: post.id.toString() } });
+      const response = await POST_POST_BOOKMARK(request, { params: Promise.resolve({ id: post.id.toString() }) });
       
       // レスポンスの検証
       expect(response.status).toBe(401);
@@ -401,7 +401,7 @@ describe('Bookmarks API', () => {
       
       // まずブックマークする
       const bookmarkRequest = createTestRequest(`/api/posts/${specialCharPost.id}/bookmark`, 'POST', {}, {}, testUserId);
-      const bookmarkResponse = await POST_POST_BOOKMARK(bookmarkRequest, { params: { id: specialCharPost.id.toString() } });
+      const bookmarkResponse = await POST_POST_BOOKMARK(bookmarkRequest, { params: Promise.resolve({ id: specialCharPost.id.toString() }) });
       
       // ブックマークのレスポンス検証
       expect(bookmarkResponse.status).toBe(200);
@@ -429,7 +429,7 @@ describe('Bookmarks API', () => {
       
       // ブックマークする
       const bookmarkRequest = createTestRequest(`/api/posts/${longTextPost.id}/bookmark`, 'POST', {}, {}, testUserId);
-      const bookmarkResponse = await POST_POST_BOOKMARK(bookmarkRequest, { params: { id: longTextPost.id.toString() } });
+      const bookmarkResponse = await POST_POST_BOOKMARK(bookmarkRequest, { params: Promise.resolve({ id: longTextPost.id.toString() }) });
       
       // ブックマークのレスポンス検証
       expect(bookmarkResponse.status).toBe(200);
@@ -507,7 +507,7 @@ describe('Bookmarks API', () => {
       
       // 1. ブックマーク追加
       const addRequest = createTestRequest(`/api/posts/${post.id}/bookmark`, 'POST', {}, {}, testUserId);
-      const addResponse = await POST_POST_BOOKMARK(addRequest, { params: { id: post.id.toString() } });
+      const addResponse = await POST_POST_BOOKMARK(addRequest, { params: Promise.resolve({ id: post.id.toString() }) });
       
       expect(addResponse.status).toBe(200);
       const addData = await addResponse.json();
@@ -515,7 +515,7 @@ describe('Bookmarks API', () => {
       
       // ブックマークが追加されたことを確認
       const checkAfterAddRequest = createTestRequest(`/api/posts/${post.id}/bookmark`, 'GET', null, {}, testUserId);
-      const checkAfterAddResponse = await GET_POST_BOOKMARK(checkAfterAddRequest, { params: { id: post.id.toString() } });
+      const checkAfterAddResponse = await GET_POST_BOOKMARK(checkAfterAddRequest, { params: Promise.resolve({ id: post.id.toString() }) });
       
       expect(checkAfterAddResponse.status).toBe(200);
       const checkAfterAddData = await checkAfterAddResponse.json();
@@ -523,7 +523,7 @@ describe('Bookmarks API', () => {
       
       // 2. ブックマーク削除（トグル）
       const removeRequest = createTestRequest(`/api/posts/${post.id}/bookmark`, 'POST', {}, {}, testUserId);
-      const removeResponse = await POST_POST_BOOKMARK(removeRequest, { params: { id: post.id.toString() } });
+      const removeResponse = await POST_POST_BOOKMARK(removeRequest, { params: Promise.resolve({ id: post.id.toString() }) });
       
       expect(removeResponse.status).toBe(200);
       const removeData = await removeResponse.json();
@@ -531,7 +531,7 @@ describe('Bookmarks API', () => {
       
       // ブックマークが削除されたことを確認
       const checkAfterRemoveRequest = createTestRequest(`/api/posts/${post.id}/bookmark`, 'GET', null, {}, testUserId);
-      const checkAfterRemoveResponse = await GET_POST_BOOKMARK(checkAfterRemoveRequest, { params: { id: post.id.toString() } });
+      const checkAfterRemoveResponse = await GET_POST_BOOKMARK(checkAfterRemoveRequest, { params: Promise.resolve({ id: post.id.toString() }) });
       
       expect(checkAfterRemoveResponse.status).toBe(200);
       const checkAfterRemoveData = await checkAfterRemoveResponse.json();
@@ -556,7 +556,7 @@ describe('Bookmarks API', () => {
       
       // 1回目のブックマーク
       const firstRequest = createTestRequest(`/api/posts/${post.id}/bookmark`, 'POST', {}, {}, testUserId);
-      const firstResponse = await POST_POST_BOOKMARK(firstRequest, { params: { id: post.id.toString() } });
+      const firstResponse = await POST_POST_BOOKMARK(firstRequest, { params: Promise.resolve({ id: post.id.toString() }) });
       
       expect(firstResponse.status).toBe(200);
       const firstData = await firstResponse.json();
@@ -564,7 +564,7 @@ describe('Bookmarks API', () => {
       
       // 2回目のブックマーク（同じ投稿）
       const secondRequest = createTestRequest(`/api/posts/${post.id}/bookmark`, 'POST', {}, {}, testUserId);
-      const secondResponse = await POST_POST_BOOKMARK(secondRequest, { params: { id: post.id.toString() } });
+      const secondResponse = await POST_POST_BOOKMARK(secondRequest, { params: Promise.resolve({ id: post.id.toString() }) });
       
       // 結果は「トグル」の場合はブックマーク解除、「追加のみ」の場合は既にブックマーク済みと返す
       expect(secondResponse.status).toBe(200);

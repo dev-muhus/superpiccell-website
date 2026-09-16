@@ -116,7 +116,7 @@ describe('Post Replies API', () => {
     test('認証済みユーザーは投稿への返信一覧を取得できる', async () => {
       // 返信一覧取得リクエスト
       const request = createTestRequest(`/api/posts/${testPost.id}/replies`, 'GET', null, {}, testUser.clerk_id);
-      const response = await GET(request, { params: { id: testPost.id.toString() } });
+      const response = await GET(request, { params: Promise.resolve({ id: testPost.id.toString() }) });
       
       // レスポンスの検証
       expect(response.status).toBe(200);
@@ -146,7 +146,7 @@ describe('Post Replies API', () => {
       // APIはソート機能を実装していないため、idによる降順ソートのテストに修正
       // 降順（新しい順）でリクエスト - デフォルトのソート順
       const descRequest = createTestRequest(`/api/posts/${testPost.id}/replies`, 'GET', null, {}, testUser.clerk_id);
-      const descResponse = await GET(descRequest, { params: { id: testPost.id.toString() } });
+      const descResponse = await GET(descRequest, { params: Promise.resolve({ id: testPost.id.toString() }) });
       
       // レスポンスの検証
       expect(descResponse.status).toBe(200);
@@ -179,7 +179,7 @@ describe('Post Replies API', () => {
       
       // 最初のページ（制限付き）
       const limitRequest = createTestRequest(`/api/posts/${testPost.id}/replies?limit=5`, 'GET', null, {}, testUser.clerk_id);
-      const limitResponse = await GET(limitRequest, { params: { id: testPost.id.toString() } });
+      const limitResponse = await GET(limitRequest, { params: Promise.resolve({ id: testPost.id.toString() }) });
       
       // レスポンスの検証
       expect(limitResponse.status).toBe(200);
@@ -197,7 +197,7 @@ describe('Post Replies API', () => {
         `/api/posts/${testPost.id}/replies?cursor=${nextCursor}&limit=5`,
         'GET', null, {}, testUser.clerk_id
       );
-      const nextPageResponse = await GET(nextPageRequest, { params: { id: testPost.id.toString() } });
+      const nextPageResponse = await GET(nextPageRequest, { params: Promise.resolve({ id: testPost.id.toString() }) });
       
       // レスポンスの検証
       expect(nextPageResponse.status).toBe(200);
@@ -217,7 +217,7 @@ describe('Post Replies API', () => {
     test('制限値が上限を超える場合はデフォルト値が使用される', async () => {
       // 上限を超える制限値でリクエスト
       const request = createTestRequest(`/api/posts/${testPost.id}/replies?limit=100`, 'GET', null, {}, testUser.clerk_id);
-      const response = await GET(request, { params: { id: testPost.id.toString() } });
+      const response = await GET(request, { params: Promise.resolve({ id: testPost.id.toString() }) });
       
       // レスポンスの検証
       expect(response.status).toBe(200);
@@ -232,7 +232,7 @@ describe('Post Replies API', () => {
       const invalidId = 'invalid';
       
       const request = createTestRequest(`/api/posts/${invalidId}/replies`, 'GET', null, {}, testUser.clerk_id);
-      const response = await GET(request, { params: { id: invalidId } });
+      const response = await GET(request, { params: Promise.resolve({ id: invalidId }) });
       
       // レスポンスの検証
       expect(response.status).toBe(400);
@@ -245,7 +245,7 @@ describe('Post Replies API', () => {
       const nonExistentId = 999999;
       
       const request = createTestRequest(`/api/posts/${nonExistentId}/replies`, 'GET', null, {}, testUser.clerk_id);
-      const response = await GET(request, { params: { id: nonExistentId.toString() } });
+      const response = await GET(request, { params: Promise.resolve({ id: nonExistentId.toString() }) });
       
       // API側では存在しない投稿への404エラー実装がないため、200が返る
       expect(response.status).toBe(200);
@@ -255,7 +255,7 @@ describe('Post Replies API', () => {
       // 認証なしでリクエスト
       global.currentTestUserId = null as unknown as string;
       const request = createTestRequest(`/api/posts/${testPost.id}/replies`, 'GET');
-      const response = await GET(request, { params: { id: testPost.id.toString() } });
+      const response = await GET(request, { params: Promise.resolve({ id: testPost.id.toString() }) });
       
       // 現在のAPI実装では認証が必須なので401エラーが返る
       expect(response.status).toBe(401);

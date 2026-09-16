@@ -59,7 +59,7 @@ describe('Post Likes API', () => {
     test('認証済みユーザーは投稿にいいねできる', async () => {
       // いいねするリクエスト
       const request = createTestRequest(`/api/posts/${testPost.id}/likes`, 'POST', null, {}, testUser.clerk_id);
-      const response = await POST(request, { params: { id: testPost.id.toString() } });
+      const response = await POST(request, { params: Promise.resolve({ id: testPost.id.toString() }) });
       
       // レスポンスの検証
       expect(response.status).toBe(200);
@@ -93,7 +93,7 @@ describe('Post Likes API', () => {
       
       // 再度リクエストするといいねを解除
       const request = createTestRequest(`/api/posts/${testPost.id}/likes`, 'POST', null, {}, testUser.clerk_id);
-      const response = await POST(request, { params: { id: testPost.id.toString() } });
+      const response = await POST(request, { params: Promise.resolve({ id: testPost.id.toString() }) });
       
       // レスポンスの検証
       expect(response.status).toBe(200);
@@ -128,7 +128,7 @@ describe('Post Likes API', () => {
       
       // 再度いいねを追加
       const request = createTestRequest(`/api/posts/${testPost.id}/likes`, 'POST', null, {}, testUser.clerk_id);
-      const response = await POST(request, { params: { id: testPost.id.toString() } });
+      const response = await POST(request, { params: Promise.resolve({ id: testPost.id.toString() }) });
       
       // レスポンスの検証
       expect(response.status).toBe(200);
@@ -155,7 +155,7 @@ describe('Post Likes API', () => {
       const nonExistentId = 999999;
       
       const request = createTestRequest(`/api/posts/${nonExistentId}/likes`, 'POST', null, {}, testUser.clerk_id);
-      const response = await POST(request, { params: { id: nonExistentId.toString() } });
+      const response = await POST(request, { params: Promise.resolve({ id: nonExistentId.toString() }) });
       
       // レスポンスの検証
       expect(response.status).toBe(404);
@@ -171,7 +171,7 @@ describe('Post Likes API', () => {
       
       // いいねしようとする
       const request = createTestRequest(`/api/posts/${testPost.id}/likes`, 'POST', null, {}, testUser.clerk_id);
-      const response = await POST(request, { params: { id: testPost.id.toString() } });
+      const response = await POST(request, { params: Promise.resolve({ id: testPost.id.toString() }) });
       
       // レスポンスの検証
       expect(response.status).toBe(404);
@@ -183,7 +183,7 @@ describe('Post Likes API', () => {
       // 認証なしのリクエスト
       global.currentTestUserId = null as unknown as string;
       const request = createTestRequest(`/api/posts/${testPost.id}/likes`, 'POST');
-      const response = await POST(request, { params: { id: testPost.id.toString() } });
+      const response = await POST(request, { params: Promise.resolve({ id: testPost.id.toString() }) });
       
       // レスポンスの検証
       expect(response.status).toBe(401);
@@ -197,7 +197,7 @@ describe('Post Likes API', () => {
     test('認証済みユーザーはいいね状態を取得できる（いいねなし）', async () => {
       // いいね状態取得リクエスト
       const request = createTestRequest(`/api/posts/${testPost.id}/likes`, 'GET', null, {}, testUser.clerk_id);
-      const response = await GET(request, { params: { id: testPost.id.toString() } });
+      const response = await GET(request, { params: Promise.resolve({ id: testPost.id.toString() }) });
       
       // レスポンスの検証
       expect(response.status).toBe(200);
@@ -216,7 +216,7 @@ describe('Post Likes API', () => {
       
       // いいね状態取得リクエスト
       const request = createTestRequest(`/api/posts/${testPost.id}/likes`, 'GET', null, {}, testUser.clerk_id);
-      const response = await GET(request, { params: { id: testPost.id.toString() } });
+      const response = await GET(request, { params: Promise.resolve({ id: testPost.id.toString() }) });
       
       // レスポンスの検証
       expect(response.status).toBe(200);
@@ -241,7 +241,7 @@ describe('Post Likes API', () => {
       
       // いいね状態取得リクエスト
       const request = createTestRequest(`/api/posts/${testPost.id}/likes`, 'GET', null, {}, testUser.clerk_id);
-      const response = await GET(request, { params: { id: testPost.id.toString() } });
+      const response = await GET(request, { params: Promise.resolve({ id: testPost.id.toString() }) });
       
       // レスポンスの検証
       expect(response.status).toBe(200);
@@ -265,7 +265,7 @@ describe('Post Likes API', () => {
       
       // いいね状態取得リクエスト
       const request = createTestRequest(`/api/posts/${testPost.id}/likes`, 'GET', null, {}, testUser.clerk_id);
-      const response = await GET(request, { params: { id: testPost.id.toString() } });
+      const response = await GET(request, { params: Promise.resolve({ id: testPost.id.toString() }) });
       
       // レスポンスの検証
       expect(response.status).toBe(200);
@@ -285,7 +285,7 @@ describe('Post Likes API', () => {
       // 認証なしでいいね状態取得リクエスト
       global.currentTestUserId = null as unknown as string;
       const request = createTestRequest(`/api/posts/${testPost.id}/likes`, 'GET');
-      const response = await GET(request, { params: { id: testPost.id.toString() } });
+      const response = await GET(request, { params: Promise.resolve({ id: testPost.id.toString() }) });
       
       // レスポンスの検証
       expect(response.status).toBe(200);
@@ -299,7 +299,7 @@ describe('Post Likes API', () => {
       const invalidId = 'invalid';
       
       const request = createTestRequest(`/api/posts/${invalidId}/likes`, 'GET', null, {}, testUser.clerk_id);
-      const response = await GET(request, { params: { id: invalidId } });
+      const response = await GET(request, { params: Promise.resolve({ id: invalidId }) });
       
       // レスポンスの検証
       expect(response.status).toBe(400);

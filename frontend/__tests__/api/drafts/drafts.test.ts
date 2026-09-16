@@ -405,7 +405,7 @@ describe('Drafts API', () => {
       // URLとパラメータを更新
       const request = createTestRequest(`/api/drafts/${draftToDelete.id}`, 'DELETE', null, {}, testUserId);
       const params = { id: draftToDelete.id.toString() };
-      const response = await DELETE(request, { params });
+      const response = await DELETE(request, { params: Promise.resolve(params) });
       
       // レスポンスの検証
       expect(response.status).toBe(200);
@@ -439,7 +439,7 @@ describe('Drafts API', () => {
       // 無効なIDでリクエスト
       const request = createTestRequest('/api/drafts/invalid', 'DELETE', null, {}, testUserId);
       const params = { id: 'invalid' };
-      const response = await DELETE(request, { params });
+      const response = await DELETE(request, { params: Promise.resolve(params) });
       
       // レスポンスの検証
       expect(response.status).toBe(400);
@@ -454,7 +454,7 @@ describe('Drafts API', () => {
       
       const request = createTestRequest(`/api/drafts/${nonexistentId}`, 'DELETE', null, {}, testUserId);
       const params = { id: nonexistentId.toString() };
-      const response = await DELETE(request, { params });
+      const response = await DELETE(request, { params: Promise.resolve(params) });
       
       // レスポンスの検証
       expect(response.status).toBe(404);
@@ -471,7 +471,7 @@ describe('Drafts API', () => {
       
       const request = createTestRequest(`/api/drafts/${draftToDelete.id}`, 'DELETE', null, {}, otherUserId);
       const params = { id: draftToDelete.id.toString() };
-      const response = await DELETE(request, { params });
+      const response = await DELETE(request, { params: Promise.resolve(params) });
       
       // レスポンスの検証 - 404が返される（存在しないか削除済みと表示）
       expect(response.status).toBe(404);
@@ -497,7 +497,7 @@ describe('Drafts API', () => {
       const draftToDelete = testDrafts[0];
       const request = createTestRequest(`/api/drafts/${draftToDelete.id}`, 'DELETE');
       const params = { id: draftToDelete.id.toString() };
-      const response = await DELETE(request, { params });
+      const response = await DELETE(request, { params: Promise.resolve(params) });
       
       // レスポンスの検証
       expect(response.status).toBe(401);
@@ -519,7 +519,7 @@ describe('Drafts API', () => {
       const draftToDelete = testDrafts[0];
       const deleteRequest = createTestRequest(`/api/drafts/${draftToDelete.id}`, 'DELETE', null, {}, testUserId);
       const params = { id: draftToDelete.id.toString() };
-      await DELETE(deleteRequest, { params });
+      await DELETE(deleteRequest, { params: Promise.resolve(params) });
       
       // 削除後の下書き数を確認
       const afterRequest = createTestRequest('/api/drafts', 'GET', null, {}, testUserId);

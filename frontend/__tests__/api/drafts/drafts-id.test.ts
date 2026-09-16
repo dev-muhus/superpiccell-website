@@ -146,7 +146,7 @@ describe('Drafts [id] API', () => {
       const testUserId = currentUser.clerk_id;
       const params = { id: testDraft.id.toString() };
       const request = createTestRequest(`/api/drafts/${testDraft.id}`, 'GET', null, {}, testUserId);
-      const response = await GET(request, { params });
+      const response = await GET(request, { params: Promise.resolve(params) });
       
       // レスポンスの検証
       expect(response.status).toBe(200);
@@ -163,7 +163,7 @@ describe('Drafts [id] API', () => {
       const testUserId = currentUser.clerk_id;
       const params = { id: replyDraft.id.toString() };
       const request = createTestRequest(`/api/drafts/${replyDraft.id}`, 'GET', null, {}, testUserId);
-      const response = await GET(request, { params });
+      const response = await GET(request, { params: Promise.resolve(params) });
       
       // レスポンスの検証
       expect(response.status).toBe(200);
@@ -183,7 +183,7 @@ describe('Drafts [id] API', () => {
       const testUserId = currentUser.clerk_id;
       const params = { id: specialDraft.id.toString() };
       const request = createTestRequest(`/api/drafts/${specialDraft.id}`, 'GET', null, {}, testUserId);
-      const response = await GET(request, { params });
+      const response = await GET(request, { params: Promise.resolve(params) });
       
       // レスポンスの検証
       expect(response.status).toBe(200);
@@ -202,7 +202,7 @@ describe('Drafts [id] API', () => {
       const testUserId = currentUser.clerk_id;
       const params = { id: longDraft.id.toString() };
       const request = createTestRequest(`/api/drafts/${longDraft.id}`, 'GET', null, {}, testUserId);
-      const response = await GET(request, { params });
+      const response = await GET(request, { params: Promise.resolve(params) });
       
       // レスポンスの検証
       expect(response.status).toBe(200);
@@ -220,7 +220,7 @@ describe('Drafts [id] API', () => {
       const testUserId = currentUser.clerk_id;
       const params = { id: nonExistentId.toString() };
       const request = createTestRequest(`/api/drafts/${nonExistentId}`, 'GET', null, {}, testUserId);
-      const response = await GET(request, { params });
+      const response = await GET(request, { params: Promise.resolve(params) });
       
       // レスポンスの検証
       expect(response.status).toBe(404);
@@ -234,7 +234,7 @@ describe('Drafts [id] API', () => {
       const testUserId = currentUser.clerk_id;
       const params = { id: invalidId };
       const request = createTestRequest(`/api/drafts/${invalidId}`, 'GET', null, {}, testUserId);
-      const response = await GET(request, { params });
+      const response = await GET(request, { params: Promise.resolve(params) });
       
       // レスポンスの検証
       expect(response.status).toBe(400);
@@ -248,7 +248,7 @@ describe('Drafts [id] API', () => {
       global.currentTestUserId = otherUserId;
       const params = { id: testDraft.id.toString() };
       const request = createTestRequest(`/api/drafts/${testDraft.id}`, 'GET', null, {}, otherUserId);
-      const response = await GET(request, { params });
+      const response = await GET(request, { params: Promise.resolve(params) });
       
       // レスポンスの検証
       expect(response.status).toBe(404);
@@ -266,7 +266,7 @@ describe('Drafts [id] API', () => {
       const testUserId = currentUser.clerk_id;
       const params = { id: testDraft.id.toString() };
       const request = createTestRequest(`/api/drafts/${testDraft.id}`, 'GET', null, {}, testUserId);
-      const response = await GET(request, { params });
+      const response = await GET(request, { params: Promise.resolve(params) });
       
       // レスポンスの検証
       expect(response.status).toBe(404);
@@ -280,7 +280,7 @@ describe('Drafts [id] API', () => {
       
       const params = { id: testDraft.id.toString() };
       const request = createTestRequest(`/api/drafts/${testDraft.id}`, 'GET', null, {});
-      const response = await GET(request, { params });
+      const response = await GET(request, { params: Promise.resolve(params) });
       
       // レスポンスの検証
       expect(response.status).toBe(401);
@@ -299,7 +299,7 @@ describe('Drafts [id] API', () => {
       const testUserId = currentUser.clerk_id;
       const params = { id: testDraft.id.toString() };
       const request = createTestRequest(`/api/drafts/${testDraft.id}`, 'PUT', updateData, {}, testUserId);
-      const response = await PUT(request, { params });
+      const response = await PUT(request, { params: Promise.resolve(params) });
       
       // レスポンスの検証
       expect(response.status).toBe(200);
@@ -330,7 +330,7 @@ describe('Drafts [id] API', () => {
       const testUserId = currentUser.clerk_id;
       const params = { id: replyDraft.id.toString() };
       const request = createTestRequest(`/api/drafts/${replyDraft.id}`, 'PUT', updateData, {}, testUserId);
-      const response = await PUT(request, { params });
+      const response = await PUT(request, { params: Promise.resolve(params) });
       
       // レスポンスの検証
       expect(response.status).toBe(200);
@@ -364,7 +364,7 @@ describe('Drafts [id] API', () => {
       const testUserId = currentUser.clerk_id;
       const params = { id: emptyDraft.id.toString() };
       const request = createTestRequest(`/api/drafts/${emptyDraft.id}`, 'PUT', updateData, {}, testUserId);
-      const response = await PUT(request, { params });
+      const response = await PUT(request, { params: Promise.resolve(params) });
       
       // レスポンスの検証
       expect(response.status).toBe(200);
@@ -401,7 +401,7 @@ describe('Drafts [id] API', () => {
       const testUserId = currentUser.clerk_id;
       const params = { id: testDraft.id.toString() };
       const request = createTestRequest(`/api/drafts/${testDraft.id}`, 'PUT', updateData, {}, testUserId);
-      const response = await PUT(request, { params });
+      const response = await PUT(request, { params: Promise.resolve(params) });
       
       // レスポンスの検証
       expect(response.status).toBe(400);
@@ -420,7 +420,7 @@ describe('Drafts [id] API', () => {
       const testUserId = currentUser.clerk_id;
       const params = { id: testDraft.id.toString() };
       const request = createTestRequest(`/api/drafts/${testDraft.id}`, 'PUT', updateData, {}, testUserId);
-      const response = await PUT(request, { params });
+      const response = await PUT(request, { params: Promise.resolve(params) });
       
       // レスポンスの検証
       expect(response.status).toBe(400);
@@ -439,7 +439,7 @@ describe('Drafts [id] API', () => {
       const testUserId = currentUser.clerk_id;
       const params = { id: nonExistentId.toString() };
       const request = createTestRequest(`/api/drafts/${nonExistentId}`, 'PUT', updateData, {}, testUserId);
-      const response = await PUT(request, { params });
+      const response = await PUT(request, { params: Promise.resolve(params) });
       
       // レスポンスの検証
       expect(response.status).toBe(404);
@@ -457,7 +457,7 @@ describe('Drafts [id] API', () => {
       const testUserId = currentUser.clerk_id;
       const params = { id: invalidId };
       const request = createTestRequest(`/api/drafts/${invalidId}`, 'PUT', updateData, {}, testUserId);
-      const response = await PUT(request, { params });
+      const response = await PUT(request, { params: Promise.resolve(params) });
       
       // レスポンスの検証
       expect(response.status).toBe(400);
@@ -476,7 +476,7 @@ describe('Drafts [id] API', () => {
       
       const params = { id: testDraft.id.toString() };
       const request = createTestRequest(`/api/drafts/${testDraft.id}`, 'PUT', updateData, {}, otherUserId);
-      const response = await PUT(request, { params });
+      const response = await PUT(request, { params: Promise.resolve(params) });
       
       // レスポンスの検証
       expect(response.status).toBe(404);
@@ -507,7 +507,7 @@ describe('Drafts [id] API', () => {
       const testUserId = currentUser.clerk_id;
       const params = { id: testDraft.id.toString() };
       const request = createTestRequest(`/api/drafts/${testDraft.id}`, 'PUT', updateData, {}, testUserId);
-      const response = await PUT(request, { params });
+      const response = await PUT(request, { params: Promise.resolve(params) });
       
       // レスポンスの検証
       expect(response.status).toBe(404);
@@ -525,7 +525,7 @@ describe('Drafts [id] API', () => {
       
       const params = { id: testDraft.id.toString() };
       const request = createTestRequest(`/api/drafts/${testDraft.id}`, 'PUT', updateData, {});
-      const response = await PUT(request, { params });
+      const response = await PUT(request, { params: Promise.resolve(params) });
       
       // レスポンスの検証
       expect(response.status).toBe(401);
@@ -573,7 +573,7 @@ describe('Drafts [id] API', () => {
       const testUserId = currentUser.clerk_id;
       const params = { id: imageDraft.id.toString() };
       const request = createTestRequest(`/api/drafts/${imageDraft.id}`, 'GET', null, {}, testUserId);
-      const response = await GET(request, { params });
+      const response = await GET(request, { params: Promise.resolve(params) });
       
       // レスポンスの検証
       expect(response.status).toBe(200);
@@ -600,7 +600,7 @@ describe('Drafts [id] API', () => {
       const testUserId = currentUser.clerk_id;
       const params = { id: videoDraft.id.toString() };
       const request = createTestRequest(`/api/drafts/${videoDraft.id}`, 'GET', null, {}, testUserId);
-      const response = await GET(request, { params });
+      const response = await GET(request, { params: Promise.resolve(params) });
       
       // レスポンスの検証
       expect(response.status).toBe(200);
@@ -656,7 +656,7 @@ describe('Drafts [id] API', () => {
       const testUserId = currentUser.clerk_id;
       const params = { id: multiImageDraft.id.toString() };
       const request = createTestRequest(`/api/drafts/${multiImageDraft.id}`, 'GET', null, {}, testUserId);
-      const response = await GET(request, { params });
+      const response = await GET(request, { params: Promise.resolve(params) });
       
       // レスポンスの検証
       expect(response.status).toBe(200);
@@ -700,7 +700,7 @@ describe('Drafts [id] API', () => {
       const testUserId = currentUser.clerk_id;
       const params = { id: imageDraft.id.toString() };
       const request = createTestRequest(`/api/drafts/${imageDraft.id}`, 'PUT', updateData, {}, testUserId);
-      const response = await PUT(request, { params });
+      const response = await PUT(request, { params: Promise.resolve(params) });
       
       // レスポンスの検証
       expect(response.status).toBe(200);
@@ -719,7 +719,7 @@ describe('Drafts [id] API', () => {
       
       // 再取得して永続化されていることを確認
       const getRequest = createTestRequest(`/api/drafts/${imageDraft.id}`, 'GET', null, {}, testUserId);
-      const getResponse = await GET(getRequest, { params });
+      const getResponse = await GET(getRequest, { params: Promise.resolve(params) });
       const getData = await getResponse.json();
       
       expect(getData.draft.media[0].url).toBe('https://example.com/updated-image.jpg');
@@ -739,7 +739,7 @@ describe('Drafts [id] API', () => {
       const testUserId = currentUser.clerk_id;
       const params = { id: imageDraft.id.toString() };
       const request = createTestRequest(`/api/drafts/${imageDraft.id}`, 'PUT', updateData, {}, testUserId);
-      const response = await PUT(request, { params });
+      const response = await PUT(request, { params: Promise.resolve(params) });
       
       // レスポンスの検証
       expect(response.status).toBe(200);
@@ -776,7 +776,7 @@ describe('Drafts [id] API', () => {
       const testUserId = currentUser.clerk_id;
       const params = { id: imageDraft.id.toString() };
       const request = createTestRequest(`/api/drafts/${imageDraft.id}`, 'PUT', updateData, {}, testUserId);
-      const response = await PUT(request, { params });
+      const response = await PUT(request, { params: Promise.resolve(params) });
       
       // レスポンスの検証
       expect(response.status).toBe(200);

@@ -404,7 +404,7 @@ describe('Blocks API', () => {
       const request = createTestRequest(`/api/users/${otherUser.id}/block`, 'POST', null, {}, testUserId);
       
       // POSTリクエストを実行
-      const response = await blockUser(request, { params: { id: String(otherUser.id) } });
+      const response = await blockUser(request, { params: Promise.resolve({ id: String(otherUser.id) }) });
       
       // レスポンスの検証
       expect(response.status).toBe(200);
@@ -440,7 +440,7 @@ describe('Blocks API', () => {
       const request = createTestRequest(`/api/users/${otherUser.id}/block`, 'POST', null, {}, testUserId);
       
       // POSTリクエストを実行
-      const response = await blockUser(request, { params: { id: String(otherUser.id) } });
+      const response = await blockUser(request, { params: Promise.resolve({ id: String(otherUser.id) }) });
       
       // レスポンスの検証 - 既存のブロックがあっても成功する
       expect(response.status).toBe(200);
@@ -470,7 +470,7 @@ describe('Blocks API', () => {
       const request = createTestRequest(`/api/users/${currentUser.id}/block`, 'POST', null, {}, testUserId);
       
       // POSTリクエストを実行
-      const response = await blockUser(request, { params: { id: String(currentUser.id) } });
+      const response = await blockUser(request, { params: Promise.resolve({ id: String(currentUser.id) }) });
       
       // レスポンスの検証 - エラーが返される
       expect(response.status).toBe(400);
@@ -491,7 +491,7 @@ describe('Blocks API', () => {
       const request = createTestRequest(`/api/users/${otherUser.id}/block`, 'DELETE', null, {}, testUserId);
       
       // DELETEリクエストを実行
-      const response = await unblockUser(request, { params: { id: String(otherUser.id) } });
+      const response = await unblockUser(request, { params: Promise.resolve({ id: String(otherUser.id) }) });
       
       // レスポンスの検証
       expect(response.status).toBe(200);
@@ -528,7 +528,7 @@ describe('Blocks API', () => {
       const request = createTestRequest(`/api/users/${otherUser.id}/block`, 'GET', null, {}, testUserId);
       
       // GETリクエストを実行
-      const response = await getUserBlockStatus(request, { params: { id: String(otherUser.id) } });
+      const response = await getUserBlockStatus(request, { params: Promise.resolve({ id: String(otherUser.id) }) });
       
       // レスポンスの検証
       expect(response.status).toBe(200);
@@ -543,7 +543,7 @@ describe('Blocks API', () => {
       const request = createTestRequest(`/api/users/${otherUser.id}/block`, 'GET', null, {}, testUserId);
       
       // GETリクエストを実行
-      const response = await getUserBlockStatus(request, { params: { id: String(otherUser.id) } });
+      const response = await getUserBlockStatus(request, { params: Promise.resolve({ id: String(otherUser.id) }) });
       
       // レスポンスの検証
       expect(response.status).toBe(200);

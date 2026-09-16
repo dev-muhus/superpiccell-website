@@ -79,7 +79,7 @@ describe('User Follow API', () => {
     test('認証済みユーザーは他のユーザーをフォローできる', async () => {
       // テスト用リクエストの作成
       const request = createTestRequest(`/api/users/${otherUser.id}/follow`, 'POST', null, {}, testUser.clerk_id);
-      const response = await POST(request, { params: { id: otherUser.id.toString() } });
+      const response = await POST(request, { params: Promise.resolve({ id: otherUser.id.toString() }) });
       
       // レスポンスの検証
       expect(response.status).toBe(200);
@@ -114,7 +114,7 @@ describe('User Follow API', () => {
       
       // テスト用リクエストの作成
       const request = createTestRequest(`/api/users/${otherUser.id}/follow`, 'POST', null, {}, testUser.clerk_id);
-      const response = await POST(request, { params: { id: otherUser.id.toString() } });
+      const response = await POST(request, { params: Promise.resolve({ id: otherUser.id.toString() }) });
       
       // レスポンスの検証
       expect(response.status).toBe(200);
@@ -139,7 +139,7 @@ describe('User Follow API', () => {
     test('自分自身をフォローしようとすると400エラーを返す', async () => {
       // 自分自身をフォローしようとする
       const request = createTestRequest(`/api/users/${testUser.id}/follow`, 'POST', null, {}, testUser.clerk_id);
-      const response = await POST(request, { params: { id: testUser.id.toString() } });
+      const response = await POST(request, { params: Promise.resolve({ id: testUser.id.toString() }) });
       
       // レスポンスの検証
       expect(response.status).toBe(400);
@@ -153,7 +153,7 @@ describe('User Follow API', () => {
       
       // テスト用リクエストの作成
       const request = createTestRequest(`/api/users/${nonExistentId}/follow`, 'POST', null, {}, testUser.clerk_id);
-      const response = await POST(request, { params: { id: nonExistentId.toString() } });
+      const response = await POST(request, { params: Promise.resolve({ id: nonExistentId.toString() }) });
       
       // レスポンスの検証
       expect(response.status).toBe(404);
@@ -167,7 +167,7 @@ describe('User Follow API', () => {
       
       // テスト用リクエストの作成
       const request = createTestRequest(`/api/users/${invalidId}/follow`, 'POST', null, {}, testUser.clerk_id);
-      const response = await POST(request, { params: { id: invalidId } });
+      const response = await POST(request, { params: Promise.resolve({ id: invalidId }) });
       
       // レスポンスの検証
       expect(response.status).toBe(400);
@@ -179,7 +179,7 @@ describe('User Follow API', () => {
       // 認証なしでリクエスト
       global.currentTestUserId = null as unknown as string;
       const request = createTestRequest(`/api/users/${otherUser.id}/follow`, 'POST');
-      const response = await POST(request, { params: { id: otherUser.id.toString() } });
+      const response = await POST(request, { params: Promise.resolve({ id: otherUser.id.toString() }) });
       
       // レスポンスの検証
       expect(response.status).toBe(401);
@@ -200,7 +200,7 @@ describe('User Follow API', () => {
       
       // テスト用リクエストの作成
       const request = createTestRequest(`/api/users/${otherUser.id}/follow`, 'DELETE', null, {}, testUser.clerk_id);
-      const response = await DELETE(request, { params: { id: otherUser.id.toString() } });
+      const response = await DELETE(request, { params: Promise.resolve({ id: otherUser.id.toString() }) });
       
       // レスポンスの検証
       expect(response.status).toBe(200);
@@ -227,7 +227,7 @@ describe('User Follow API', () => {
     test('フォローしていないユーザーをフォロー解除しても成功する', async () => {
       // フォロー関係なしでフォロー解除を試みる
       const request = createTestRequest(`/api/users/${otherUser.id}/follow`, 'DELETE', null, {}, testUser.clerk_id);
-      const response = await DELETE(request, { params: { id: otherUser.id.toString() } });
+      const response = await DELETE(request, { params: Promise.resolve({ id: otherUser.id.toString() }) });
       
       // レスポンスの検証
       expect(response.status).toBe(200);
@@ -255,7 +255,7 @@ describe('User Follow API', () => {
       
       // テスト用リクエストの作成
       const request = createTestRequest(`/api/users/${otherUser.id}/follow`, 'DELETE', null, {}, testUser.clerk_id);
-      const response = await DELETE(request, { params: { id: otherUser.id.toString() } });
+      const response = await DELETE(request, { params: Promise.resolve({ id: otherUser.id.toString() }) });
       
       // レスポンスの検証
       expect(response.status).toBe(200);
@@ -272,7 +272,7 @@ describe('User Follow API', () => {
       
       // テスト用リクエストの作成
       const request = createTestRequest(`/api/users/${nonExistentId}/follow`, 'DELETE', null, {}, testUser.clerk_id);
-      const response = await DELETE(request, { params: { id: nonExistentId.toString() } });
+      const response = await DELETE(request, { params: Promise.resolve({ id: nonExistentId.toString() }) });
       
       // レスポンスの検証 - 現在の実装では200を返す
       expect(response.status).toBe(200);
@@ -288,7 +288,7 @@ describe('User Follow API', () => {
       
       // テスト用リクエストの作成
       const request = createTestRequest(`/api/users/${invalidId}/follow`, 'DELETE', null, {}, testUser.clerk_id);
-      const response = await DELETE(request, { params: { id: invalidId } });
+      const response = await DELETE(request, { params: Promise.resolve({ id: invalidId }) });
       
       // レスポンスの検証
       expect(response.status).toBe(400);
@@ -300,7 +300,7 @@ describe('User Follow API', () => {
       // 認証なしでリクエスト
       global.currentTestUserId = null as unknown as string;
       const request = createTestRequest(`/api/users/${otherUser.id}/follow`, 'DELETE');
-      const response = await DELETE(request, { params: { id: otherUser.id.toString() } });
+      const response = await DELETE(request, { params: Promise.resolve({ id: otherUser.id.toString() }) });
       
       // レスポンスの検証
       expect(response.status).toBe(401);
@@ -321,7 +321,7 @@ describe('User Follow API', () => {
       
       // テスト用リクエストの作成
       const request = createTestRequest(`/api/users/${otherUser.id}/follow`, 'GET', null, {}, testUser.clerk_id);
-      const response = await GET(request, { params: { id: otherUser.id.toString() } });
+      const response = await GET(request, { params: Promise.resolve({ id: otherUser.id.toString() }) });
       
       // レスポンスの検証
       expect(response.status).toBe(200);
@@ -334,7 +334,7 @@ describe('User Follow API', () => {
     test('フォローしていないユーザーの状態を確認すると false を返す', async () => {
       // フォロー関係がない状態でリクエスト
       const request = createTestRequest(`/api/users/${otherUser.id}/follow`, 'GET', null, {}, testUser.clerk_id);
-      const response = await GET(request, { params: { id: otherUser.id.toString() } });
+      const response = await GET(request, { params: Promise.resolve({ id: otherUser.id.toString() }) });
       
       // レスポンスの検証
       expect(response.status).toBe(200);
@@ -361,7 +361,7 @@ describe('User Follow API', () => {
       
       // テスト用リクエストの作成
       const request = createTestRequest(`/api/users/${otherUser.id}/follow`, 'GET', null, {}, testUser.clerk_id);
-      const response = await GET(request, { params: { id: otherUser.id.toString() } });
+      const response = await GET(request, { params: Promise.resolve({ id: otherUser.id.toString() }) });
       
       // レスポンスの検証
       expect(response.status).toBe(200);
@@ -374,7 +374,7 @@ describe('User Follow API', () => {
     test('自分自身のフォロー状態を確認できる（常にfalse）', async () => {
       // 自分自身のフォロー状態を確認
       const request = createTestRequest(`/api/users/${testUser.id}/follow`, 'GET', null, {}, testUser.clerk_id);
-      const response = await GET(request, { params: { id: testUser.id.toString() } });
+      const response = await GET(request, { params: Promise.resolve({ id: testUser.id.toString() }) });
       
       // レスポンスの検証
       expect(response.status).toBe(200);
@@ -390,7 +390,7 @@ describe('User Follow API', () => {
       
       // テスト用リクエストの作成
       const request = createTestRequest(`/api/users/${nonExistentId}/follow`, 'GET', null, {}, testUser.clerk_id);
-      const response = await GET(request, { params: { id: nonExistentId.toString() } });
+      const response = await GET(request, { params: Promise.resolve({ id: nonExistentId.toString() }) });
       
       // レスポンスの検証 - 現在の実装では200を返す
       expect(response.status).toBe(200);
@@ -405,7 +405,7 @@ describe('User Follow API', () => {
       
       // テスト用リクエストの作成
       const request = createTestRequest(`/api/users/${invalidId}/follow`, 'GET', null, {}, testUser.clerk_id);
-      const response = await GET(request, { params: { id: invalidId } });
+      const response = await GET(request, { params: Promise.resolve({ id: invalidId }) });
       
       // レスポンスの検証
       expect(response.status).toBe(400);
@@ -417,7 +417,7 @@ describe('User Follow API', () => {
       // 認証なしでリクエスト
       global.currentTestUserId = null as unknown as string;
       const request = createTestRequest(`/api/users/${otherUser.id}/follow`, 'GET');
-      const response = await GET(request, { params: { id: otherUser.id.toString() } });
+      const response = await GET(request, { params: Promise.resolve({ id: otherUser.id.toString() }) });
       
       // レスポンスの検証
       expect(response.status).toBe(401);
@@ -438,11 +438,11 @@ describe('User Follow API', () => {
       
       // 2. フォローを解除
       const request1 = createTestRequest(`/api/users/${otherUser.id}/follow`, 'DELETE', null, {}, testUser.clerk_id);
-      await DELETE(request1, { params: { id: otherUser.id.toString() } });
+      await DELETE(request1, { params: Promise.resolve({ id: otherUser.id.toString() }) });
       
       // 3. 再度フォロー
       const request2 = createTestRequest(`/api/users/${otherUser.id}/follow`, 'POST', null, {}, testUser.clerk_id);
-      const response = await POST(request2, { params: { id: otherUser.id.toString() } });
+      const response = await POST(request2, { params: Promise.resolve({ id: otherUser.id.toString() }) });
       
       // レスポンスの検証
       expect(response.status).toBe(200);

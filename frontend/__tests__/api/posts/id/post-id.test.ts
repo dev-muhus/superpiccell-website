@@ -114,7 +114,7 @@ describe('Post ID API', () => {
     test('認証済みユーザーは投稿詳細を取得できる', async () => {
       // GET リクエストのテスト
       const request = createTestRequest(`/api/posts/${testPost.id}`, 'GET', null, {}, testUser.clerk_id);
-      const response = await GET(request, { params: { id: testPost.id.toString() } });
+      const response = await GET(request, { params: Promise.resolve({ id: testPost.id.toString() }) });
       
       // レスポンスの検証
       expect(response.status).toBe(200);
@@ -139,7 +139,7 @@ describe('Post ID API', () => {
     test('別のユーザーの投稿も取得できる', async () => {
       // 別のユーザーの投稿を取得
       const request = createTestRequest(`/api/posts/${otherUserPost.id}`, 'GET', null, {}, testUser.clerk_id);
-      const response = await GET(request, { params: { id: otherUserPost.id.toString() } });
+      const response = await GET(request, { params: Promise.resolve({ id: otherUserPost.id.toString() }) });
       
       // レスポンスの検証
       expect(response.status).toBe(200);
@@ -170,7 +170,7 @@ describe('Post ID API', () => {
       
       // 引用投稿の詳細を取得（include_related=trueを指定）
       const request = createTestRequest(`/api/posts/${quotePost.id}?include_related=true`, 'GET', null, {}, testUser.clerk_id);
-      const response = await GET(request, { params: { id: quotePost.id.toString() } });
+      const response = await GET(request, { params: Promise.resolve({ id: quotePost.id.toString() }) });
       
       // レスポンスの検証
       expect(response.status).toBe(200);
@@ -202,7 +202,7 @@ describe('Post ID API', () => {
       
       // 返信投稿の詳細を取得（include_related=trueを指定）
       const request = createTestRequest(`/api/posts/${replyPost.id}?include_related=true`, 'GET', null, {}, testUser.clerk_id);
-      const response = await GET(request, { params: { id: replyPost.id.toString() } });
+      const response = await GET(request, { params: Promise.resolve({ id: replyPost.id.toString() }) });
       
       // レスポンスの検証
       expect(response.status).toBe(200);
@@ -254,7 +254,7 @@ describe('Post ID API', () => {
       
       // 返信投稿の詳細を取得（include_related=trueを指定）
       const request = createTestRequest(`/api/posts/${replyToMediaPost.id}?include_related=true`, 'GET', null, {}, testUser.clerk_id);
-      const response = await GET(request, { params: { id: replyToMediaPost.id.toString() } });
+      const response = await GET(request, { params: Promise.resolve({ id: replyToMediaPost.id.toString() }) });
       
       // レスポンスの検証
       expect(response.status).toBe(200);
@@ -287,7 +287,7 @@ describe('Post ID API', () => {
       
       // 元記事の詳細を取得（include_related=trueを指定）
       const request = createTestRequest(`/api/posts/${otherUserPost.id}?include_related=true`, 'GET', null, {}, testUser.clerk_id);
-      const response = await GET(request, { params: { id: otherUserPost.id.toString() } });
+      const response = await GET(request, { params: Promise.resolve({ id: otherUserPost.id.toString() }) });
       
       // レスポンスの検証
       expect(response.status).toBe(200);
@@ -312,7 +312,7 @@ describe('Post ID API', () => {
     test('リポストされていない記事にはリポスト情報が含まれない', async () => {
       // リポストされていない記事の詳細を取得
       const request = createTestRequest(`/api/posts/${testPost.id}?include_related=true`, 'GET', null, {}, testUser.clerk_id);
-      const response = await GET(request, { params: { id: testPost.id.toString() } });
+      const response = await GET(request, { params: Promise.resolve({ id: testPost.id.toString() }) });
       
       // レスポンスの検証
       expect(response.status).toBe(200);
@@ -333,7 +333,7 @@ describe('Post ID API', () => {
       const nonExistentId = 999999;
       
       const request = createTestRequest(`/api/posts/${nonExistentId}`, 'GET', null, {}, testUser.clerk_id);
-      const response = await GET(request, { params: { id: nonExistentId.toString() } });
+      const response = await GET(request, { params: Promise.resolve({ id: nonExistentId.toString() }) });
       
       // レスポンスの検証
       expect(response.status).toBe(404);
@@ -348,7 +348,7 @@ describe('Post ID API', () => {
         .where(eq(posts.id, testPost.id));
       
       const request = createTestRequest(`/api/posts/${testPost.id}`, 'GET', null, {}, testUser.clerk_id);
-      const response = await GET(request, { params: { id: testPost.id.toString() } });
+      const response = await GET(request, { params: Promise.resolve({ id: testPost.id.toString() }) });
       
       // レスポンスの検証
       expect(response.status).toBe(404);
@@ -360,7 +360,7 @@ describe('Post ID API', () => {
       // 認証なしのリクエスト
       global.currentTestUserId = null as unknown as string;
       const request = createTestRequest(`/api/posts/${testPost.id}`, 'GET');
-      const response = await GET(request, { params: { id: testPost.id.toString() } });
+      const response = await GET(request, { params: Promise.resolve({ id: testPost.id.toString() }) });
       
       // レスポンスの検証
       expect(response.status).toBe(401);
@@ -371,7 +371,7 @@ describe('Post ID API', () => {
     test('メディア付き投稿の詳細と関連メディアを取得できる', async () => {
       // GET リクエストのテスト
       const request = createTestRequest(`/api/posts/${mediaPost.id}`, 'GET', null, {}, testUser.clerk_id);
-      const response = await GET(request, { params: { id: mediaPost.id.toString() } });
+      const response = await GET(request, { params: Promise.resolve({ id: mediaPost.id.toString() }) });
       
       // レスポンスの検証
       expect(response.status).toBe(200);
@@ -424,7 +424,7 @@ describe('Post ID API', () => {
       
       // GET リクエストのテスト
       const request = createTestRequest(`/api/posts/${videoPost.id}`, 'GET', null, {}, testUser.clerk_id);
-      const response = await GET(request, { params: { id: videoPost.id.toString() } });
+      const response = await GET(request, { params: Promise.resolve({ id: videoPost.id.toString() }) });
       
       // レスポンスの検証
       expect(response.status).toBe(200);
@@ -464,7 +464,7 @@ describe('Post ID API', () => {
       
       // include_related=trueで引用投稿の詳細を取得
       const request = createTestRequest(`/api/posts/${quotePost.id}?include_related=true`, 'GET', null, {}, testUser.clerk_id);
-      const response = await GET(request, { params: { id: quotePost.id.toString() } });
+      const response = await GET(request, { params: Promise.resolve({ id: quotePost.id.toString() }) });
       
       // レスポンスの検証
       expect(response.status).toBe(200);
@@ -489,7 +489,7 @@ describe('Post ID API', () => {
       
       // include_related=falseで引用投稿の詳細を取得
       const request = createTestRequest(`/api/posts/${quotePost.id}?include_related=false`, 'GET', null, {}, testUser.clerk_id);
-      const response = await GET(request, { params: { id: quotePost.id.toString() } });
+      const response = await GET(request, { params: Promise.resolve({ id: quotePost.id.toString() }) });
       
       // レスポンスの検証
       expect(response.status).toBe(200);
@@ -514,7 +514,7 @@ describe('Post ID API', () => {
       
       // include_relatedパラメータなしで返信投稿の詳細を取得
       const request = createTestRequest(`/api/posts/${replyPost.id}`, 'GET', null, {}, testUser.clerk_id);
-      const response = await GET(request, { params: { id: replyPost.id.toString() } });
+      const response = await GET(request, { params: Promise.resolve({ id: replyPost.id.toString() }) });
       
       // レスポンスの検証
       expect(response.status).toBe(200);
@@ -539,7 +539,7 @@ describe('Post ID API', () => {
       
       // include_related=trueでリポスト投稿の詳細を取得
       const request = createTestRequest(`/api/posts/${repostPost.id}?include_related=true`, 'GET', null, {}, testUser.clerk_id);
-      const response = await GET(request, { params: { id: repostPost.id.toString() } });
+      const response = await GET(request, { params: Promise.resolve({ id: repostPost.id.toString() }) });
       
       // レスポンスの検証
       expect(response.status).toBe(200);
@@ -557,7 +557,7 @@ describe('Post ID API', () => {
     test('投稿者は自分の投稿を削除できる', async () => {
       // DELETE リクエストのテスト
       const request = createTestRequest(`/api/posts/${testPost.id}`, 'DELETE', null, {}, testUser.clerk_id);
-      const response = await DELETE(request, { params: { id: testPost.id.toString() } });
+      const response = await DELETE(request, { params: Promise.resolve({ id: testPost.id.toString() }) });
       
       // レスポンスの検証
       expect(response.status).toBe(200);
@@ -578,7 +578,7 @@ describe('Post ID API', () => {
     test('他人の投稿は削除できない', async () => {
       // 他のユーザーの投稿を削除しようとする
       const request = createTestRequest(`/api/posts/${otherUserPost.id}`, 'DELETE', null, {}, testUser.clerk_id);
-      const response = await DELETE(request, { params: { id: otherUserPost.id.toString() } });
+      const response = await DELETE(request, { params: Promise.resolve({ id: otherUserPost.id.toString() }) });
       
       // レスポンスの検証
       expect(response.status).toBe(403);
@@ -600,7 +600,7 @@ describe('Post ID API', () => {
       const nonExistentId = 999999;
       
       const request = createTestRequest(`/api/posts/${nonExistentId}`, 'DELETE', null, {}, testUser.clerk_id);
-      const response = await DELETE(request, { params: { id: nonExistentId.toString() } });
+      const response = await DELETE(request, { params: Promise.resolve({ id: nonExistentId.toString() }) });
       
       // レスポンスの検証
       expect(response.status).toBe(404);
@@ -612,7 +612,7 @@ describe('Post ID API', () => {
       global.currentTestUserId = null as unknown as string;
       
       const request = createTestRequest(`/api/posts/${testPost.id}`, 'DELETE');
-      const response = await DELETE(request, { params: { id: testPost.id.toString() } });
+      const response = await DELETE(request, { params: Promise.resolve({ id: testPost.id.toString() }) });
       
       // レスポンスの検証
       expect(response.status).toBe(401);
@@ -628,7 +628,7 @@ describe('Post ID API', () => {
       
       // 削除済みの投稿を削除しようとする
       const request = createTestRequest(`/api/posts/${testPost.id}`, 'DELETE', null, {}, testUser.clerk_id);
-      const response = await DELETE(request, { params: { id: testPost.id.toString() } });
+      const response = await DELETE(request, { params: Promise.resolve({ id: testPost.id.toString() }) });
       
       // レスポンスの検証
       expect(response.status).toBe(404);

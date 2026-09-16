@@ -62,7 +62,7 @@ describe('User Block API', () => {
     test('認証済みユーザーは他のユーザーをブロックできる', async () => {
       // テスト用リクエストの作成
       const request = createTestRequest(`/api/users/${otherUser.id}/block`, 'POST', null, {}, testUser.clerk_id);
-      const response = await POST(request, { params: { id: otherUser.id.toString() } });
+      const response = await POST(request, { params: Promise.resolve({ id: otherUser.id.toString() }) });
       
       // レスポンスの検証
       expect(response.status).toBe(200);
@@ -97,7 +97,7 @@ describe('User Block API', () => {
       
       // テスト用リクエストの作成
       const request = createTestRequest(`/api/users/${otherUser.id}/block`, 'POST', null, {}, testUser.clerk_id);
-      const response = await POST(request, { params: { id: otherUser.id.toString() } });
+      const response = await POST(request, { params: Promise.resolve({ id: otherUser.id.toString() }) });
       
       // レスポンスの検証
       expect(response.status).toBe(200);
@@ -122,7 +122,7 @@ describe('User Block API', () => {
     test('BANされたユーザーをブロックすると400エラーを返す', async () => {
       // BANされたユーザーをブロックしようとする
       const request = createTestRequest(`/api/users/${bannedUser.id}/block`, 'POST', null, {}, testUser.clerk_id);
-      const response = await POST(request, { params: { id: bannedUser.id.toString() } });
+      const response = await POST(request, { params: Promise.resolve({ id: bannedUser.id.toString() }) });
       
       // レスポンスの検証
       expect(response.status).toBe(400);
@@ -133,7 +133,7 @@ describe('User Block API', () => {
     test('自分自身をブロックしようとすると400エラーを返す', async () => {
       // 自分自身をブロックしようとする
       const request = createTestRequest(`/api/users/${testUser.id}/block`, 'POST', null, {}, testUser.clerk_id);
-      const response = await POST(request, { params: { id: testUser.id.toString() } });
+      const response = await POST(request, { params: Promise.resolve({ id: testUser.id.toString() }) });
       
       // レスポンスの検証
       expect(response.status).toBe(400);
@@ -147,7 +147,7 @@ describe('User Block API', () => {
       
       // テスト用リクエストの作成
       const request = createTestRequest(`/api/users/${nonExistentId}/block`, 'POST', null, {}, testUser.clerk_id);
-      const response = await POST(request, { params: { id: nonExistentId.toString() } });
+      const response = await POST(request, { params: Promise.resolve({ id: nonExistentId.toString() }) });
       
       // レスポンスの検証
       expect(response.status).toBe(404);
@@ -161,7 +161,7 @@ describe('User Block API', () => {
       
       // テスト用リクエストの作成
       const request = createTestRequest(`/api/users/${invalidId}/block`, 'POST', null, {}, testUser.clerk_id);
-      const response = await POST(request, { params: { id: invalidId } });
+      const response = await POST(request, { params: Promise.resolve({ id: invalidId }) });
       
       // レスポンスの検証
       expect(response.status).toBe(400);
@@ -173,7 +173,7 @@ describe('User Block API', () => {
       // 認証なしでリクエスト
       global.currentTestUserId = null as unknown as string;
       const request = createTestRequest(`/api/users/${otherUser.id}/block`, 'POST');
-      const response = await POST(request, { params: { id: otherUser.id.toString() } });
+      const response = await POST(request, { params: Promise.resolve({ id: otherUser.id.toString() }) });
       
       // レスポンスの検証
       expect(response.status).toBe(401);
@@ -194,7 +194,7 @@ describe('User Block API', () => {
       
       // テスト用リクエストの作成
       const request = createTestRequest(`/api/users/${otherUser.id}/block`, 'DELETE', null, {}, testUser.clerk_id);
-      const response = await DELETE(request, { params: { id: otherUser.id.toString() } });
+      const response = await DELETE(request, { params: Promise.resolve({ id: otherUser.id.toString() }) });
       
       // レスポンスの検証
       expect(response.status).toBe(200);
@@ -221,7 +221,7 @@ describe('User Block API', () => {
     test('ブロックしていないユーザーをブロック解除しても成功する', async () => {
       // ブロック関係なしでブロック解除を試みる
       const request = createTestRequest(`/api/users/${otherUser.id}/block`, 'DELETE', null, {}, testUser.clerk_id);
-      const response = await DELETE(request, { params: { id: otherUser.id.toString() } });
+      const response = await DELETE(request, { params: Promise.resolve({ id: otherUser.id.toString() }) });
       
       // レスポンスの検証
       expect(response.status).toBe(200);
@@ -249,7 +249,7 @@ describe('User Block API', () => {
       
       // テスト用リクエストの作成
       const request = createTestRequest(`/api/users/${otherUser.id}/block`, 'DELETE', null, {}, testUser.clerk_id);
-      const response = await DELETE(request, { params: { id: otherUser.id.toString() } });
+      const response = await DELETE(request, { params: Promise.resolve({ id: otherUser.id.toString() }) });
       
       // レスポンスの検証
       expect(response.status).toBe(200);
@@ -266,7 +266,7 @@ describe('User Block API', () => {
       
       // テスト用リクエストの作成
       const request = createTestRequest(`/api/users/${nonExistentId}/block`, 'DELETE', null, {}, testUser.clerk_id);
-      const response = await DELETE(request, { params: { id: nonExistentId.toString() } });
+      const response = await DELETE(request, { params: Promise.resolve({ id: nonExistentId.toString() }) });
       
       // レスポンスの検証 - 現在の実装では200を返す
       expect(response.status).toBe(200);
@@ -282,7 +282,7 @@ describe('User Block API', () => {
       
       // テスト用リクエストの作成
       const request = createTestRequest(`/api/users/${invalidId}/block`, 'DELETE', null, {}, testUser.clerk_id);
-      const response = await DELETE(request, { params: { id: invalidId } });
+      const response = await DELETE(request, { params: Promise.resolve({ id: invalidId }) });
       
       // レスポンスの検証
       expect(response.status).toBe(400);
@@ -294,7 +294,7 @@ describe('User Block API', () => {
       // 認証なしでリクエスト
       global.currentTestUserId = null as unknown as string;
       const request = createTestRequest(`/api/users/${otherUser.id}/block`, 'DELETE');
-      const response = await DELETE(request, { params: { id: otherUser.id.toString() } });
+      const response = await DELETE(request, { params: Promise.resolve({ id: otherUser.id.toString() }) });
       
       // レスポンスの検証
       expect(response.status).toBe(401);
@@ -315,7 +315,7 @@ describe('User Block API', () => {
       
       // テスト用リクエストの作成
       const request = createTestRequest(`/api/users/${otherUser.id}/block`, 'GET', null, {}, testUser.clerk_id);
-      const response = await GET(request, { params: { id: otherUser.id.toString() } });
+      const response = await GET(request, { params: Promise.resolve({ id: otherUser.id.toString() }) });
       
       // レスポンスの検証
       expect(response.status).toBe(200);
@@ -328,7 +328,7 @@ describe('User Block API', () => {
     test('ブロックしていないユーザーの状態を確認すると false を返す', async () => {
       // ブロック関係がない状態でリクエスト
       const request = createTestRequest(`/api/users/${otherUser.id}/block`, 'GET', null, {}, testUser.clerk_id);
-      const response = await GET(request, { params: { id: otherUser.id.toString() } });
+      const response = await GET(request, { params: Promise.resolve({ id: otherUser.id.toString() }) });
       
       // レスポンスの検証
       expect(response.status).toBe(200);
@@ -355,7 +355,7 @@ describe('User Block API', () => {
       
       // テスト用リクエストの作成
       const request = createTestRequest(`/api/users/${otherUser.id}/block`, 'GET', null, {}, testUser.clerk_id);
-      const response = await GET(request, { params: { id: otherUser.id.toString() } });
+      const response = await GET(request, { params: Promise.resolve({ id: otherUser.id.toString() }) });
       
       // レスポンスの検証
       expect(response.status).toBe(200);
@@ -368,7 +368,7 @@ describe('User Block API', () => {
     test('自分自身のブロック状態を確認できる（常にfalse）', async () => {
       // 自分自身のブロック状態を確認
       const request = createTestRequest(`/api/users/${testUser.id}/block`, 'GET', null, {}, testUser.clerk_id);
-      const response = await GET(request, { params: { id: testUser.id.toString() } });
+      const response = await GET(request, { params: Promise.resolve({ id: testUser.id.toString() }) });
       
       // レスポンスの検証
       expect(response.status).toBe(200);
@@ -384,7 +384,7 @@ describe('User Block API', () => {
       
       // テスト用リクエストの作成
       const request = createTestRequest(`/api/users/${nonExistentId}/block`, 'GET', null, {}, testUser.clerk_id);
-      const response = await GET(request, { params: { id: nonExistentId.toString() } });
+      const response = await GET(request, { params: Promise.resolve({ id: nonExistentId.toString() }) });
       
       // レスポンスの検証 - 現在の実装では200を返す
       expect(response.status).toBe(200);
@@ -399,7 +399,7 @@ describe('User Block API', () => {
       
       // テスト用リクエストの作成
       const request = createTestRequest(`/api/users/${invalidId}/block`, 'GET', null, {}, testUser.clerk_id);
-      const response = await GET(request, { params: { id: invalidId } });
+      const response = await GET(request, { params: Promise.resolve({ id: invalidId }) });
       
       // レスポンスの検証
       expect(response.status).toBe(400);
@@ -411,7 +411,7 @@ describe('User Block API', () => {
       // 認証なしでリクエスト
       global.currentTestUserId = null as unknown as string;
       const request = createTestRequest(`/api/users/${otherUser.id}/block`, 'GET');
-      const response = await GET(request, { params: { id: otherUser.id.toString() } });
+      const response = await GET(request, { params: Promise.resolve({ id: otherUser.id.toString() }) });
       
       // レスポンスの検証
       expect(response.status).toBe(401);
@@ -432,11 +432,11 @@ describe('User Block API', () => {
       
       // 2. ブロックを解除
       const request1 = createTestRequest(`/api/users/${otherUser.id}/block`, 'DELETE', null, {}, testUser.clerk_id);
-      await DELETE(request1, { params: { id: otherUser.id.toString() } });
+      await DELETE(request1, { params: Promise.resolve({ id: otherUser.id.toString() }) });
       
       // 3. 再度ブロック
       const request2 = createTestRequest(`/api/users/${otherUser.id}/block`, 'POST', null, {}, testUser.clerk_id);
-      const response = await POST(request2, { params: { id: otherUser.id.toString() } });
+      const response = await POST(request2, { params: Promise.resolve({ id: otherUser.id.toString() }) });
       
       // レスポンスの検証
       expect(response.status).toBe(200);

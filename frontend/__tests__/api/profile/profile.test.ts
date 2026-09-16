@@ -196,7 +196,7 @@ describe('Profile API', () => {
     test('ユーザー名から他のユーザーのプロフィールを取得できる', async () => {
       // テスト用リクエストの作成
       const request = createTestRequest(`/api/profile/${otherUser.username}`, 'GET', null, {}, testUser.clerk_id);
-      const response = await getUserProfile(request, { params: { username: otherUser.username } });
+      const response = await getUserProfile(request, { params: Promise.resolve({ username: otherUser.username }) });
       
       // レスポンスの検証
       expect(response.status).toBe(200);
@@ -219,7 +219,7 @@ describe('Profile API', () => {
     test('自分自身のプロフィールを取得する場合はisOwnProfileがtrueになる', async () => {
       // テスト用リクエストの作成
       const request = createTestRequest(`/api/profile/${testUser.username}`, 'GET', null, {}, testUser.clerk_id);
-      const response = await getUserProfile(request, { params: { username: testUser.username } });
+      const response = await getUserProfile(request, { params: Promise.resolve({ username: testUser.username }) });
       
       // レスポンスの検証
       expect(response.status).toBe(200);
@@ -236,7 +236,7 @@ describe('Profile API', () => {
     test('ブロックしているユーザーのプロフィールを取得する場合はisBlockedがtrueになる', async () => {
       // テスト用リクエストの作成
       const request = createTestRequest(`/api/profile/${blockedUser.username}`, 'GET', null, {}, testUser.clerk_id);
-      const response = await getUserProfile(request, { params: { username: blockedUser.username } });
+      const response = await getUserProfile(request, { params: Promise.resolve({ username: blockedUser.username }) });
       
       // レスポンスの検証
       expect(response.status).toBe(200);
@@ -254,7 +254,7 @@ describe('Profile API', () => {
       // 認証なしでリクエスト
       global.currentTestUserId = null as unknown as string;
       const request = createTestRequest(`/api/profile/${otherUser.username}`, 'GET');
-      const response = await getUserProfile(request, { params: { username: otherUser.username } });
+      const response = await getUserProfile(request, { params: Promise.resolve({ username: otherUser.username }) });
       
       // レスポンスの検証
       expect(response.status).toBe(200);
@@ -275,7 +275,7 @@ describe('Profile API', () => {
       
       // テスト用リクエストの作成
       const request = createTestRequest(`/api/profile/${nonExistentUsername}`, 'GET', null, {}, testUser.clerk_id);
-      const response = await getUserProfile(request, { params: { username: nonExistentUsername } });
+      const response = await getUserProfile(request, { params: Promise.resolve({ username: nonExistentUsername }) });
       
       // レスポンスの検証
       expect(response.status).toBe(404);
@@ -286,7 +286,7 @@ describe('Profile API', () => {
     test('ユーザー名が指定されていない場合は400エラーを返す', async () => {
       // ユーザー名なしでリクエスト
       const request = createTestRequest('/api/profile/', 'GET', null, {}, testUser.clerk_id);
-      const response = await getUserProfile(request, { params: { username: '' } });
+      const response = await getUserProfile(request, { params: Promise.resolve({ username: '' }) });
       
       // レスポンスの検証
       expect(response.status).toBe(400);

@@ -56,7 +56,7 @@ describe('POST /api/posts/[id]/repost', () => {
 
   test('正常にリポストできること', async () => {
     const request = createTestRequest(`/api/posts/${testPost.id}/repost`, 'POST', null, {}, testUser.clerk_id);
-    const response = await POST(request, { params: { id: testPost.id.toString() } });
+    const response = await POST(request, { params: Promise.resolve({ id: testPost.id.toString() }) });
 
     expect(response.status).toBe(201);
     const data = await response.json();
@@ -73,12 +73,12 @@ describe('POST /api/posts/[id]/repost', () => {
   test('同じ投稿を二度リポストできないこと', async () => {
     // 1回目のリポスト
     const request1 = createTestRequest(`/api/posts/${testPost.id}/repost`, 'POST', null, {}, testUser.clerk_id);
-    const response1 = await POST(request1, { params: { id: testPost.id.toString() } });
+    const response1 = await POST(request1, { params: Promise.resolve({ id: testPost.id.toString() }) });
     expect(response1.status).toBe(201);
 
     // 2回目のリポスト
     const request2 = createTestRequest(`/api/posts/${testPost.id}/repost`, 'POST', null, {}, testUser.clerk_id);
-    const response2 = await POST(request2, { params: { id: testPost.id.toString() } });
+    const response2 = await POST(request2, { params: Promise.resolve({ id: testPost.id.toString() }) });
     expect(response2.status).toBe(400);
     const data = await response2.json();
     expect(data.error).toContain('既にこの投稿をリポストしています');
@@ -86,7 +86,7 @@ describe('POST /api/posts/[id]/repost', () => {
 
   test('存在しない投稿をリポストできないこと', async () => {
     const request = createTestRequest('/api/posts/99999/repost', 'POST', null, {}, testUser.clerk_id);
-    const response = await POST(request, { params: { id: '99999' } });
+    const response = await POST(request, { params: Promise.resolve({ id: '99999' }) });
 
     expect(response.status).toBe(404);
     const data = await response.json();
@@ -101,7 +101,7 @@ describe('POST /api/posts/[id]/repost', () => {
 
     // リポストを試みる
     const request = createTestRequest(`/api/posts/${testPost.id}/repost`, 'POST', null, {}, testUser.clerk_id);
-    const response = await POST(request, { params: { id: testPost.id.toString() } });
+    const response = await POST(request, { params: Promise.resolve({ id: testPost.id.toString() }) });
 
     expect(response.status).toBe(404);
     const data = await response.json();
@@ -119,7 +119,7 @@ describe('POST /api/posts/[id]/repost', () => {
 
     // リポストを試みる
     const request = createTestRequest(`/api/posts/${testPost.id}/repost`, 'POST', null, {}, testUser.clerk_id);
-    const response = await POST(request, { params: { id: testPost.id.toString() } });
+    const response = await POST(request, { params: Promise.resolve({ id: testPost.id.toString() }) });
 
     expect(response.status).toBe(403);
     const data = await response.json();
@@ -137,7 +137,7 @@ describe('POST /api/posts/[id]/repost', () => {
 
     // リポストを試みる
     const request = createTestRequest(`/api/posts/${testPost.id}/repost`, 'POST', null, {}, testUser.clerk_id);
-    const response = await POST(request, { params: { id: testPost.id.toString() } });
+    const response = await POST(request, { params: Promise.resolve({ id: testPost.id.toString() }) });
 
     expect(response.status).toBe(403);
     const data = await response.json();
@@ -146,7 +146,7 @@ describe('POST /api/posts/[id]/repost', () => {
 
   test('無効な投稿IDでエラーになること', async () => {
     const request = createTestRequest('/api/posts/invalid/repost', 'POST', null, {}, testUser.clerk_id);
-    const response = await POST(request, { params: { id: 'invalid' } });
+    const response = await POST(request, { params: Promise.resolve({ id: 'invalid' }) });
 
     expect(response.status).toBe(400);
     const data = await response.json();
@@ -157,7 +157,7 @@ describe('POST /api/posts/[id]/repost', () => {
     // 認証なしのリクエスト
     global.currentTestUserId = null as unknown as string;
     const request = createTestRequest(`/api/posts/${testPost.id}/repost`, 'POST');
-    const response = await POST(request, { params: { id: testPost.id.toString() } });
+    const response = await POST(request, { params: Promise.resolve({ id: testPost.id.toString() }) });
 
     expect(response.status).toBe(401);
     const data = await response.json();
@@ -220,7 +220,7 @@ describe('DELETE /api/posts/[id]/repost', () => {
 
   test('正常にリポストを解除できること', async () => {
     const request = createTestRequest(`/api/posts/${testPost.id}/repost`, 'DELETE', null, {}, testUser.clerk_id);
-    const response = await DELETE(request, { params: { id: testPost.id.toString() } });
+    const response = await DELETE(request, { params: Promise.resolve({ id: testPost.id.toString() }) });
 
     expect(response.status).toBe(200);
     const data = await response.json();
@@ -251,7 +251,7 @@ describe('DELETE /api/posts/[id]/repost', () => {
     }).returning().then(res => res[0]);
 
     const request = createTestRequest(`/api/posts/${anotherPost.id}/repost`, 'DELETE', null, {}, testUser.clerk_id);
-    const response = await DELETE(request, { params: { id: anotherPost.id.toString() } });
+    const response = await DELETE(request, { params: Promise.resolve({ id: anotherPost.id.toString() }) });
 
     expect(response.status).toBe(404);
     const data = await response.json();
@@ -260,7 +260,7 @@ describe('DELETE /api/posts/[id]/repost', () => {
 
   test('存在しない投稿のリポスト解除はできないこと', async () => {
     const request = createTestRequest('/api/posts/99999/repost', 'DELETE', null, {}, testUser.clerk_id);
-    const response = await DELETE(request, { params: { id: '99999' } });
+    const response = await DELETE(request, { params: Promise.resolve({ id: '99999' }) });
 
     expect(response.status).toBe(404);
     const data = await response.json();
@@ -269,7 +269,7 @@ describe('DELETE /api/posts/[id]/repost', () => {
 
   test('無効な投稿IDでエラーになること', async () => {
     const request = createTestRequest('/api/posts/invalid/repost', 'DELETE', null, {}, testUser.clerk_id);
-    const response = await DELETE(request, { params: { id: 'invalid' } });
+    const response = await DELETE(request, { params: Promise.resolve({ id: 'invalid' }) });
 
     expect(response.status).toBe(400);
     const data = await response.json();
@@ -280,7 +280,7 @@ describe('DELETE /api/posts/[id]/repost', () => {
     // 認証なしのリクエスト
     global.currentTestUserId = null as unknown as string;
     const request = createTestRequest(`/api/posts/${testPost.id}/repost`, 'DELETE');
-    const response = await DELETE(request, { params: { id: testPost.id.toString() } });
+    const response = await DELETE(request, { params: Promise.resolve({ id: testPost.id.toString() }) });
 
     expect(response.status).toBe(401);
     const data = await response.json();
@@ -294,7 +294,7 @@ describe('DELETE /api/posts/[id]/repost', () => {
       .where(eq(posts.id, repostPost.id));
 
     const request = createTestRequest(`/api/posts/${testPost.id}/repost`, 'DELETE', null, {}, testUser.clerk_id);
-    const response = await DELETE(request, { params: { id: testPost.id.toString() } });
+    const response = await DELETE(request, { params: Promise.resolve({ id: testPost.id.toString() }) });
 
     expect(response.status).toBe(404);
     const data = await response.json();
